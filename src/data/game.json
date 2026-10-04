@@ -1,0 +1,69 @@
+{
+  "ticksPerSecond": 20,
+  "dayLengthTicks": 24000,
+  "startTime": 1000,
+  "randomTickSpeed": 3,
+  "autosaveSeconds": 30,
+  "render": {
+    "fov": 72,
+    "near": 0.08,
+    "far": 600,
+    "defaultRenderDistance": 4,
+    "minRenderDistance": 2,
+    "maxRenderDistance": 10,
+    "meshBudgetMs": 6,
+    "generateBudgetMs": 8,
+    "maxPixelRatio": 1.5,
+    "underwaterFog": [0.06, 0.16, 0.42],
+    "underwaterFogFar": 22,
+    "lavaFog": [0.8, 0.25, 0.02]
+  },
+  "sky": {
+    "radius": 420,
+    "dayTop": "#78a7ff",
+    "dayHorizon": "#c2d8ff",
+    "nightTop": "#03050c",
+    "nightHorizon": "#0b1020",
+    "sunset": "#ff9a50",
+    "minDaylight": 0.22,
+    "sunSize": 60,
+    "moonSize": 46,
+    "stars": 900,
+    "cloudHeight": 126,
+    "cloudTexture": 64,
+    "cloudCell": 12,
+    "cloudSpan": 1600,
+    "cloudSpeed": 1.2,
+    "cloudOpacity": 0.82
+  },
+  "liquids": {
+    "water": { "tickDelay": 5, "spread": 7 },
+    "lava": { "tickDelay": 30, "spread": 3 },
+    "maxUpdatesPerTick": 400
+  },
+  "interaction": {
+    "reachSurvival": 4.5,
+    "reachCreative": 5.5,
+    "creativeBreakCooldown": 0.18,
+    "placeCooldown": 0.22,
+    "attackCooldown": 0.45,
+    "holdToBreakMs": 230,
+    "itemPickupDelay": 0.6,
+    "itemPickupRadius": 1.6,
+    "itemDespawnSeconds": 300,
+    "maxItemEntities": 160,
+    "inWaterMiningFactor": 0.2,
+    "airborneMiningFactor": 0.2
+  },
+  "spawning": {
+    "passivePerChunkChance": 0.22,
+    "passiveGroup": [2, 4],
+    "maxPassive": 28,
+    "maxHostile": 14,
+    "hostileAttemptsPerSecond": 2,
+    "hostileMinDistance": 18,
+    "hostileMaxDistance": 48,
+    "despawnDistance": 96,
+    "hostileMaxLight": 7
+  }
+}

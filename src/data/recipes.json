@@ -1,0 +1,57 @@
+{
+  "tags": {
+    "#planks": ["oak_planks", "birch_planks", "spruce_planks"],
+    "#logs": ["oak_log", "birch_log", "spruce_log"],
+    "#coal": ["coal"],
+    "#wool": ["white_wool", "red_wool", "yellow_wool", "green_wool", "black_wool"]
+  },
+  "toolPatterns": {
+    "pickaxe": ["XXX", " # ", " # "],
+    "axe": ["XX", "X#", " #"],
+    "shovel": ["X", "#", "#"],
+    "hoe": ["XX", " #", " #"],
+    "sword": ["X", "X", "#"]
+  },
+  "toolIngredients": {
+    "wooden": "#planks",
+    "stone": "cobblestone",
+    "iron": "iron_ingot",
+    "golden": "gold_ingot",
+    "diamond": "diamond"
+  },
+  "recipes": [
+    { "type": "shapeless", "ingredients": ["oak_log"], "result": { "item": "oak_planks", "count": 4 } },
+    { "type": "shapeless", "ingredients": ["birch_log"], "result": { "item": "birch_planks", "count": 4 } },
+    { "type": "shapeless", "ingredients": ["spruce_log"], "result": { "item": "spruce_planks", "count": 4 } },
+    { "type": "shaped", "pattern": ["P", "P"], "key": { "P": "#planks" }, "result": { "item": "stick", "count": 4 } },
+    { "type": "shaped", "pattern": ["PP", "PP"], "key": { "P": "#planks" }, "result": { "item": "crafting_table", "count": 1 } },
+    { "type": "shaped", "pattern": ["CCC", "C C", "CCC"], "key": { "C": "cobblestone" }, "result": { "item": "furnace", "count": 1 } },
+    { "type": "shaped", "pattern": ["PPP", "P P", "PPP"], "key": { "P": "#planks" }, "result": { "item": "chest", "count": 1 } },
+    { "type": "shaped", "pattern": ["C", "S"], "key": { "C": "#coal", "S": "stick" }, "result": { "item": "torch", "count": 4 } },
+    { "type": "shaped", "pattern": ["WWW"], "key": { "W": "wheat" }, "result": { "item": "bread", "count": 1 } },
+    { "type": "shaped", "pattern": ["SS", "SS"], "key": { "S": "sand" }, "result": { "item": "sandstone", "count": 1 } },
+    { "type": "shaped", "pattern": ["BB", "BB"], "key": { "B": "brick" }, "result": { "item": "bricks", "count": 1 } },
+    { "type": "shaped", "pattern": ["SS", "SS"], "key": { "S": "stone" }, "result": { "item": "stone_bricks", "count": 4 } },
+    { "type": "shaped", "pattern": ["CC", "CC"], "key": { "C": "clay_ball" }, "result": { "item": "clay", "count": 1 } },
+    { "type": "shaped", "pattern": ["SS", "SS"], "key": { "S": "snow_block" }, "result": { "item": "ice", "count": 1 } },
+    { "type": "shaped", "pattern": ["III", "III", "III"], "key": { "I": "iron_ingot" }, "result": { "item": "iron_block", "count": 1 } },
+    { "type": "shaped", "pattern": ["GGG", "GGG", "GGG"], "key": { "G": "gold_ingot" }, "result": { "item": "gold_block", "count": 1 } },
+    { "type": "shaped", "pattern": ["DDD", "DDD", "DDD"], "key": { "D": "diamond" }, "result": { "item": "diamond_block", "count": 1 } },
+    { "type": "shaped", "pattern": ["CCC", "CCC", "CCC"], "key": { "C": "coal" }, "result": { "item": "coal_block", "count": 1 } },
+    { "type": "shapeless", "ingredients": ["iron_block"], "result": { "item": "iron_ingot", "count": 9 } },
+    { "type": "shapeless", "ingredients": ["gold_block"], "result": { "item": "gold_ingot", "count": 9 } },
+    { "type": "shapeless", "ingredients": ["diamond_block"], "result": { "item": "diamond", "count": 9 } },
+    { "type": "shapeless", "ingredients": ["coal_block"], "result": { "item": "coal", "count": 9 } },
+    { "type": "shaped", "pattern": ["WWW", "PPP"], "key": { "W": "#wool", "P": "#planks" }, "result": { "item": "bed", "count": 1 } },
+    { "type": "shaped", "pattern": ["I I", " I "], "key": { "I": "iron_ingot" }, "result": { "item": "bucket", "count": 1 } },
+    { "type": "shaped", "pattern": ["PPP", "LLL", "PPP"], "key": { "P": "#planks", "L": "leather" }, "result": { "item": "bookshelf", "count": 1 } },
+    { "type": "shaped", "pattern": [" T ", "TGT", " T "], "key": { "T": "torch", "G": "glass" }, "result": { "item": "glowstone", "count": 1 } },
+    { "type": "shapeless", "ingredients": ["cobblestone", "tall_grass"], "result": { "item": "mossy_cobblestone", "count": 1 } },
+    { "type": "shapeless", "ingredients": ["white_wool", "red_flower"], "result": { "item": "red_wool", "count": 1 } },
+    { "type": "shapeless", "ingredients": ["white_wool", "yellow_flower"], "result": { "item": "yellow_wool", "count": 1 } },
+    { "type": "shapeless", "ingredients": ["white_wool", "cactus"], "result": { "item": "green_wool", "count": 1 } },
+    { "type": "shapeless", "ingredients": ["white_wool", "coal"], "result": { "item": "black_wool", "count": 1 } },
+    { "type": "shaped", "pattern": ["SS", "SS"], "key": { "S": "string" }, "result": { "item": "white_wool", "count": 1 } },
+    { "type": "shapeless", "ingredients": ["pumpkin", "wheat", "apple"], "result": { "item": "pumpkin_pie", "count": 1 } }
+  ]
+}

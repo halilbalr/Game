@@ -1,0 +1,21 @@
+{
+  "name": "blockheim",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Blockheim - a voxel sandbox survival game for mobile browsers",
+  "type": "module",
+  "scripts": {
+    "dev": "node tools/dev-server.mjs",
+    "build": "node tools/build.mjs",
+    "test": "node --test \"tests/**/*.test.mjs\"",
+    "evidence": "node tools/capture-evidence.mjs"
+  },
+  "dependencies": {
+    "three": "0.186.1"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "playwright": "1.56.1"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,61 @@
+{
+  "cookTicks": 200,
+  "recipes": [
+    {
+      "input": "sand",
+      "output": "glass"
+    },
+    {
+      "input": "cobblestone",
+      "output": "stone"
+    },
+    {
+      "input": "iron_ore",
+      "output": "iron_ingot"
+    },
+    {
+      "input": "gold_ore",
+      "output": "gold_ingot"
+    },
+    {
+      "input": "diamond_ore",
+      "output": "diamond"
+    },
+    {
+      "input": "coal_ore",
+      "output": "coal"
+    },
+    {
+      "input": "clay_ball",
+      "output": "brick"
+    },
+    {
+      "input": "clay",
+      "output": "terracotta"
+    },
+    {
+      "input": "raw_porkchop",
+      "output": "cooked_porkchop"
+    },
+    {
+      "input": "raw_beef",
+      "output": "steak"
+    },
+    {
+      "input": "raw_chicken",
+      "output": "cooked_chicken"
+    },
+    {
+      "input": "oak_log",
+      "output": "coal"
+    },
+    {
+      "input": "birch_log",
+      "output": "coal"
+    },
+    {
+      "input": "spruce_log",
+      "output": "coal"
+    }
+  ]
+}

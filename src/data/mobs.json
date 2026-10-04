@@ -1,0 +1,121 @@
+{
+  "mobs": {
+    "pig": {
+      "label": { "sv": "Gris", "en": "Pig" },
+      "hostile": false, "health": 10, "halfWidth": 0.45, "height": 0.9,
+      "walkSpeed": 1.3, "panicSpeed": 3.4, "sound": "pig",
+      "drops": [{ "item": "raw_porkchop", "count": [1, 3] }],
+      "model": {
+        "texture": { "base": "#eaa2a2", "noise": 0.06 },
+        "parts": [
+          { "name": "body", "size": [10, 8, 16], "pos": [0, 9, 0], "color": "#eaa2a2" },
+          { "name": "head", "size": [8, 8, 8], "pos": [0, 12, -11], "color": "#eca8a8", "face": "pig_face", "head": true },
+          { "name": "leg", "size": [4, 6, 4], "pos": [-3, 3, -5], "color": "#d99191", "swing": 1, "pivotTop": true },
+          { "name": "leg", "size": [4, 6, 4], "pos": [3, 3, -5], "color": "#d99191", "swing": -1, "pivotTop": true },
+          { "name": "leg", "size": [4, 6, 4], "pos": [-3, 3, 5], "color": "#d99191", "swing": -1, "pivotTop": true },
+          { "name": "leg", "size": [4, 6, 4], "pos": [3, 3, 5], "color": "#d99191", "swing": 1, "pivotTop": true }
+        ]
+      }
+    },
+    "cow": {
+      "label": { "sv": "Ko", "en": "Cow" },
+      "hostile": false, "health": 10, "halfWidth": 0.45, "height": 1.4,
+      "walkSpeed": 1.2, "panicSpeed": 3.2, "sound": "cow",
+      "drops": [{ "item": "raw_beef", "count": [1, 3] }, { "item": "leather", "count": [0, 2] }],
+      "model": {
+        "parts": [
+          { "name": "body", "size": [12, 10, 18], "pos": [0, 15, 0], "color": "#5c3b22", "spots": "#e9e4dc" },
+          { "name": "head", "size": [8, 8, 6], "pos": [0, 19, -12], "color": "#5c3b22", "face": "cow_face", "head": true },
+          { "name": "horn", "size": [1, 3, 1], "pos": [-4.5, 23.5, -12], "color": "#d9d2c2", "attach": "head" },
+          { "name": "horn", "size": [1, 3, 1], "pos": [4.5, 23.5, -12], "color": "#d9d2c2", "attach": "head" },
+          { "name": "leg", "size": [4, 10, 4], "pos": [-4, 5, -6], "color": "#4a2f1a", "swing": 1, "pivotTop": true },
+          { "name": "leg", "size": [4, 10, 4], "pos": [4, 5, -6], "color": "#4a2f1a", "swing": -1, "pivotTop": true },
+          { "name": "leg", "size": [4, 10, 4], "pos": [-4, 5, 6], "color": "#4a2f1a", "swing": -1, "pivotTop": true },
+          { "name": "leg", "size": [4, 10, 4], "pos": [4, 5, 6], "color": "#4a2f1a", "swing": 1, "pivotTop": true }
+        ]
+      }
+    },
+    "sheep": {
+      "label": { "sv": "Får", "en": "Sheep" },
+      "hostile": false, "health": 8, "halfWidth": 0.45, "height": 1.3,
+      "walkSpeed": 1.2, "panicSpeed": 3.2, "sound": "sheep",
+      "drops": [{ "item": "white_wool", "count": [1, 1] }],
+      "model": {
+        "parts": [
+          { "name": "body", "size": [10, 10, 16], "pos": [0, 15, 0], "color": "#ececec", "noise": 0.12 },
+          { "name": "head", "size": [6, 6, 8], "pos": [0, 19, -10], "color": "#d6c6b4", "face": "sheep_face", "head": true },
+          { "name": "leg", "size": [4, 10, 4], "pos": [-3, 5, -5], "color": "#d6c6b4", "swing": 1, "pivotTop": true },
+          { "name": "leg", "size": [4, 10, 4], "pos": [3, 5, -5], "color": "#d6c6b4", "swing": -1, "pivotTop": true },
+          { "name": "leg", "size": [4, 10, 4], "pos": [-3, 5, 5], "color": "#d6c6b4", "swing": -1, "pivotTop": true },
+          { "name": "leg", "size": [4, 10, 4], "pos": [3, 5, 5], "color": "#d6c6b4", "swing": 1, "pivotTop": true }
+        ]
+      }
+    },
+    "chicken": {
+      "label": { "sv": "Höna", "en": "Chicken" },
+      "hostile": false, "health": 4, "halfWidth": 0.2, "height": 0.7,
+      "walkSpeed": 1.1, "panicSpeed": 3.0, "sound": "chicken", "slowFall": true,
+      "drops": [{ "item": "raw_chicken", "count": [1, 1] }, { "item": "feather", "count": [0, 2] }],
+      "model": {
+        "parts": [
+          { "name": "body", "size": [6, 6, 8], "pos": [0, 7, 0], "color": "#f5f5f5" },
+          { "name": "head", "size": [4, 6, 3], "pos": [0, 12, -4.5], "color": "#f5f5f5", "face": "chicken_face", "head": true },
+          { "name": "beak", "size": [4, 2, 2], "pos": [0, 12, -7], "color": "#f0b030", "attach": "head" },
+          { "name": "wattle", "size": [2, 2, 1], "pos": [0, 10, -6.5], "color": "#d83030", "attach": "head" },
+          { "name": "wing", "size": [1, 4, 6], "pos": [-3.5, 8, 0], "color": "#e6e6e6", "flap": 1 },
+          { "name": "wing", "size": [1, 4, 6], "pos": [3.5, 8, 0], "color": "#e6e6e6", "flap": -1 },
+          { "name": "leg", "size": [1, 4, 1], "pos": [-1.5, 2, 0.5], "color": "#e6a020", "swing": 1, "pivotTop": true },
+          { "name": "leg", "size": [1, 4, 1], "pos": [1.5, 2, 0.5], "color": "#e6a020", "swing": -1, "pivotTop": true }
+        ]
+      }
+    },
+    "zombie": {
+      "label": { "sv": "Zombie", "en": "Zombie" },
+      "hostile": true, "health": 20, "halfWidth": 0.3, "height": 1.95,
+      "walkSpeed": 1.0, "chaseSpeed": 3.2, "attackDamage": { "easy": 2, "normal": 3, "hard": 4 },
+      "attackRange": 1.4, "attackCooldown": 1.0, "followRange": 24, "burnsInDaylight": true, "sound": "zombie",
+      "drops": [{ "item": "rotten_flesh", "count": [0, 2] }, { "item": "bone", "count": [0, 1] }],
+      "model": {
+        "parts": [
+          { "name": "head", "size": [8, 8, 8], "pos": [0, 28, 0], "color": "#5f9046", "face": "zombie_face", "head": true },
+          { "name": "body", "size": [8, 12, 4], "pos": [0, 18, 0], "color": "#2e8b8b" },
+          { "name": "arm", "size": [4, 12, 4], "pos": [-6, 18, 0], "color": "#5f9046", "pivotTop": true, "rest": [-85, 0, 0], "swing": 0.15 },
+          { "name": "arm", "size": [4, 12, 4], "pos": [6, 18, 0], "color": "#5f9046", "pivotTop": true, "rest": [-85, 0, 0], "swing": -0.15 },
+          { "name": "leg", "size": [4, 12, 4], "pos": [-2, 6, 0], "color": "#3a3f9e", "swing": 1, "pivotTop": true },
+          { "name": "leg", "size": [4, 12, 4], "pos": [2, 6, 0], "color": "#3a3f9e", "swing": -1, "pivotTop": true }
+        ]
+      }
+    },
+    "blastling": {
+      "label": { "sv": "Sprängling", "en": "Blastling" },
+      "hostile": true, "health": 20, "halfWidth": 0.4, "height": 1.0,
+      "walkSpeed": 1.0, "chaseSpeed": 2.6, "followRange": 18, "sound": "blastling",
+      "fuseSeconds": 1.5, "fuseRange": 2.6, "cancelRange": 6, "explosionPower": 3, "explosionDamage": { "easy": 10, "normal": 18, "hard": 26 },
+      "drops": [{ "item": "coal", "count": [0, 2] }, { "item": "string", "count": [0, 1] }],
+      "model": {
+        "parts": [
+          { "name": "body", "size": [12, 10, 12], "pos": [0, 11, 0], "color": "#4d7a37", "spots": "#2f5222", "face": "blast_face", "head": false },
+          { "name": "cap", "size": [14, 3, 14], "pos": [0, 17.5, 0], "color": "#3b6329", "spots": "#6e9a45" },
+          { "name": "leg", "size": [4, 6, 4], "pos": [-4, 3, -4], "color": "#3b5a2a", "swing": 1, "pivotTop": true },
+          { "name": "leg", "size": [4, 6, 4], "pos": [4, 3, -4], "color": "#3b5a2a", "swing": -1, "pivotTop": true },
+          { "name": "leg", "size": [4, 6, 4], "pos": [-4, 3, 4], "color": "#3b5a2a", "swing": -1, "pivotTop": true },
+          { "name": "leg", "size": [4, 6, 4], "pos": [4, 3, 4], "color": "#3b5a2a", "swing": 1, "pivotTop": true }
+        ]
+      }
+    }
+  },
+  "faces": {
+    "pig_face": { "rows": ["........", ".wk..kw.", "........", "..pppp..", "..pdpd..", "..pppp..", "........", "........"], "palette": { "w": "#ffffff", "k": "#1a1a1a", "p": "#f6c0c0", "d": "#9a5a5a" } },
+    "cow_face": { "rows": ["........", "........", ".wk..kw.", "...ww...", "..mmmm..", "..mdmd..", "..mmmm..", "........"], "palette": { "w": "#e9e4dc", "k": "#151515", "m": "#c8b49a", "d": "#5a4030" } },
+    "sheep_face": { "rows": ["........", "........", ".wk..kw.", "........", "...pp...", "...pp...", "........", "........"], "palette": { "w": "#ffffff", "k": "#1a1a1a", "p": "#d89a9a" } },
+    "chicken_face": { "rows": ["....", "k..k", "....", "....", "....", "...."], "palette": { "k": "#111111" } },
+    "zombie_face": { "rows": ["........", "........", ".kk..kk.", ".kg..gk.", "........", "..dddd..", "........", "........"], "palette": { "k": "#0e1a0a", "g": "#2e4a22", "d": "#2a3a1e" } },
+    "blast_face": { "rows": ["............", "............", "..oo....oo..", "..oy....yo..", "............", "....oooo....", "...oyyyyo...", "....oooo....", "............", "............"], "palette": { "o": "#ff8a1a", "y": "#ffe27a" } }
+  },
+  "physics": { "gravity": 32, "airDrag": 0.4, "jumpVelocity": 8.6, "stepHeight": 0.6, "knockback": 6, "knockbackUp": 5 },
+  "ai": {
+    "wanderRadius": 8, "wanderMinSeconds": 3, "wanderMaxSeconds": 9, "idleChance": 0.4,
+    "panicSeconds": 4, "maxSafeDrop": 3, "hurtInvulnerableSeconds": 0.5, "deathSeconds": 0.7,
+    "daylightBurnLevel": 0.7, "burnDamagePerSecond": 1
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "toolMaterials": {
+    "wooden":  { "tier": 0, "speed": 2,  "durability": 59,   "damageBonus": 0, "palette": "wood",    "fuel": 200, "label": { "sv": "Trä",     "en": "Wooden" } },
+    "stone":   { "tier": 1, "speed": 4,  "durability": 131,  "damageBonus": 1, "palette": "stone",   "label": { "sv": "Sten",    "en": "Stone" } },
+    "iron":    { "tier": 2, "speed": 6,  "durability": 250,  "damageBonus": 2, "palette": "iron",    "label": { "sv": "Järn",    "en": "Iron" } },
+    "golden":  { "tier": 0, "speed": 12, "durability": 32,   "damageBonus": 0, "palette": "gold",    "label": { "sv": "Guld",    "en": "Golden" } },
+    "diamond": { "tier": 3, "speed": 8,  "durability": 1561, "damageBonus": 3, "palette": "diamond", "label": { "sv": "Diamant", "en": "Diamond" } }
+  },
+  "toolTypes": {
+    "pickaxe": { "attack": 2, "label": { "sv": "hacka",  "en": "Pickaxe" } },
+    "axe":     { "attack": 3, "label": { "sv": "yxa",    "en": "Axe" } },
+    "shovel":  { "attack": 1.5, "label": { "sv": "spade", "en": "Shovel" } },
+    "hoe":     { "attack": 1, "label": { "sv": "skyffel", "en": "Hoe" } },
+    "sword":   { "attack": 4, "label": { "sv": "svärd",  "en": "Sword" } }
+  },
+  "toolIdStart": 300,
+  "toolOrder": ["pickaxe", "axe", "shovel", "hoe", "sword"],
+  "materialOrder": ["wooden", "stone", "iron", "golden", "diamond"],
+  "fistDamage": 1,
+  "items": [
+    { "id": 256, "name": "stick", "sprite": "stick", "fuel": 100, "label": { "sv": "Pinne", "en": "Stick" } },
+    { "id": 257, "name": "coal", "sprite": "coal", "fuel": 1600, "label": { "sv": "Kol", "en": "Coal" } },
+    { "id": 258, "name": "iron_ingot", "sprite": "ingot_iron", "label": { "sv": "Järntacka", "en": "Iron Ingot" } },
+    { "id": 259, "name": "gold_ingot", "sprite": "ingot_gold", "label": { "sv": "Guldtacka", "en": "Gold Ingot" } },
+    { "id": 260, "name": "diamond", "sprite": "diamond", "label": { "sv": "Diamant", "en": "Diamond" } },
+    { "id": 261, "name": "wheat_seeds", "sprite": "seeds", "places": "wheat_crop", "label": { "sv": "Vetefrön", "en": "Wheat Seeds" } },
+    { "id": 262, "name": "wheat", "sprite": "wheat", "label": { "sv": "Vete", "en": "Wheat" } },
+    { "id": 263, "name": "bread", "sprite": "bread", "food": { "hunger": 5, "saturation": 6.0 }, "label": { "sv": "Bröd", "en": "Bread" } },
+    { "id": 264, "name": "apple", "sprite": "apple", "food": { "hunger": 4, "saturation": 2.4 }, "label": { "sv": "Äpple", "en": "Apple" } },
+    { "id": 265, "name": "raw_porkchop", "sprite": "porkchop_raw", "food": { "hunger": 3, "saturation": 1.8 }, "label": { "sv": "Rå fläskkotlett", "en": "Raw Porkchop" } },
+    { "id": 266, "name": "cooked_porkchop", "sprite": "porkchop_cooked", "food": { "hunger": 8, "saturation": 12.8 }, "label": { "sv": "Stekt fläskkotlett", "en": "Cooked Porkchop" } },
+    { "id": 267, "name": "raw_beef", "sprite": "beef_raw", "food": { "hunger": 3, "saturation": 1.8 }, "label": { "sv": "Rått nötkött", "en": "Raw Beef" } },
+    { "id": 268, "name": "steak", "sprite": "beef_cooked", "food": { "hunger": 8, "saturation": 12.8 }, "label": { "sv": "Biff", "en": "Steak" } },
+    { "id": 269, "name": "raw_chicken", "sprite": "chicken_raw", "food": { "hunger": 2, "saturation": 1.2 }, "label": { "sv": "Rå kyckling", "en": "Raw Chicken" } },
+    { "id": 270, "name": "cooked_chicken", "sprite": "chicken_cooked", "food": { "hunger": 6, "saturation": 7.2 }, "label": { "sv": "Stekt kyckling", "en": "Cooked Chicken" } },
+    { "id": 271, "name": "rotten_flesh", "sprite": "rotten_flesh", "food": { "hunger": 4, "saturation": 0.8 }, "label": { "sv": "Ruttet kött", "en": "Rotten Flesh" } },
+    { "id": 272, "name": "leather", "sprite": "leather", "label": { "sv": "Läder", "en": "Leather" } },
+    { "id": 273, "name": "feather", "sprite": "feather", "label": { "sv": "Fjäder", "en": "Feather" } },
+    { "id": 274, "name": "clay_ball", "sprite": "clay_ball", "label": { "sv": "Lerklump", "en": "Clay Ball" } },
+    { "id": 275, "name": "brick", "sprite": "brick", "label": { "sv": "Tegelsten", "en": "Brick" } },
+    { "id": 276, "name": "bucket", "sprite": "bucket", "stack": 16, "bucket": "empty", "label": { "sv": "Hink", "en": "Bucket" } },
+    { "id": 277, "name": "water_bucket", "sprite": "bucket_water", "stack": 1, "bucket": "water", "label": { "sv": "Vattenhink", "en": "Water Bucket" } },
+    { "id": 278, "name": "lava_bucket", "sprite": "bucket_lava", "stack": 1, "bucket": "lava", "fuel": 20000, "fuelRemainder": "bucket", "label": { "sv": "Lavahink", "en": "Lava Bucket" } },
+    { "id": 279, "name": "bed", "sprite": "bed", "stack": 1, "places": "bed_foot", "label": { "sv": "Säng", "en": "Bed" } },
+    { "id": 280, "name": "string", "sprite": "string", "label": { "sv": "Tråd", "en": "String" } },
+    { "id": 281, "name": "bone", "sprite": "bone", "label": { "sv": "Ben", "en": "Bone" } },
+    { "id": 282, "name": "pumpkin_pie", "sprite": "pumpkin_pie", "food": { "hunger": 8, "saturation": 4.8 }, "label": { "sv": "Pumpapaj", "en": "Pumpkin Pie" } }
+  ]
+}

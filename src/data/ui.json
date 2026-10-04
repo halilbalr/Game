@@ -1,0 +1,36 @@
+{
+  "controls": {
+    "joystickZone": 0.42,
+    "joystickRadius": 56,
+    "joystickDeadzone": 0.12,
+    "sprintThreshold": 0.93,
+    "touchScale": 0.0062,
+    "mouseScale": 0.0026,
+    "tapMaxMs": 260,
+    "tapMaxMove": 14,
+    "holdMaxMove": 26
+  },
+  "hand": {
+    "skin": "#c8946a",
+    "block": { "pos": [0.62, -0.62, -1.05], "rot": [0, 45, 0], "scale": 0.42 },
+    "item": { "pos": [0.58, -0.42, -0.85], "rot": [0, -80, 25], "scale": 0.62 },
+    "arm": { "pos": [0.62, -0.62, -0.75], "rot": [-10, 12, 0] }
+  },
+  "hotbarSlots": 9,
+  "inventorySlots": 36,
+  "chestSlots": 27,
+  "creativeTabs": [
+    { "id": "building", "icon": "bricks", "categories": ["building"] },
+    { "id": "nature", "icon": "grass_block", "categories": ["nature"] },
+    { "id": "functional", "icon": "crafting_table", "categories": ["functional"] },
+    { "id": "tools", "icon": "iron_pickaxe", "categories": ["tools"] },
+    { "id": "food", "icon": "apple", "categories": ["food"] },
+    { "id": "materials", "icon": "diamond", "categories": ["materials"] }
+  ],
+  "starterKitCreative": ["grass_block", "dirt", "stone", "oak_planks", "oak_log", "glass", "torch", "bricks", "crafting_table"],
+  "splashes": {
+    "sv": ["Nu i fickformat!", "Kuber hela vägen ner!", "Gräv inte rakt ner!", "Med facklor!", "100% fyrkantigt!", "Åtta kycklingar senare...", "Byggd i en webbläsare!", "Lagom svårt!", "Fika i grottan!", "Inga pixlar skadades!"],
+    "en": ["Now pocket-sized!", "Cubes all the way down!", "Don't dig straight down!", "With torches!", "100% square!", "Built in a browser!", "Mind the Blastlings!", "No pixels were harmed!"]
+  },
+  "seedWords": ["björk", "fjäll", "glänta", "kulle", "sjö", "skog", "dal", "ö", "berg", "äng"]
+}
