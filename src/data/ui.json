@@ -12,25 +12,139 @@
   },
   "hand": {
     "skin": "#c8946a",
-    "block": { "pos": [0.62, -0.62, -1.05], "rot": [0, 45, 0], "scale": 0.42 },
-    "item": { "pos": [0.58, -0.42, -0.85], "rot": [0, -80, 25], "scale": 0.62 },
-    "arm": { "pos": [0.62, -0.62, -0.75], "rot": [-10, 12, 0] }
+    "block": {
+      "pos": [
+        0.62,
+        -0.62,
+        -1.05
+      ],
+      "rot": [
+        0,
+        45,
+        0
+      ],
+      "scale": 0.42
+    },
+    "item": {
+      "pos": [
+        0.58,
+        -0.42,
+        -0.85
+      ],
+      "rot": [
+        0,
+        -80,
+        25
+      ],
+      "scale": 0.62
+    },
+    "arm": {
+      "pos": [
+        0.72,
+        -0.78,
+        -1.05
+      ],
+      "rot": [
+        -18,
+        18,
+        0
+      ]
+    }
   },
   "hotbarSlots": 9,
   "inventorySlots": 36,
   "chestSlots": 27,
   "creativeTabs": [
-    { "id": "building", "icon": "bricks", "categories": ["building"] },
-    { "id": "nature", "icon": "grass_block", "categories": ["nature"] },
-    { "id": "functional", "icon": "crafting_table", "categories": ["functional"] },
-    { "id": "tools", "icon": "iron_pickaxe", "categories": ["tools"] },
-    { "id": "food", "icon": "apple", "categories": ["food"] },
-    { "id": "materials", "icon": "diamond", "categories": ["materials"] }
+    {
+      "id": "building",
+      "icon": "bricks",
+      "categories": [
+        "building"
+      ]
+    },
+    {
+      "id": "nature",
+      "icon": "grass_block",
+      "categories": [
+        "nature"
+      ]
+    },
+    {
+      "id": "functional",
+      "icon": "crafting_table",
+      "categories": [
+        "functional"
+      ]
+    },
+    {
+      "id": "tools",
+      "icon": "iron_pickaxe",
+      "categories": [
+        "tools"
+      ]
+    },
+    {
+      "id": "food",
+      "icon": "apple",
+      "categories": [
+        "food"
+      ]
+    },
+    {
+      "id": "materials",
+      "icon": "diamond",
+      "categories": [
+        "materials"
+      ]
+    }
   ],
-  "starterKitCreative": ["grass_block", "dirt", "stone", "oak_planks", "oak_log", "glass", "torch", "bricks", "crafting_table"],
+  "starterKitCreative": [
+    "grass_block",
+    "dirt",
+    "stone",
+    "oak_planks",
+    "oak_log",
+    "glass",
+    "torch",
+    "bricks",
+    "crafting_table"
+  ],
   "splashes": {
-    "sv": ["Nu i fickformat!", "Kuber hela vägen ner!", "Gräv inte rakt ner!", "Med facklor!", "100% fyrkantigt!", "Åtta kycklingar senare...", "Byggd i en webbläsare!", "Lagom svårt!", "Fika i grottan!", "Inga pixlar skadades!"],
-    "en": ["Now pocket-sized!", "Cubes all the way down!", "Don't dig straight down!", "With torches!", "100% square!", "Built in a browser!", "Mind the Blastlings!", "No pixels were harmed!"]
+    "sv": [
+      "Nu i fickformat!",
+      "Kuber hela v\u00e4gen ner!",
+      "Gr\u00e4v inte rakt ner!",
+      "Med facklor!",
+      "100% fyrkantigt!",
+      "\u00c5tta kycklingar senare...",
+      "Byggd i en webbl\u00e4sare!",
+      "Lagom sv\u00e5rt!",
+      "Fika i grottan!",
+      "Inga pixlar skadades!"
+    ],
+    "en": [
+      "Now pocket-sized!",
+      "Cubes all the way down!",
+      "Don't dig straight down!",
+      "With torches!",
+      "100% square!",
+      "Built in a browser!",
+      "Mind the Blastlings!",
+      "No pixels were harmed!"
+    ]
   },
-  "seedWords": ["björk", "fjäll", "glänta", "kulle", "sjö", "skog", "dal", "ö", "berg", "äng"]
+  "seedWords": [
+    "bj\u00f6rk",
+    "fj\u00e4ll",
+    "gl\u00e4nta",
+    "kulle",
+    "sj\u00f6",
+    "skog",
+    "dal",
+    "\u00f6",
+    "berg",
+    "\u00e4ng"
+  ],
+  "inventoryHoldMs": 380,
+  "hotbarDropHoldMs": 700
 }

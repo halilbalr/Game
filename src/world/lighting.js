@@ -190,8 +190,9 @@ export class LightEngine {
         const f = filter[nc.blocks[ni]];
         if (f >= 15) continue;
         let next;
+        // Each step costs max(1, filter); full sky light falls straight down through clear blocks.
         if (sky && dir === DOWN && level === 15) next = 15 - f;
-        else next = level - 1 - f;
+        else next = level - Math.max(1, f);
         if (next <= 0) continue;
         const cur = sky ? nc.light[ni] >> 4 : nc.light[ni] & 15;
         if (next > cur) {

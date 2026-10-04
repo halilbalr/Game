@@ -313,7 +313,7 @@ export class UI {
         e.preventDefault();
         e.stopPropagation();
         this.game?.select(i);
-        pressTimer = setTimeout(() => { pressTimer = null; this.game?.dropHeld(true); }, 700);
+        pressTimer = setTimeout(() => { pressTimer = null; this.game?.dropHeld(true); }, this.data.ui.hotbarDropHoldMs);
       };
       const end = (e) => { e.preventDefault(); e.stopPropagation(); if (pressTimer) clearTimeout(pressTimer); pressTimer = null; };
       slot.addEventListener('touchstart', start, { passive: false });

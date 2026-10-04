@@ -217,8 +217,11 @@ export class GameRenderer {
     const per = this.atlas.tilesPerRow;
     const tx = tile % per, ty = Math.floor(tile / per);
     const uv = this.crack.geometry.attributes.uv;
+    // Remap from the box's original 0..1 face UVs, kept aside on first use.
+    if (!this._crackBaseUV) this._crackBaseUV = Float32Array.from(uv.array);
+    const base = this._crackBaseUV;
     for (let i = 0; i < uv.count; i++) {
-      const u = uv.getX(i) > 0.5 ? 1 : 0, v = uv.getY(i) > 0.5 ? 1 : 0;
+      const u = base[i * 2], v = base[i * 2 + 1];
       uv.setXY(i, (tx + u) / per, (ty + 1 - v) / per);
     }
     uv.needsUpdate = true;
@@ -252,7 +255,8 @@ export class GameRenderer {
     u.uDaylight.value = sky.daylight;
     const far = view.renderDistance * 16;
     if (view.submerged === 'water') {
-      u.uFogColor.value.setRGB(...this.cfg.underwaterFog);
+      const k = 0.35 + 0.65 * sky.day;
+      u.uFogColor.value.setRGB(this.cfg.underwaterFog[0] * k, this.cfg.underwaterFog[1] * k, this.cfg.underwaterFog[2] * k);
       u.uFogNear.value = 0;
       u.uFogFar.value = this.cfg.underwaterFogFar * (0.4 + 0.6 * sky.day);
     } else if (view.submerged === 'lava') {

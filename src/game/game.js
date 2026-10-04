@@ -114,6 +114,8 @@ export class Game {
       this.inventory.load(meta.inventory);
       this.survival.load(meta.survival);
       this.selected = meta.selected ?? 0;
+      // A world saved while dead reopens at the respawn point.
+      if (this.survival.dead) this.respawn();
     } else {
       const s = this.generator.findSpawnColumn();
       meta.spawn = { x: s.x + 0.5, y: s.height + 1, z: s.z + 0.5 };
@@ -208,7 +210,7 @@ export class Game {
   get heldItem() { const s = this.heldStack; return s ? this.items.get(s.id) : undefined; }
   get timeOfDay() { return (this.time % this.cfg.dayLengthTicks) / this.cfg.dayLengthTicks; }
   get day() { return Math.floor(this.time / this.cfg.dayLengthTicks) + 1; }
-  get isNight() { const t = this.timeOfDay; return t > 0.53 && t < 0.97; }
+  get isNight() { const t = this.timeOfDay; return t > this.cfg.rules.nightStart && t < this.cfg.rules.nightEnd; }
   get reach() { return this.creative ? this.cfg.interaction.reachCreative : this.cfg.interaction.reachSurvival; }
 
   _pickup(s) {
@@ -228,8 +230,9 @@ export class Game {
     if (!s) return;
     const d = this.player.lookDir();
     const e = this.player.eye();
+    const v = this.cfg.rules.throwSpeed;
     this.entities.dropItem(e.x + d.x * 0.3, e.y - 0.3 + d.y * 0.3, e.z + d.z * 0.3, s, {
-      vx: d.x * 6, vy: d.y * 6 + 2, vz: d.z * 6, pickupDelay: 1.5,
+      vx: d.x * v, vy: d.y * v + 2, vz: d.z * v, pickupDelay: 1.5,
     });
   }
 
@@ -249,9 +252,10 @@ export class Game {
     if (fromX !== undefined) {
       const dx = this.player.x - fromX, dz = this.player.z - fromZ;
       const len = Math.hypot(dx, dz) || 1;
-      this.player.vx += (dx / len) * 6;
-      this.player.vz += (dz / len) * 6;
-      this.player.vy = Math.max(this.player.vy, 5);
+      const r = this.cfg.rules;
+      this.player.vx += (dx / len) * r.playerKnockback;
+      this.player.vz += (dz / len) * r.playerKnockback;
+      this.player.vy = Math.max(this.player.vy, r.playerKnockbackUp);
     }
   }
 
@@ -289,7 +293,7 @@ export class Game {
         if (p.jumpedThisFrame && !this.creative) this.survival.addExhaustion(p.sprinting ? this.data.player.survival.exhaustion.sprintJump : this.data.player.survival.exhaustion.jump);
         void prevY;
       }
-      if (p.y < -64) this.damagePlayer(4, 'void');
+      if (p.y < this.cfg.rules.voidY) this.damagePlayer(this.cfg.rules.voidDamage, 'void');
       this._updateTarget();
       this._interact(dt, input, actions);
       this._footsteps(dt);
@@ -339,7 +343,7 @@ export class Game {
 
   _footsteps(dt) {
     const p = this.player;
-    if (p.onGround && !p.flying && p.stepDistance > (p.sprinting ? 2.1 : 1.7)) {
+    if (p.onGround && !p.flying && p.stepDistance > (p.sprinting ? this.cfg.rules.stepDistanceSprint : this.cfg.rules.stepDistanceWalk)) {
       p.stepDistance = 0;
       const id = p.groundBlock;
       const def = this.blocks.defs[id];
@@ -383,7 +387,8 @@ export class Game {
     const p = this.player;
     const eye = p.eye(), dir = p.lookDir();
     const hit = raycastBlocks(this.world, this._isSelectable, eye, dir, this.reach, this.bounds);
-    const mob = this.entities.raycastMob(eye, dir, Math.min(this.reach, this.creative ? 5 : 3.2));
+    const r = this.cfg.rules;
+    const mob = this.entities.raycastMob(eye, dir, Math.min(this.reach, this.creative ? r.mobReachCreative : r.mobReachSurvival));
     if (mob && (!hit || mob.dist < hit.dist)) this.target = { type: 'mob', mob: mob.mob, dist: mob.dist };
     else if (hit) this.target = { type: 'block', ...hit };
     else this.target = null;
@@ -450,12 +455,13 @@ export class Game {
     const secs = breakSeconds(def, this.heldItem, {
       onGround: p.onGround || p.flying, inWater: p.eyeIn === 'water',
       waterFactor: this.cfg.interaction.inWaterMiningFactor, airFactor: this.cfg.interaction.airborneMiningFactor,
+      swordLeavesSpeed: this.data.items.swordLeavesSpeed,
     });
     if (secs === Infinity) return;
     this.miningProgress += secs === 0 ? 1 : dt / secs;
     this._digSoundTimer -= dt;
     if (this._digSoundTimer <= 0) {
-      this._digSoundTimer = 0.25;
+      this._digSoundTimer = this.cfg.rules.digSoundInterval;
       this.sound?.play(`dig_${def.sound}`, t.x + 0.5, t.y + 0.5, t.z + 0.5);
       this.view?.hand.doSwing();
     }
@@ -463,7 +469,7 @@ export class Game {
       this.breakBlock(t.x, t.y, t.z);
       this.miningKey = null;
       this.miningProgress = 0;
-      this.breakCooldown = secs === 0 ? 0.12 : 0.2;
+      this.breakCooldown = secs === 0 ? this.cfg.rules.breakDelayInstant : this.cfg.rules.breakDelay;
     }
   }
 
@@ -528,9 +534,10 @@ export class Game {
     if (this.attackCooldown > 0) return;
     this.attackCooldown = this.cfg.interaction.attackCooldown;
     const item = this.heldItem;
+    const rules = this.cfg.rules;
     let dmg = item?.tool ? item.tool.attack : this.items.fistDamage;
-    if (!this.player.onGround && this.player.vy < 0 && !this.player.flying) dmg *= 1.5;
-    if (this.creative) dmg = Math.max(dmg, 6);
+    if (!this.player.onGround && this.player.vy < 0 && !this.player.flying) dmg *= rules.critMultiplier;
+    if (this.creative) dmg = Math.max(dmg, rules.creativeMinAttack);
     this.view?.hand.doSwing();
     if (this.entities.hurtMob(mob, dmg, this.player.x, this.player.z)) {
       if (!this.creative) { this._wearHeld('attack'); this.survival.addExhaustion(this.data.player.survival.exhaustion.attack); }
@@ -678,13 +685,14 @@ export class Game {
 
   sleep(x, y, z) {
     if (!this.isNight) { this.ui?.toast(this.ui.t('msg.sleepNotNight')); return; }
+    const R = this.cfg.rules.sleepMonsterRadius;
     const near = this.entities.list.some((e) => e.type === 'mob' && e.def.hostile && !e.dead
-      && Math.abs(e.x - x) < 8 && Math.abs(e.y - y) < 5 && Math.abs(e.z - z) < 8);
+      && Math.abs(e.x - x) < R && Math.abs(e.y - y) < R / 2 && Math.abs(e.z - z) < R);
     if (near && !this.creative) { this.ui?.toast(this.ui.t('msg.sleepMonsters')); return; }
     this.meta.spawn = { x: x + 0.5, y: y + 1, z: z + 0.5 };
     this.ui?.toast(this.ui.t('msg.spawnSet'));
-    this.sleepTimer = 2;
-    this.ui?.sleepFade(2);
+    this.sleepTimer = this.cfg.rules.sleepSeconds;
+    this.ui?.sleepFade(this.cfg.rules.sleepSeconds);
   }
 
   /** Respawns after death. */
@@ -701,6 +709,7 @@ export class Game {
     this.player.teleport(s.x, y, s.z);
     this.player.flying = false;
     this.survival.reset();
+    this.deathHandled = false;
     this.hurtTilt = 0;
   }
 
@@ -710,7 +719,7 @@ export class Game {
     for (let i = 0; i < this.inventory.size; i++) {
       const s = this.inventory.get(i);
       if (s) this.entities.dropItem(this.player.x, this.player.y + 0.5, this.player.z, s, {
-        vx: (this.rand() - 0.5) * 6, vy: 3 + this.rand() * 3, vz: (this.rand() - 0.5) * 6, pickupDelay: 2,
+        vx: (this.rand() - 0.5) * this.cfg.rules.deathDropSpeed, vy: 3 + this.rand() * 3, vz: (this.rand() - 0.5) * this.cfg.rules.deathDropSpeed, pickupDelay: 2,
       });
     }
     this.inventory.clear();
@@ -719,6 +728,7 @@ export class Game {
   /** Explosion: destroys blocks, damages and knocks back entities. */
   explode(x, y, z, power, damage) {
     const B = this.blocks;
+    const rules = this.cfg.rules;
     const r = power;
     const bedrock = B.id('bedrock');
     for (let dy = -r; dy <= r; dy++) {
@@ -730,10 +740,10 @@ export class Game {
           const id = this.world.getBlock(bx, by, bz);
           if (!id || id === bedrock || B.liquid[id]) continue;
           const def = B.defs[id];
-          if (def.hardness < 0 || def.hardness >= 50) continue;
+          if (def.hardness < 0 || def.hardness >= rules.explosionMaxHardness) continue;
           this._dropContainer(bx, by, bz);
           this.world.setBlock(bx, by, bz, 0);
-          if (this.rand() < 0.3) for (const dr of dropsFor(def, 0, undefined, this.rand, this.items)) {
+          if (this.rand() < rules.explosionDropChance) for (const dr of dropsFor(def, 0, undefined, this.rand, this.items)) {
             this.entities.dropItem(bx + 0.5, by + 0.5, bz + 0.5, stack(dr.id, dr.count));
           }
           if (this.rand() < 0.15) this.view?.entityRenderer.particles.burst(bx, by, bz, B.tileFor(id, FACE.NORTH, 0), [255, 255, 255], 4);
@@ -741,12 +751,12 @@ export class Game {
       }
     }
     this.sound?.play('explode', x, y, z, 1.5);
-    const reach = r * 2;
+    const reach = r * rules.explosionReachFactor;
     const p = this.player;
     const pd = Math.hypot(p.x - x, p.y + 0.9 - y, p.z - z);
     if (pd < reach) {
       this.damagePlayer(Math.max(1, Math.round(damage * (1 - pd / reach))), 'explosion', x, z);
-      const k = (1 - pd / reach) * 10;
+      const k = (1 - pd / reach) * rules.explosionKnockback;
       p.vx += ((p.x - x) / (pd || 1)) * k; p.vy += 4 * (1 - pd / reach) + 2; p.vz += ((p.z - z) / (pd || 1)) * k;
     }
     for (const e of this.entities.list) {
@@ -766,12 +776,13 @@ export class Game {
     this._tickFurnaces();
     const p = this.player;
     const touchingCactus = this._touchingCactus();
-    const wasDead = this.survival.dead;
     if (!this.creative) {
       this.survival.tick({ headInWater: p.eyeIn === 'water', inLava: p.inLava, touchingCactus });
       if (this.survival.hurtFlash === 1 && this.survival.lastDamage !== 'fall') { this.hurtTilt = Math.max(this.hurtTilt, 0.6); }
     }
-    if (!wasDead && this.survival.dead) {
+    // Damage can come from anywhere (mobs, explosions, falls), so death is detected here once.
+    if (this.survival.dead && !this.deathHandled) {
+      this.deathHandled = true;
       this.onDeath();
       this.ui?.showDeath(this.survival.lastDamage);
     }
@@ -865,6 +876,7 @@ export class Game {
 
   _randomTick(kind, x, y, z, id) {
     const B = this.blocks, w = this.world;
+    const rules = this.cfg.rules;
     switch (kind) {
       case 'grass': {
         const above = w.getBlock(x, y + 1, z);
@@ -872,18 +884,18 @@ export class Game {
         const tx = x + Math.floor(this.rand() * 3) - 1, ty = y + Math.floor(this.rand() * 5) - 3, tz = z + Math.floor(this.rand() * 3) - 1;
         if (w.getBlock(tx, ty, tz) === B.id('dirt')) {
           const a = w.getBlock(tx, ty + 1, tz);
-          if (!B.opaque[a] && !B.liquid[a] && w.getSkyLight(tx, ty + 1, tz) >= 9) w.setBlock(tx, ty, tz, id);
+          if (!B.opaque[a] && !B.liquid[a] && w.getSkyLight(tx, ty + 1, tz) >= rules.growthMinLight) w.setBlock(tx, ty, tz, id);
         }
         return;
       }
       case 'crop': {
         const meta = w.getMeta(x, y, z);
         const def = B.defs[id];
-        if (meta < def.maxStage && this.world.getSkyLight(x, y + 1, z) >= 9 && this.rand() < 0.35) w.setMeta(x, y, z, meta + 1);
+        if (meta < def.maxStage && this._lightAt(x, y, z) >= rules.growthMinLight && this.rand() < rules.cropGrowChance) w.setMeta(x, y, z, meta + 1);
         return;
       }
       case 'sapling': {
-        if (this.rand() > 0.15 || this._lightAt(x, y, z) < 9) return;
+        if (this.rand() > rules.saplingGrowChance || this._lightAt(x, y, z) < rules.growthMinLight) return;
         const tree = this.generator.treeDefs[B.defs[id].tree];
         for (let dy = 1; dy <= tree.maxHeight; dy++) if (w.getBlock(x, y + dy, z) !== 0) return;
         w.setBlock(x, y, z, 0);
@@ -896,8 +908,9 @@ export class Game {
       }
       case 'leaves': {
         if (w.getMeta(x, y, z) & 1) return;
-        for (let dy = -4; dy <= 4; dy++) for (let dz = -4; dz <= 4; dz++) for (let dx = -4; dx <= 4; dx++) {
-          if (Math.abs(dx) + Math.abs(dy) + Math.abs(dz) > 6) continue;
+        const R = rules.leafDecayRange;
+        for (let dy = -R; dy <= R; dy++) for (let dz = -R; dz <= R; dz++) for (let dx = -R; dx <= R; dx++) {
+          if (Math.abs(dx) + Math.abs(dy) + Math.abs(dz) > rules.leafDecayManhattan) continue;
           const b = B.defs[w.getBlock(x + dx, y + dy, z + dz)];
           if (b && b.name.endsWith('_log')) return;
         }
@@ -910,10 +923,11 @@ export class Game {
         const above = w.getBlock(x, y + 1, z);
         if (B.defs[above]?.name === 'wheat_crop') return;
         let water = false;
-        for (let dz = -4; dz <= 4 && !water; dz++) for (let dx = -4; dx <= 4 && !water; dx++) {
+        const R = rules.farmlandWaterRange;
+        for (let dz = -R; dz <= R && !water; dz++) for (let dx = -R; dx <= R && !water; dx++) {
           if (B.liquid[w.getBlock(x + dx, y, z + dz)] === LIQUID.water) water = true;
         }
-        if (!water && this.rand() < 0.15) w.setBlock(x, y, z, B.id('dirt'));
+        if (!water && this.rand() < rules.farmlandRevertChance) w.setBlock(x, y, z, B.id('dirt'));
         return;
       }
       default:

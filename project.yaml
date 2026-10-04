@@ -25,3 +25,20 @@ framework:
 # here. `/settings --local <key>=<value>` writes there; `/settings <key>=<value>`
 # edits this file. See `.claude/docs/config-resolution.md` for the full
 # precedence order.
+
+# Blockheim ships as a web game (ADR-0001). engine.name stays unset because the
+# template's engine-specific tooling (gdUnit4, Unity/Unreal runners) does not apply.
+platform:
+  multiplayer: false
+  online: false
+  targets: [Mobile, Web]
+  primary_input: "Touch"
+  gamepad_support: "None"
+  touch_support: "Full"
+  cert_tier: none
+
+commands:
+  test: "npm test"
+  build: "npm run build"
+  run: "npm run dev"
+  smoke: "npm run build && npm run evidence"

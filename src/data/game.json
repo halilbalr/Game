@@ -14,9 +14,17 @@
     "meshBudgetMs": 6,
     "generateBudgetMs": 8,
     "maxPixelRatio": 1.5,
-    "underwaterFog": [0.06, 0.16, 0.42],
-    "underwaterFogFar": 22,
-    "lavaFog": [0.8, 0.25, 0.02]
+    "underwaterFog": [
+      0.1,
+      0.27,
+      0.62
+    ],
+    "underwaterFogFar": 26,
+    "lavaFog": [
+      0.8,
+      0.25,
+      0.02
+    ]
   },
   "sky": {
     "radius": 420,
@@ -37,8 +45,14 @@
     "cloudOpacity": 0.82
   },
   "liquids": {
-    "water": { "tickDelay": 5, "spread": 7 },
-    "lava": { "tickDelay": 30, "spread": 3 },
+    "water": {
+      "tickDelay": 5,
+      "spread": 7
+    },
+    "lava": {
+      "tickDelay": 30,
+      "spread": 3
+    },
     "maxUpdatesPerTick": 400
   },
   "interaction": {
@@ -57,7 +71,10 @@
   },
   "spawning": {
     "passivePerChunkChance": 0.22,
-    "passiveGroup": [2, 4],
+    "passiveGroup": [
+      2,
+      4
+    ],
     "maxPassive": 28,
     "maxHostile": 14,
     "hostileAttemptsPerSecond": 2,
@@ -65,5 +82,37 @@
     "hostileMaxDistance": 48,
     "despawnDistance": 96,
     "hostileMaxLight": 7
+  },
+  "rules": {
+    "critMultiplier": 1.5,
+    "creativeMinAttack": 6,
+    "mobReachSurvival": 3.2,
+    "mobReachCreative": 5,
+    "playerKnockback": 6,
+    "playerKnockbackUp": 5,
+    "voidDamage": 4,
+    "voidY": -64,
+    "breakDelayInstant": 0.12,
+    "breakDelay": 0.2,
+    "digSoundInterval": 0.25,
+    "explosionDropChance": 0.3,
+    "explosionReachFactor": 2,
+    "explosionKnockback": 10,
+    "explosionMaxHardness": 50,
+    "saplingGrowChance": 0.15,
+    "cropGrowChance": 0.35,
+    "growthMinLight": 9,
+    "farmlandRevertChance": 0.15,
+    "farmlandWaterRange": 4,
+    "leafDecayRange": 4,
+    "leafDecayManhattan": 6,
+    "sleepSeconds": 2,
+    "sleepMonsterRadius": 8,
+    "nightStart": 0.53,
+    "nightEnd": 0.97,
+    "stepDistanceWalk": 1.7,
+    "stepDistanceSprint": 2.1,
+    "throwSpeed": 6,
+    "deathDropSpeed": 6
   }
 }

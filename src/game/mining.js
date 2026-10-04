@@ -18,7 +18,7 @@ export function canHarvest(def, item) {
  * Seconds needed to break a block.
  * @param {object} def block definition
  * @param {object|undefined} item held item definition
- * @param {{onGround?:boolean, inWater?:boolean, waterFactor?:number, airFactor?:number}} ctx
+ * @param {{onGround?:boolean, inWater?:boolean, waterFactor?:number, airFactor?:number, swordLeavesSpeed?:number}} ctx
  * @returns {number} seconds; 0 = instant, Infinity = unbreakable
  */
 export function breakSeconds(def, item, ctx = {}) {
@@ -28,7 +28,7 @@ export function breakSeconds(def, item, ctx = {}) {
   let speed = 1;
   const tool = item?.tool;
   if (tool && def.tool && tool.type === def.tool) speed = tool.speed;
-  if (tool && tool.type === 'sword' && def.name.endsWith('leaves')) speed = 1.5;
+  if (tool && tool.type === 'sword' && def.name.endsWith('leaves')) speed = ctx.swordLeavesSpeed ?? 1.5;
   if (ctx.inWater) speed *= ctx.waterFactor ?? 0.2;
   if (ctx.onGround === false) speed *= ctx.airFactor ?? 0.2;
   const damage = speed / h / (canHarvest(def, item) ? 30 : 100);

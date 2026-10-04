@@ -50,11 +50,27 @@ const full = html
   .replace('<script type="module" src="game.js"></script>', () => `${swRegister}\n<script type="module">${js}</script>`);
 fs.writeFileSync(dist('index.html'), full);
 
-// Body-only variant: <title>, font link, style, markup and script, no document skeleton.
+// Body-only variant for hosts that supply their own document skeleton: <title>, font
+// links, style, markup and script. Three.js is loaded from the jsDelivr npm CDN there,
+// so the file itself contains only this project's code and data.
+const threeVersion = JSON.parse(fs.readFileSync(path.join(root, 'node_modules', 'three', 'package.json'), 'utf8')).version;
+const THREE_CDN = `https://cdn.jsdelivr.net/npm/three@${threeVersion}/build/three.module.js`;
+const lite = await esbuild.build({
+  entryPoints: [src('main.js')],
+  bundle: true,
+  format: 'esm',
+  minify: true,
+  target: 'es2022',
+  write: false,
+  legalComments: 'none',
+  external: ['three'],
+});
+const liteJs = lite.outputFiles[0].text.replace(/from\s*"three"/g, `from"${THREE_CDN}"`).replaceAll('</script', '<\\/script');
+if (/from\s*"three"/.test(liteJs) || !liteJs.includes(THREE_CDN)) throw new Error('three import was not rewritten');
 const head = html.match(/<title>[\s\S]*?<\/title>/)[0];
 const fontLinks = [...html.matchAll(/<link rel="(?:preconnect|stylesheet)" href="https:\/\/fonts[^>]*>/g)].map((m) => m[0]).join('\n');
 const body = html.split('<!--BODY-->')[1].split('<!--/BODY-->')[0];
-const artifact = `${head}\n${fontLinks}\n<style>\n${css}\n</style>\n${body}\n<script type="module">${js}</script>\n`;
+const artifact = `${head}\n${fontLinks}\n<style>\n${css}\n</style>\n${body}\n<script type="module">${liteJs}</script>\n`;
 fs.writeFileSync(dist('artifact.html'), artifact);
 
 fs.writeFileSync(dist('manifest.webmanifest'), JSON.stringify({

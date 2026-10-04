@@ -12,6 +12,7 @@ const ctx = await esbuild.context({
   sourcemap: true,
   target: 'es2022',
   outdir: 'src',
+  write: false,
   logLevel: 'info',
 });
 const { hosts } = await ctx.serve({ servedir: 'src', port, host: '0.0.0.0' });

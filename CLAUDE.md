@@ -5,11 +5,12 @@ Each agent owns a specific domain, enforcing separation of concerns and quality.
 
 ## Technology Stack
 
-- **Engine**: [CHOOSE: Godot 4 / Unity / Unreal Engine 5]
-- **Language**: [CHOOSE: GDScript / C# / C++ / Blueprint]
+- **Engine**: Web - Three.js 0.186 (WebGL2) in the browser; see `docs/architecture/adr-0001-web-platform.md`
+- **Language**: JavaScript (ES modules), code root `src/`, data in `src/data/*.json`
 - **Version Control**: Git with trunk-based development
-- **Build System**: [SPECIFY after choosing engine]
-- **Asset Pipeline**: [SPECIFY after choosing engine]
+- **Build System**: esbuild via `npm run build` -> `dist/index.html` (+ PWA files); `npm run dev` serves `src/`
+- **Asset Pipeline**: textures/sprites/sounds are generated at runtime from `src/data/textures.json`, `src/data/sprites.json` (authored by `tools/asset-pipeline/author_sprites.py`) and `src/audio/sound.js`
+- **Tests**: `npm test` (node --test, `tests/unit/`, `tests/integration/`); screenshots: `npm run evidence`
 
 > **Note**: Engine-specialist agents exist for Godot, Unity, and Unreal with
 > dedicated sub-specialists. Use the set matching your engine.

@@ -17,6 +17,7 @@
   "toolOrder": ["pickaxe", "axe", "shovel", "hoe", "sword"],
   "materialOrder": ["wooden", "stone", "iron", "golden", "diamond"],
   "fistDamage": 1,
+  "swordLeavesSpeed": 1.5,
   "items": [
     { "id": 256, "name": "stick", "sprite": "stick", "fuel": 100, "label": { "sv": "Pinne", "en": "Stick" } },
     { "id": 257, "name": "coal", "sprite": "coal", "fuel": 1600, "label": { "sv": "Kol", "en": "Coal" } },

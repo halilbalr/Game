@@ -171,3 +171,7 @@ $RECYCLE.BIN/
 # the project root. Anchored so a reports/ folder elsewhere stays tracked.
 /reports/
 /test-results/
+
+# === Blockheim dev bundle (served from memory by tools/dev-server.mjs) ===
+/src/game.js
+/src/game.js.map

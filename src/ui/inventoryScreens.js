@@ -10,8 +10,6 @@
 import { h } from './ui.js';
 import { Inventory, clickSlot, quickMove, stack, sameItem } from '../game/inventory.js';
 
-const HOLD_MS = 380;
-
 /** Adapter exposing a furnace state as three inventory slots. */
 class FurnaceSlots {
   constructor(state, items) {
@@ -93,6 +91,7 @@ export class InventoryScreens {
     } else this.container = null;
     this._build();
     this.ui.show(kind, this.el);
+    this.refresh();
   }
 
   /** Closes the screen, returning held and grid items to the player. */
@@ -154,7 +153,7 @@ export class InventoryScreens {
         return;
       }
       longFired = false;
-      timer = setTimeout(() => { timer = null; longFired = true; act('secondary'); }, HOLD_MS);
+      timer = setTimeout(() => { timer = null; longFired = true; act('secondary'); }, this.ui.data.ui.inventoryHoldMs);
     });
     const up = (e) => {
       if (e.pointerType === 'mouse') return;
