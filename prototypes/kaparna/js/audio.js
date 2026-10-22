@@ -22,6 +22,15 @@
     } catch (e) { S.ctx = null; }
   };
 
+  // Vibration på mobiler som stöder det (Android). Följer ljudinställningen.
+  S.buzz = function (pattern) {
+    if (S.muted || !navigator.vibrate) return;
+    const now = performance.now();
+    if (now - (S.lastBuzz || 0) < 70) return;
+    S.lastBuzz = now;
+    try { navigator.vibrate(pattern); } catch (e) { /* stöds inte */ }
+  };
+
   S.setMuted = function (m) {
     S.muted = m;
     if (S.master) S.master.gain.setTargetAtTime(m ? 0 : 0.55, S.ctx.currentTime, 0.05);

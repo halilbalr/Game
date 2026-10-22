@@ -20,7 +20,7 @@
       const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
       if (K.ship.inPoly(pts, mx + nx * 0.03, my + ny * 0.03)) { nx = -nx; ny = -ny; }
       normals.push([nx, ny]);
-      sh.edges.push({ a, b, nx, ny, len: l, vis: nx + ny > 0.02 });
+      sh.edges.push({ a, b, nx, ny, len: l });
     }
     sh.foam = pts.map((p, i) => {
       const n0 = normals[(i - 1 + n) % n], n1 = normals[i];
@@ -50,9 +50,10 @@
   A.hull = function (ctx, sh, t) {
     prep(sh);
     const pal = sh.def.pal;
+    for (const e of sh.edges) e.vis = G.depth(e.nx, e.ny) > 0.02;
     for (const e of sh.edges) {
       if (!e.vis) continue;
-      const f = -0.05 - 0.35 * ((e.ny - e.nx + 1) / 2);
+      const f = -0.05 - 0.35 * ((1 - G.sdx(e.nx, e.ny)) / 2);
       const a0 = P(e.a[0], e.a[1], 0), b0 = P(e.b[0], e.b[1], 0);
       const a1 = P(e.a[0], e.a[1], -HULL), b1 = P(e.b[0], e.b[1], -HULL);
       const a2 = P(e.a[0], e.a[1], -HULL + 10), b2 = P(e.b[0], e.b[1], -HULL + 10);
@@ -189,7 +190,7 @@
     G.box(ctx, b.x + 0.18, b.y + 0.18, b.x + b.w - 0.18, b.y + b.h - 0.18, 0, 6, '#6f7b86');
     G.cyl(ctx, cx, cy, 0.72, 6, 13, '#8c98a3');
     const ang = b.ang || 0, len = 1.15 - (b.recoil || 0) * 0.35;
-    const behind = Math.cos(ang) + Math.sin(ang) < 0;
+    const behind = G.depth(Math.cos(ang), Math.sin(ang)) < 0;
     if (behind) barrel(ctx, cx, cy, 20, ang, len, 8, '#3a424c');
     G.cyl(ctx, cx, cy, 0.48, 13, 25, '#5b6773');
     G.blob(ctx, ...P(cx - 0.12, cy - 0.12, 26), 5, 2.4, 'rgba(255,255,255,.3)', null);
@@ -225,7 +226,7 @@
     G.box(ctx, b.x + 0.12, b.y + 0.12, b.x + b.w - 0.12, b.y + b.h - 0.12, top, top + 6, '#9b6a3d');
     const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
     const [GX, GY] = P(cx, cy, top + 6);
-    const face = Math.cos(b.ang || 0) - Math.sin(b.ang || 0) >= 0 ? 1 : -1;
+    const face = G.sdx(Math.cos(b.ang || 0), Math.sin(b.ang || 0)) >= 0 ? 1 : -1;
     A.unit(ctx, { type: sh.def.guardType || 'vakt', facing: face, scale: 0.78, noShadow: true, atkAnim: b.atkAnim || 0, skin: '#b97a4c', id: b.id }, GX, GY, t);
     for (const [x, y] of [[b.x + 0.15, b.y + 0.15], [b.x + b.w - 0.15, b.y + 0.15], [b.x + 0.15, b.y + b.h - 0.15], [b.x + b.w - 0.15, b.y + b.h - 0.15]])
       G.line(ctx, P(x, y, top + 6), P(x, y, top + 30), '#5a3a20', 2);
@@ -238,7 +239,7 @@
   B.morsare = function (ctx, b, sh, t) {
     const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
     const bags = [];
-    for (let k = 0; k < 12; k++) { const a = (k / 12) * Math.PI * 2; bags.push([cx + Math.cos(a) * 0.74, cy + Math.sin(a) * 0.74, Math.cos(a) + Math.sin(a)]); }
+    for (let k = 0; k < 12; k++) { const a = (k / 12) * Math.PI * 2; bags.push([cx + Math.cos(a) * 0.74, cy + Math.sin(a) * 0.74, G.depth(Math.cos(a), Math.sin(a))]); }
     bags.sort((p, q) => p[2] - q[2]);
     const drawBags = (front) => {
       for (const [x, y, d] of bags) {
@@ -447,11 +448,13 @@
   const spriteCache = new Map();
   function sprite(key, w, h, hgt, draw) {
     const sc = A.spriteScale;
-    const k = key + '|' + sc.toFixed(3);
+    const k = key + '|' + sc.toFixed(3) + '|' + G.view;
     let sp = spriteCache.get(k);
     if (!sp) {
       if (spriteCache.size > 400) spriteCache.clear();
-      const x0 = -h * G.HW - 12, x1 = w * G.HW + 12, y0 = -hgt - 18, y1 = (w + h) * G.HH + 12;
+      const cs = [P(0, 0), P(w, 0), P(0, h), P(w, h)];
+      const x0 = Math.min(...cs.map((c) => c[0])) - 12, x1 = Math.max(...cs.map((c) => c[0])) + 12;
+      const y0 = Math.min(...cs.map((c) => c[1])) - hgt * G.ZK - 18, y1 = Math.max(...cs.map((c) => c[1])) + 12;
       const cv = document.createElement('canvas');
       cv.width = Math.max(1, Math.ceil((x1 - x0) * sc)); cv.height = Math.max(1, Math.ceil((y1 - y0) * sc));
       const c = cv.getContext('2d');
@@ -523,7 +526,7 @@
     const n = 4 + Math.round(b.w * b.h * 0.8);
     const chunks = [];
     for (let i = 0; i < n; i++) chunks.push([b.x + 0.2 + r() * (b.w - 0.4), b.y + 0.2 + r() * (b.h - 0.4), r(), r()]);
-    chunks.sort((p, q) => p[0] + p[1] - q[0] - q[1]);
+    chunks.sort((p, q) => G.depth(p[0], p[1]) - G.depth(q[0], q[1]));
     for (const [x, y, a, s] of chunks) {
       const sz = 0.12 + s * 0.16;
       G.box(ctx, x - sz, y - sz * 0.8, x + sz, y + sz * 0.8, 0, 4 + a * 7, a > 0.55 ? c : '#6e6a64', { lw: 1.1 });
@@ -537,7 +540,7 @@
   // ---------- dryckszoner ----------
   A.spellZone = function (ctx, s, t) {
     const [X, Y] = P(s.x, s.y, 0);
-    const rx = s.r * G.HW * G.R2, ry = s.r * G.HH * G.R2;
+    const rx = s.r * G.SX, ry = s.r * G.SY;
     const life = s.t / s.dur;
     const fade = Math.min(1, (1 - life) * 6, s.t * 6);
     ctx.globalAlpha = 0.28 * fade;
@@ -564,21 +567,28 @@
     A.hull(ctx, sh, t);
     A.deck(ctx, sh, t);
     const items = [];
-    for (const b of sh.buildings) items.push([b.x + b.y + (b.w + b.h) / 2, 0, b]);
-    for (const w of sh.walls) items.push([w.x + w.y + 1, 1, w]);
+    for (const b of sh.buildings) items.push([G.depth(b.x + b.w / 2, b.y + b.h / 2), 0, b]);
+    for (const w of sh.walls) items.push([G.depth(w.x + 0.5, w.y + 0.5), 1, w]);
     items.sort((p, q) => p[0] - q[0]);
     for (const it of items) if (it[1] === 1) A.wall(ctx, it[2], sh, t); else A.building(ctx, it[2], sh, t, o);
   };
 
-  A.shipBounds = function (sh) {
+  // Skärmgränser för skrovet; margin = extra vatten runt om (i rutor)
+  A.shipBounds = function (sh, margin = 0) {
+    prep(sh);
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-    for (const [x, y] of sh.poly) for (const z of [0, -HULL]) {
-      const [X, Y] = P(x, y, z); x0 = Math.min(x0, X); x1 = Math.max(x1, X); y0 = Math.min(y0, Y); y1 = Math.max(y1, Y);
+    for (const [x, y, nx, ny] of sh.foam) for (const z of [0, -HULL]) {
+      const [X, Y] = P(x + nx * margin, y + ny * margin, z); x0 = Math.min(x0, X); x1 = Math.max(x1, X); y0 = Math.min(y0, Y); y1 = Math.max(y1, Y);
     }
     return { x0, y0, x1, y1 };
   };
 
   A.shipThumb = function (cv, def, pirate) {
+    const prevView = G.view, prevScale = A.spriteScale;
+    G.setView('iso'); A.spriteScale = 0;
+    try { thumb(cv, def, pirate); } finally { G.setView(prevView); A.spriteScale = prevScale; }
+  };
+  function thumb(cv, def, pirate) {
     const ctx = cv.getContext('2d');
     const sh = K.ship.build(def);
     const bd = A.shipBounds(sh);
@@ -590,5 +600,5 @@
     ctx.setTransform(s, 0, 0, s, w / 2 - ((bd.x0 + bd.x1) / 2) * s, h / 2 - ((top + bd.y1) / 2) * s);
     A.shipFull(ctx, sh, 1.2, { pirate });
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-  };
+  }
 })();

@@ -10,12 +10,34 @@
   G.OUT = '#1d1526';
   G.flash = 0; // 0..1: blanda mot vitt (träffblink)
 
-  // värld (x, y, z) -> iso-pixlar
-  G.P = (x, y, z = 0) => [(x - y) * HW, (x + y) * HH - z];
-  G.isoToWorld = (X, Y, z = 0) => {
-    const u = X / HW, v = (Y + z) / HH;
-    return [(u + v) / 2, (v - u) / 2];
+  // Två vyer. 'iso' = klassisk Clash-vy (skeppet ligger diagonalt, passar liggande skärm).
+  // 'tall' = brantare kamera som är vriden så att skeppet står upp (passar stående mobil).
+  // Båda är "vrid marken φ, tryck ihop höjdled": X = SX·(x·cosφ − y·sinφ), Y = SY·(x·sinφ + y·cosφ) − z·ZK
+  const VIEWS = {
+    iso: { phi: Math.PI / 4, SX: HW * Math.SQRT2, SY: HH * Math.SQRT2, ZK: 1, unit: 1 },
+    tall: { phi: (80 * Math.PI) / 180, SX: 45, SY: 45 * 0.7, ZK: 0.82, unit: 1.45 },
   };
+  let MA, MB, MC, MD, ZK, CS, SN;
+  G.setView = function (name) {
+    if (G.view === name) return;
+    const v = VIEWS[name];
+    G.view = name;
+    CS = Math.cos(v.phi); SN = Math.sin(v.phi);
+    MA = CS * v.SX; MB = -SN * v.SX; MC = SN * v.SY; MD = CS * v.SY; ZK = v.ZK;
+    G.SX = v.SX; G.SY = v.SY; G.ZK = v.ZK; G.unitScale = v.unit;
+  };
+  G.setView('iso');
+
+  // värld (x, y, z) -> skärmpixlar före kamera
+  G.P = (x, y, z = 0) => [x * MA + y * MB, x * MC + y * MD - z * ZK];
+  G.isoToWorld = (X, Y, z = 0) => {
+    const Yz = Y + z * ZK, det = MA * MD - MB * MC;
+    return [(MD * X - MB * Yz) / det, (-MC * X + MA * Yz) / det];
+  };
+  // djup mot kameran (större = närmare) och skärmens x-riktning för en världsvektor
+  G.depth = (x, y) => x * SN + y * CS;
+  G.sdx = (dx, dy) => dx * CS - dy * SN;
+  G.depthDir = () => [SN, CS];
 
   // ---------- färger ----------
   const rgbCache = new Map();
@@ -78,8 +100,8 @@
   G.R2 = Math.SQRT2;
   G.cyl = function (ctx, cx, cy, r, z0, z1, color, o = {}) {
     const [X, Y0] = G.P(cx, cy, z0);
-    const Y1 = Y0 - (z1 - z0);
-    const rx = r * HW * G.R2, ry = r * HH * G.R2;
+    const Y1 = Y0 - (z1 - z0) * ZK;
+    const rx = r * G.SX, ry = r * G.SY;
     ctx.beginPath();
     ctx.moveTo(X - rx, Y1);
     ctx.lineTo(X - rx, Y0);
@@ -107,7 +129,7 @@
   G.disc = function (ctx, cx, cy, r, z, fill, stroke, lw = 1.6) {
     const [X, Y] = G.P(cx, cy, z);
     ctx.beginPath();
-    ctx.ellipse(X, Y, r * HW * G.R2, r * HH * G.R2, 0, 0, Math.PI * 2);
+    ctx.ellipse(X, Y, r * G.SX, r * G.SY, 0, 0, Math.PI * 2);
     if (fill) { ctx.fillStyle = fill; ctx.fill(); }
     if (stroke) { ctx.lineWidth = lw; ctx.strokeStyle = stroke; ctx.stroke(); }
   };

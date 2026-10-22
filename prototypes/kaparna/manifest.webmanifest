@@ -1,0 +1,16 @@
+{
+  "name": "Kaparna – pirater från Adenviken",
+  "short_name": "Kaparna",
+  "description": "Somaliskt piratspel i Clash-stil: storma skepp, ta kommandobryggan och bygg din flotta.",
+  "lang": "sv",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#083d52",
+  "theme_color": "#083d52",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

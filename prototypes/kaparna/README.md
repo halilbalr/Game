@@ -4,14 +4,17 @@
 
 # Kaparna – pirater från Adenviken
 
-Ett somaliskt piratspel i Clash of Clans-stil, spelbart i webbläsaren. Du är kapten för en
+Ett somaliskt piratspel i Clash of Clans-stil, **byggt för mobilen** (stående och liggande)
+men spelbart i alla webbläsare. Du är kapten för en
 piratbesättning på Somaliakusten. Välj ett skepp på sjökortet, skicka ut dina pirater i
 skiffar runt skrovet och se dem entra däcket, slåss mot vakter och kanoner och plundra
 lasten. Tar ni kommandobryggan är skeppet kapat: piratflaggan hissas och skeppet seglar hem
 till din hamn, där det tjänar guld åt dig. Guldet går till nya pirater och uppgraderingar,
 och då klarar du nästa, svårare skepp.
 
-![Hamnen](screenshots/02-hamnen.jpg)
+| | | |
+|---|---|---|
+| ![Hamnen](screenshots/02-hamnen.jpg) | ![Strid](screenshots/05-strid.jpg) | ![Kapat](screenshots/06-kapat.jpg) |
 
 ## Hypotes
 
@@ -25,17 +28,29 @@ direkt som Clash egna utplacering på land. Därför byggdes striden först och 
 
 ## Så kör du
 
-- **Enklast:** öppna `kaparna.html` i valfri webbläsare (dubbelklicka). Allt ligger i en fil.
-- **Utvecklingsläge:** öppna `index.html` (läser `css/` och `js/` direkt).
+**På telefonen**
+- Håll telefonen **stående**: skeppet står då upp på skärmen som en arena i Clash Royale.
+  Vrider du telefonen byter spelet till den klassiska diagonala Clash of Clans-vyn, mitt i striden om du vill.
+- Lägg den på hemskärmen så startar den som en app i helskärm, med egen ikon och utan nät:
+  - **iPhone (Safari):** Dela-knappen → *Lägg till på hemskärmen*.
+  - **Android (Chrome):** menyn ⋮ → *Installera app* / *Lägg till på startskärmen*.
+  - Det kräver att mappen ligger på en riktig webbadress (https), till exempel GitHub Pages.
+    Då följer `manifest.webmanifest`, `sw.js` och `icons/` med, och spelet fungerar offline efter första starten.
+- Ljudet startar när du trycker SPELA. Vibration (Android) följer ljudknappen.
+
+**På datorn**
+- Öppna `kaparna.html` (allt i en fil, går att skicka till någon) eller `index.html` (läser `css/` och `js/` direkt).
 - Bygg om enfilsversionen efter ändringar: `python3 build.py`
-- Liggande läge rekommenderas på mobil. Nyp eller scrolla för att zooma, dra för att panorera.
-- Spelet sparas i webbläsarens lokala lagring. Nollställ med `KAPARNA.reset()` i konsolen.
+- Mushjulet zoomar, dra för att panorera.
+
+Spelet sparas i webbläsarens lokala lagring. Nollställ med `KAPARNA.reset()` i konsolen.
 
 ## Så spelar du
 
 1. **ANFALL!** öppnar sjökortet. Välj ett skepp (det första är en olaglig trålare).
-2. Välj en trupp i kortraden längst ner och **tryck på vattnet runt skeppet**. En skiff
-   kör fram och piraten entrar med änterhake. **Håll inne** för att skicka flera.
+2. Välj en trupp i kortraden längst ner och **tryck på vattnet runt skeppet eller nära
+   relingen** (det vita bandet före första utsläppet visar var). En skiff kör fram och piraten
+   entrar med änterhake. **Håll fingret kvar** för att skicka flera av samma trupp.
 3. Trupperna väljer själva mål: närmaste byggnad (Kämpe, Skytt), försvar (Bjässe),
    barrikader (Bombare) eller byte (Plundrare).
 4. Stjärnor: ⭐ 50 % förstört · ⭐ kommandobryggan tagen (= skeppet kapat) · ⭐ 100 %.
@@ -43,6 +58,7 @@ direkt som Clash egna utplacering på land. Därför byggdes striden först och 
    kallar på fyra kämpar, läker sig och blir rasande.
 6. **Drycker:** *Shaah-te* (kryddat somaliskt te) läker, *Krigstrumma* ger raseri.
 7. Hemma i hamnen: tryck på guldbubblan över dina kapade skepp för att samla in guld.
+   På stående telefon ligger flottan i en rad nedåt: dra med fingret för att se alla skepp.
    **Armé** rekryterar trupper, **Smedja** uppgraderar trupper och Piratfästet
    (fler armé- och dryckesplatser).
 
@@ -73,14 +89,21 @@ mät om de startar strid nummer två och tre på egen hand.
 - **Prestanda:** statiska delar (skrov, däck, ruiner, terräng, containrar, barrikader)
   förrenderas och återanvänds. Om bildfrekvensen ändå sjunker under ~35 fps sänks
   upplösningen automatiskt.
+- **Mobil:** testat i emulerad iPhone-storlek (390×844, pekskärm, retina) och liggande
+  844×390. Pekutplacering, håll-inne, fingerscroll och vridning mitt i strid fungerar.
+  Installerbarheten är kontrollerad i Chrome (inga manifestfel, service worker aktiv, startar utan nät).
+  Ännu inte provat på en fysisk telefon.
 
 ## Skärmdumpar
 
-| | |
-|---|---|
-| ![Titel](screenshots/01-titel.jpg) | ![Sjökort](screenshots/03-sjokort.jpg) |
-| ![Entring](screenshots/04-entring.jpg) | ![Strid](screenshots/05-strid.jpg) |
-| ![Seger](screenshots/06-kapat.jpg) | ![Mobil](screenshots/07-mobil.jpg) |
+| | | |
+|---|---|---|
+| ![Titel](screenshots/01-titel.jpg) | ![Sjökort](screenshots/03-sjokort.jpg) | ![Entring](screenshots/04-entring.jpg) |
+
+Liggande telefon och dator använder den diagonala vyn:
+
+![Liggande](screenshots/07-liggande.jpg)
+![Dator](screenshots/08-dator.jpg)
 
 ## Filer
 
@@ -88,14 +111,16 @@ mät om de startar strid nummer två och tre på egen hand.
 |---|---|
 | `js/data.js` | All balans: trupper, försvar, skepp och layouter, ekonomi |
 | `js/ship.js` | Skrovform, däcksrutnät, placering av byggnader och barrikader |
-| `js/gfx.js` | Isometrisk projektion, kamera, ritprimitiver, förrenderade lager |
+| `js/gfx.js` | Två kameravyer (diagonal + stående), kamera, ritprimitiver, förrenderade lager |
 | `js/art.js` | Figurer (pirater, vakter), skiffar, flaggor, effekter, porträtt |
 | `js/art-ship.js` | Skrov, däck, alla byggnader, ruiner, dryckszoner |
 | `js/battle.js` | Stridssimulering (vägfinning, AI, projektiler, stjärnor, byte) + ritning |
 | `js/harbor.js` | Hemmahamnen med fäste, läger, smedja, kameler och flottan |
 | `js/ui.js`, `js/main.js` | Gränssnitt, sparning, inmatning, spelloop |
 | `js/audio.js` | Syntetiserade ljud och pentatonisk trumslinga (inga ljudfiler) |
+| `manifest.webmanifest`, `sw.js`, `icons/` | Hemskärmsapp: namn, ikon, helskärm, offline |
 | `build.py` | Bakar ihop allt till `kaparna.html` |
 
-All grafik ritas med kod (canvas), så det finns inga bildfiler. Allt innehåll är fiktivt:
+All grafik ritas med kod (canvas), så det finns inga bildfiler (ikonerna i `icons/` är
+renderade från spelets egen kaptensfigur). Allt innehåll är fiktivt:
 skeppen, rederierna och flaggorna finns inte på riktigt.

@@ -68,9 +68,11 @@
   }
 
   // Ritar en figur med fötterna i (X, Y) (iso-pixlar). u: {type, facing, walk, moving, atkAnim, skin, flash, air, squash, rage, slow, scale}
+  // Figurer ritas som platta "kort" mot kameran. unitScale > 1 i mobilvyn så de syns bättre.
+  A.unitScale = 1;
   A.unit = function (ctx, u, X, Y, t) {
     const sp = SPEC[u.type] || SPEC.kampe;
-    const s = sp.s * (u.scale || 1);
+    const s = sp.s * (u.scale || 1) * A.unitScale;
     if (!u.noShadow) G.shadow(ctx, X, Y, 9 * s, 4.2 * s, 0.28);
     if (u.rage > 0) {
       const g = ctx.createRadialGradient(X, Y, 0, X, Y, 16 * s);
@@ -362,7 +364,7 @@
       case 'ring': {
         const r = p.size * (1 - f) + 2;
         ctx.globalAlpha = f; ctx.strokeStyle = p.color || '#fff'; ctx.lineWidth = 3 * f + 1;
-        ctx.beginPath(); ctx.ellipse(X, Y, r * G.R2 * 1.0, r * G.R2 * 0.5, 0, 0, 7); ctx.stroke(); ctx.globalAlpha = 1; break;
+        ctx.beginPath(); ctx.ellipse(X, Y, (r * G.SX) / 32, (r * G.SY) / 32, 0, 0, 7); ctx.stroke(); ctx.globalAlpha = 1; break;
       }
       case 'coin': {
         ctx.globalAlpha = Math.min(1, f * 3);

@@ -9,11 +9,38 @@
   const W = (u, v) => [(u + v) / 2, (v - u) / 2];
   const coast = (u) => 20 + 1.6 * Math.sin(u * 0.23) + 0.8 * Math.sin(u * 0.57 + 1);
   const SHIP_SCALE = 0.4;
-  const SLOTS = [[-15, 31], [0, 30], [15, 31], [-15, 47], [0, 46], [15, 47]];
+  // Två planlösningar: bred för liggande skärm, smal för stående mobil (flottan i en kolumn nedåt).
+  const LAYOUTS = {
+    wide: {
+      fort: [0, 11], camp: [-10, 14], forge: [10, 14], light: [21, 16.5],
+      palms: [[-17, 16], [-5, 17], [5, 17.5], [16, 12], [-15, 8], [18, 6], [-3, 3], [-22, 13], [24, 9]],
+      acacias: [[-21, 7], [8, 6], [-9, 4], [12, 3]],
+      rocks: [[-12, 18.5], [3, 18.7], [9, 18.6], [-25, 18]],
+      barrels: [[-4, 15.5], [-3.2, 16], [6.5, 15], [-7, 9]],
+      jetties: [[-6.5, 19.5, 6], [7.5, 19.3, 6]],
+      moored: [[-6.5, 25.5], [7.5, 25.3], [-5.2, 24.4]],
+      camels: [[-18, 6], [12, 9]], crew: [-12, 6], walkU: 24,
+      slots: [[-15, 31], [0, 30], [15, 31], [-15, 47], [0, 46], [15, 47]],
+      waves: [620, 140, 58],
+    },
+    narrow: {
+      fort: [0, 11.5], camp: [-7, 14.5], forge: [7, 14.5], light: [-10.5, 18.2],
+      palms: [[-9.5, 9.5], [-3.2, 17.4], [3.6, 18], [10, 10], [-5, 4], [5.5, 4], [10.5, 16.5], [-11.5, 13]],
+      acacias: [[-8, 4], [8.5, 6], [0, 3]],
+      rocks: [[-6.5, 17], [6.5, 19.6], [9.5, 20]],
+      barrels: [[-2.6, 16.3], [-1.8, 16.8], [2.8, 16.4]],
+      jetties: [[-3.6, 19.3, 6], [4.2, 19.6, 6]],
+      moored: [[-3.6, 25.3], [4.2, 25.6], [-2.4, 24.2]],
+      camels: [[-8, 6], [8, 8]], crew: [-8, 4], walkU: 10,
+      slots: [[-2.5, 32], [2.5, 47], [-2.5, 62], [2.5, 77], [-2.5, 92], [2.5, 107]],
+      waves: [480, 60, 100],
+    },
+  };
 
   class Harbor {
-    constructor(game) {
-      this.game = game; this.t = 0;
+    constructor(game, portrait) {
+      this.game = game; this.t = 0; this.portrait = !!portrait;
+      const L = (this.L = LAYOUTS[portrait ? 'narrow' : 'wide']);
       const pts = [];
       for (let u = -90; u <= 90; u += 1) pts.push(W(u, coast(u)));
       pts.push(W(90, -90), W(-90, -90));
@@ -23,24 +50,25 @@
       this.sandPatches = [];
       for (let i = 0; i < 60; i++) { const u = -70 + r() * 140, v = -30 + r() * 46; this.sandPatches.push([...W(u, v), 0.8 + r() * 2.2, r()]); }
       this.waves = [];
-      for (let i = 0; i < 620; i++) { const u = -70 + r() * 140, v = 23.5 + r() * 58; this.waves.push([...W(u, v), r() * 6.28]); }
-      const B = (u, v, w, h, type) => { const [cx, cy] = W(u, v); return { type, x: cx - w / 2, y: cy - h / 2, w, h, cx, cy }; };
-      this.fort = B(0, 11, 4, 4, 'fort');
-      this.camp = B(-10, 14, 3, 3, 'camp');
-      this.forge = B(10, 14, 3, 3, 'forge');
-      this.light = B(21, 16.5, 1.4, 1.4, 'light');
+      const [nw, wu, wv] = L.waves;
+      for (let i = 0; i < nw; i++) { const u = -wu / 2 + r() * wu, v = 23.5 + r() * wv; this.waves.push([...W(u, v), r() * 6.28]); }
+      const B = (uv, w, h, type) => { const [cx, cy] = W(uv[0], uv[1]); return { type, x: cx - w / 2, y: cy - h / 2, w, h, cx, cy }; };
+      this.fort = B(L.fort, 4, 4, 'fort');
+      this.camp = B(L.camp, 3, 3, 'camp');
+      this.forge = B(L.forge, 3, 3, 'forge');
+      this.light = B(L.light, 1.4, 1.4, 'light');
       this.deco = [];
-      for (const [u, v] of [[-17, 16], [-5, 17], [5, 17.5], [16, 12], [-15, 8], [18, 6], [-3, 3], [-22, 13], [24, 9]]) this.deco.push({ type: 'palm', ...this.pt(u, v), s: 0.9 + r() * 0.3, ph: r() * 6 });
-      for (const [u, v] of [[-21, 7], [8, 6], [-9, 4], [12, 3]]) this.deco.push({ type: 'acacia', ...this.pt(u, v), s: 0.9 + r() * 0.3, ph: r() * 6 });
-      for (const [u, v] of [[-12, 18.5], [3, 18.7], [9, 18.6], [-25, 18]]) this.deco.push({ type: 'rock', ...this.pt(u, v), s: 0.7 + r() * 0.6, ph: r() * 6 });
-      for (const [u, v] of [[-4, 15.5], [-3.2, 16], [6.5, 15], [-7, 9]]) this.deco.push({ type: 'barrel', ...this.pt(u, v), s: 1, ph: r() });
-      this.jetties = [[-6.5, 19.5, 6], [7.5, 19.3, 6]];
+      for (const [u, v] of L.palms) this.deco.push({ type: 'palm', ...this.pt(u, v), s: 0.9 + r() * 0.3, ph: r() * 6 });
+      for (const [u, v] of L.acacias) this.deco.push({ type: 'acacia', ...this.pt(u, v), s: 0.9 + r() * 0.3, ph: r() * 6 });
+      for (const [u, v] of L.rocks) this.deco.push({ type: 'rock', ...this.pt(u, v), s: 0.7 + r() * 0.6, ph: r() * 6 });
+      for (const [u, v] of L.barrels) this.deco.push({ type: 'barrel', ...this.pt(u, v), s: 1, ph: r() });
+      this.jetties = L.jetties;
       this.moored = [];
-      for (const [u, v] of [[-6.5, 25.5], [7.5, 25.3], [-5.2, 24.4]]) this.moored.push({ ...this.pt(u, v), ang: 0.785 + (r() - 0.5) * 0.6, seed: r() * 9, color: ['#2f7fd1', '#3aa357', '#e8b021'][(r() * 3) | 0] });
-      this.camels = [0, 1].map((i) => ({ ...this.pt(-18 + i * 30, 6 + i * 3), tx: 0, ty: 0, wait: r() * 3, walk: 0, facing: 1, id: i }));
+      for (const [u, v] of L.moored) this.moored.push({ ...this.pt(u, v), ang: 0.785 + (r() - 0.5) * 0.6, seed: r() * 9, color: ['#2f7fd1', '#3aa357', '#e8b021'][(r() * 3) | 0] });
+      this.camels = L.camels.map(([u, v], i) => ({ ...this.pt(u, v), tx: 0, ty: 0, wait: r() * 3, walk: 0, facing: 1, id: i }));
       this.crew = [];
       const types = ['kampe', 'skytt', 'kampe', 'plundrare', 'skytt'];
-      for (let i = 0; i < 5; i++) this.crew.push({ type: types[i], ...this.pt(-12 + i * 6, 12 + (i % 2) * 3), tx: 0, ty: 0, wait: r() * 2, walk: 0, facing: 1, moving: false, id: i + 3, skin: A.SKINS[i % A.SKINS.length] });
+      for (let i = 0; i < 5; i++) this.crew.push({ type: types[i], ...this.pt(L.crew[0] + i * L.crew[1] * 0.6, 12 + (i % 2) * 3), tx: 0, ty: 0, wait: r() * 2, walk: 0, facing: 1, moving: false, id: i + 3, skin: A.SKINS[i % A.SKINS.length] });
       this.fleet = [];
       this.refreshFleet();
     }
@@ -54,7 +82,7 @@
         if (!save.captured[def.id]) continue;
         const sh = K.ship.build(def);
         for (const b of sh.buildings) { b.alive = true; b.cx = b.x + b.w / 2; b.cy = b.y + b.h / 2; b.ang = (b.seed % 628) / 100; }
-        const [u, v] = SLOTS[i++ % SLOTS.length];
+        const [u, v] = this.L.slots[i++ % this.L.slots.length];
         const [cx, cy] = W(u, v);
         this.fleet.push({ def, sh, ox: cx - (def.len * SHIP_SCALE) / 2, oy: cy - (def.beam * SHIP_SCALE) / 2, cx, cy, u, v });
       }
@@ -67,7 +95,7 @@
     }
     randomLandPoint(r) {
       for (let k = 0; k < 30; k++) {
-        const u = -24 + Math.random() * 48, v = 2 + Math.random() * 15;
+        const wu = this.L.walkU, u = -wu + Math.random() * wu * 2, v = 2 + Math.random() * 15;
         const [x, y] = W(u, v);
         if (this.onLand(x, y) && !this.blocked(x, y)) return [x, y];
       }
@@ -96,6 +124,10 @@
     bubblePos(f) { return P(f.cx, f.cy, WL + 140 * SHIP_SCALE + 40); }
 
     bounds() {
+      if (this.portrait) {
+        const last = this.fleet.length ? this.L.slots[this.fleet.length - 1][1] + 9 : 30;
+        return { x0: -11.5 * 32, x1: 11.5 * 32, y0: -40, y1: last * 16 };
+      }
       const ys = this.fleet.length > 3 ? 54 : this.fleet.length ? 40 : 30;
       return { x0: -26 * 32, x1: 26 * 32, y0: -2 * 16 - 60, y1: ys * 16 };
     }

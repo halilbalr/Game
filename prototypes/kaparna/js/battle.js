@@ -331,7 +331,12 @@
       const life = o.life || 0.6;
       this.fx.push({ type, x, y, z, vx: o.vx || 0, vy: o.vy || 0, vz: o.vz || 0, life, max: life, size: o.size || 6, color: o.color, rot: o.rot || 0, spin: o.spin || 0, g: o.g ?? (type === 'debris' || type === 'coin' || type === 'water' ? 380 : 0), alpha: o.alpha, floor: o.floor ?? 0 });
     }
-    sound(name) { if (!this.headless && K.sfx) K.sfx.play(name); }
+    sound(name) {
+      if (this.headless || !K.sfx) return;
+      K.sfx.play(name);
+      const buzz = { collapse: 16, boom: 28, star: 40, roar: 50, die: 6 }[name];
+      if (buzz) K.sfx.buzz(buzz);
+    }
 
     // ---------- uppdatering ----------
     update(dt) {
@@ -356,6 +361,7 @@
       this.updateFx(dt);
       if (this.inspect) { this.inspect.t -= dt; if (this.inspect.t <= 0) this.inspect = null; }
       if (this.deployFail) { this.deployFail.t -= dt; if (this.deployFail.t <= 0) this.deployFail = null; }
+      if (this.zoneFlash > 0) this.zoneFlash -= dt;
       this.checkEnd();
     }
 
@@ -433,11 +439,11 @@
       else { u.moving = false; return; }
       u.moving = true;
       u.walk += dt * spd * 7;
-      const sdx = dx - dy;
+      const sdx = G.sdx(dx, dy);
       if (Math.abs(sdx) > 0.05) u.facing = sdx > 0 ? 1 : -1;
     }
 
-    face(u, tx, ty) { const sdx = (tx - u.x) - (ty - u.y); if (Math.abs(sdx) > 0.02) u.facing = sdx > 0 ? 1 : -1; }
+    face(u, tx, ty) { const sdx = G.sdx(tx - u.x, ty - u.y); if (Math.abs(sdx) > 0.02) u.facing = sdx > 0 ? 1 : -1; }
 
     tickTimers(u, dt) {
       u.cd -= dt; u.atkAnim = Math.max(0, u.atkAnim - dt); u.flash = Math.max(0, u.flash - dt);
@@ -762,13 +768,18 @@
     bob() { return Math.sin(this.time * 1.1) * 2; }
 
     behindShip(x, y) {
-      // ligger punkten bakom skrovet sett från kameran (riktning +x+y)?
-      const poly = this.sh.poly;
-      for (let k = 0.5; k < 30; k += 0.5) if (K.ship.inPoly(poly, x + k, y + k)) return true;
+      // ligger punkten bakom skrovet sett från kameran?
+      const poly = this.sh.poly, [dx, dy] = G.depthDir();
+      for (let k = 0.5; k < 40; k += 0.5) if (K.ship.inPoly(poly, x + k * dx, y + k * dy)) return true;
       return false;
     }
 
     render(ctx, cam, cw, ch, dpr, t) {
+      A.unitScale = G.unitScale;
+      try { this.draw(ctx, cam, cw, ch, dpr, t); } finally { A.unitScale = 1; A.spriteScale = 0; }
+    }
+
+    draw(ctx, cam, cw, ch, dpr, t) {
       const sh = this.sh;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       const g = ctx.createLinearGradient(0, 0, 0, ch);
@@ -778,7 +789,7 @@
       G.waves(ctx, this.waves, t, -A.HULL);
       const back = [], front = [];
       for (const sk of this.skiffs) {
-        if (sk.behind === undefined || sk.moving) sk.behind = this.behindShip(sk.x, sk.y);
+        if (sk.behind === undefined || sk.moving || sk.view !== G.view) { sk.behind = this.behindShip(sk.x, sk.y); sk.view = G.view; }
         (sk.behind ? back : front).push(sk);
       }
       const drawSkiffs = (list) => {
@@ -797,11 +808,19 @@
       ctx.save();
       ctx.translate(0, bob);
       A.water(ctx, sh, t);
+      const zone = !this.started ? 0.17 + 0.07 * Math.sin(t * 4) : this.zoneFlash > 0 ? 0.26 * Math.min(1, this.zoneFlash) : 0;
+      if (zone > 0) {
+        ctx.setLineDash([12, 10]); ctx.lineDashOffset = -t * 25;
+        ctx.strokeStyle = `rgba(255,255,255,${Math.min(0.9, zone * 3.5)})`; ctx.lineWidth = 2.5; ctx.lineJoin = 'round';
+        G.path(ctx, sh.foam.map(([x, y, nx, ny]) => P(x + nx * 1.35, y + ny * 1.35, -A.HULL))); ctx.stroke();
+        ctx.setLineDash([]);
+      }
       // skrov, däck, skuggor och ruiner ändras sällan: rita dem i ett förrenderat lager
-      if (!this.layer) {
-        this.layer = new G.Layer();
+      if (!this.layer) this.layer = new G.Layer();
+      if (this.layerView !== G.view) {
         const b = A.shipBounds(sh);
         this.layerBounds = { x0: b.x0 - 10, y0: b.y0 - 28, x1: b.x1 + 10, y1: b.y1 + 10 };
+        this.layerView = G.view;
       }
       const drawStatic = (c) => {
         A.hull(c, sh, t);
@@ -809,9 +828,17 @@
         for (const b of this.buildings) if (!b.alive) A.rubble(c, b, sh, t, true);
         for (const b of this.buildings) if (b.alive) A.buildingShadow(c, b);
       };
-      const key = cam.z.toFixed(4) + '|' + dpr + '|' + (this.layerVer || 0);
+      const key = cam.z.toFixed(4) + '|' + dpr + '|' + (this.layerVer || 0) + '|' + G.view;
       if (this.layer.ensure(key, this.layerBounds, cam.z * dpr, drawStatic)) this.layer.blit(ctx);
       else drawStatic(ctx);
+      if (zone > 0) {
+        // vitt band innanför relingen = här kan man också trycka
+        const pts = sh.poly.map(([x, y]) => P(x, y, 0));
+        ctx.save(); G.path(ctx, pts); ctx.clip();
+        ctx.strokeStyle = `rgba(255,255,255,${zone})`; ctx.lineWidth = 2 * 2.3 * ((G.SX + G.SY) / 2) * 0.9; ctx.lineJoin = 'round';
+        G.path(ctx, pts); ctx.stroke();
+        ctx.restore();
+      }
       if (this.bridgeDown) { const br = this.buildings.find((b) => b.type === 'brygga'); const [X, Y] = P(br.cx, br.cy, 0); A.flag(ctx, X, Y - 58, 'pirate', t, 1.15); }
       for (const m of this.marks) { ctx.globalAlpha = Math.min(1, m.t / 2) * 0.5; G.disc(ctx, m.x, m.y, 0.7, 0, '#2a2420', null); ctx.globalAlpha = 1; }
       for (const s of this.spells) A.spellZone(ctx, s, t);
@@ -821,9 +848,9 @@
         if (b.def.minRange) G.disc(ctx, b.cx, b.cy, b.def.minRange, 0, null, 'rgba(255,120,120,.75)', 2);
       }
       const items = [];
-      for (const b of this.buildings) if (b.alive) items.push([b.cx + b.cy, 0, b]);
-      for (const w of this.walls) if (w.alive) items.push([w.x + w.y + 1, 1, w]);
-      for (const u of this.units) if (u.hp > 0 && (u.state === 'deck' || u.state === 'jump')) items.push([u.state === 'jump' ? u.x + u.y + 50 : u.x + u.y, 2, u]);
+      for (const b of this.buildings) if (b.alive) items.push([G.depth(b.cx, b.cy), 0, b]);
+      for (const w of this.walls) if (w.alive) items.push([G.depth(w.x + 0.5, w.y + 0.5), 1, w]);
+      for (const u of this.units) if (u.hp > 0 && (u.state === 'deck' || u.state === 'jump')) items.push([G.depth(u.x, u.y) + (u.state === 'jump' ? 50 : 0), 2, u]);
       items.sort((p, q) => p[0] - q[0]);
       A.spriteScale = cam.z * dpr;
       for (const [, kind, o] of items) {
@@ -858,8 +885,9 @@
         if (u.hp <= 0 || u.state !== 'deck') continue;
         const hero = u.type === 'kapten';
         if (u.hp >= u.maxHp && !hero) continue;
-        const s = (A.SPEC[u.type] || A.SPEC.kampe).s;
-        const [X, Y] = P(u.x, u.y, 44 * s + 6);
+        const s = (A.SPEC[u.type] || A.SPEC.kampe).s * A.unitScale;
+        const [X, Y0] = P(u.x, u.y, 0);
+        const Y = Y0 - 44 * s - 6;
         A.hpBar(ctx, X, Y, u.hp / u.maxHp, u.side === 'p' ? '#7be043' : '#ff5a3a', hero ? 30 : 18);
         if (hero) A.crown(ctx, X, Y - 3);
       }
