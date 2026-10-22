@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Kaparna</title>
+<!-- PROTOTYPE - NOT FOR PRODUCTION -->
+<!-- Question: Är det roligt att kapa skepp med Clash-liknande anfall? -->
+<!-- Date: 2026-10-22 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@700;800;900&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<!--BODY-->
+<canvas id="cv" aria-label="Spelplan"></canvas>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#ffcf3a" stroke="#1d1526" stroke-width="2.4"/><circle cx="12" cy="12" r="5.6" fill="none" stroke="#c98a00" stroke-width="2.2"/><path d="M7.5 7.8a6.5 6.5 0 0 1 4-2.2" stroke="#fff6c8" stroke-width="2" fill="none" stroke-linecap="round"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 1.8l3.1 6.6 7.2.9-5.3 5 1.4 7.1L12 17.9l-6.4 3.5 1.4-7.1-5.3-5 7.2-.9z" stroke="#1d1526" stroke-width="2" stroke-linejoin="round"/></symbol>
+    <symbol id="i-swords" viewBox="0 0 48 48"><g stroke="#1d1526" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><path d="M9 6c10 6 18 15 25 26l-3 3C20 28 12 19 6 9z" fill="#eef4f8"/><path d="M39 6C29 12 21 21 14 32l3 3C28 28 36 19 42 9z" fill="#eef4f8"/><path d="M26 33l9 9M30 37l-4 4" fill="none"/><path d="M22 33l-9 9M18 37l4 4" fill="none"/><circle cx="37" cy="40" r="3" fill="#ffcf3a"/><circle cx="11" cy="40" r="3" fill="#ffcf3a"/></g></symbol>
+    <symbol id="i-hammer" viewBox="0 0 48 48"><g stroke="#1d1526" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><path d="M27 20L9 38a3.5 3.5 0 0 0 5 5l18-18z" fill="#c98a4a"/><path d="M20 9l9-4 12 12-4 9-6-2-9-9z" fill="#8d99a6"/></g></symbol>
+    <symbol id="i-crew" viewBox="0 0 48 48"><g stroke="#1d1526" stroke-width="3" stroke-linejoin="round"><circle cx="24" cy="20" r="11" fill="#7a4a2a"/><path d="M12 19a12 12 0 0 1 24 0c-6-3-18-3-24 0z" fill="#e0392b"/><path d="M8 44c2-9 8-13 16-13s14 4 16 13z" fill="#7cc6ff"/><circle cx="27" cy="21" r="2" fill="#fff"/><circle cx="33" cy="21" r="2" fill="#fff"/></g></symbol>
+    <symbol id="i-sound" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z" fill="#fff" stroke="#1d1526" stroke-width="2" stroke-linejoin="round"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></symbol>
+    <symbol id="i-mute" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z" fill="#fff" stroke="#1d1526" stroke-width="2" stroke-linejoin="round"/><path d="M16 9l5 6M21 9l-5 6" fill="none" stroke="#ff5a3a" stroke-width="2.6" stroke-linecap="round"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2.5" fill="#ffcf3a" stroke="#1d1526" stroke-width="2"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10" fill="none" stroke="#1d1526" stroke-width="2.4"/></symbol>
+  </defs>
+</svg>
+
+<section id="title" class="screen title">
+  <div class="logo">
+    <div class="logo-word ol">KAPARNA</div>
+    <div class="logo-sub ol">Pirater från Adenviken</div>
+  </div>
+  <button id="btn-play" class="btn btn-green btn-xl ol">SPELA</button>
+  <p class="title-hint">Storma skepp, ta kommandobryggan och bygg upp din egen flotta.</p>
+</section>
+
+<section id="hud-home" class="hud" hidden>
+  <div class="hud-top">
+    <div class="pill rep"><svg class="pi"><use href="#i-star" fill="#ffcf3a"/></svg><b id="rep" class="ol">0</b><span>Rykte</span></div>
+    <div class="pill gold" id="gold-pill"><svg class="pi"><use href="#i-coin"/></svg><b id="gold" class="ol">0</b></div>
+  </div>
+  <div class="hud-bl">
+    <button id="btn-attack" class="btn-attack" aria-label="Anfall">
+      <svg class="sw"><use href="#i-swords"/></svg>
+      <span class="ol">ANFALL!</span>
+    </button>
+    <div id="army-mini" class="mini ol">Armé 0/20</div>
+  </div>
+  <div class="hud-br">
+    <button id="btn-army" class="btn btn-blue round ol"><svg><use href="#i-crew"/></svg><span>Armé</span></button>
+    <button id="btn-forge" class="btn btn-orange round ol"><svg><use href="#i-hammer"/></svg><span>Smedja</span></button>
+  </div>
+  <button id="btn-sound" class="btn-icon" aria-label="Ljud av/på"><svg><use href="#i-sound"/></svg></button>
+  <div id="hint" class="hint" hidden></div>
+</section>
+
+<section id="hud-battle" class="hud" hidden>
+  <div class="b-tl">
+    <div class="b-ship ol" id="b-ship"></div>
+    <div class="pill gold small" id="loot-pill"><svg class="pi"><use href="#i-coin"/></svg><b id="b-loot" class="ol">0</b><span id="b-loot-max"></span></div>
+  </div>
+  <div class="b-tr">
+    <div class="b-timer ol" id="b-timer">2:30</div>
+    <div class="b-stars" id="b-stars"><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg></div>
+    <div class="b-pct ol" id="b-pct">0 %</div>
+  </div>
+  <div class="b-banner ol" id="b-banner"></div>
+  <div class="b-bottom">
+    <button id="b-end" class="btn btn-red ol">Tillbaka</button>
+    <div id="b-cards" class="cards"></div>
+  </div>
+  <button id="b-ability" class="ability" hidden><canvas width="64" height="64"></canvas><span class="ol">Stridsrop!</span></button>
+</section>
+
+<div id="big-msg" class="big-msg ol" hidden></div>
+
+<section id="panel" class="panel-wrap" hidden>
+  <div class="panel" role="dialog" aria-labelledby="panel-title">
+    <header><h2 id="panel-title" class="ol"></h2><button id="panel-close" class="btn-x ol" aria-label="Stäng">✕</button></header>
+    <div id="panel-body" class="panel-body"></div>
+  </div>
+</section>
+
+<section id="confirm" class="panel-wrap" hidden>
+  <div class="panel small" role="dialog" aria-labelledby="confirm-title">
+    <header><h2 id="confirm-title" class="ol">Avsluta striden?</h2></header>
+    <div class="panel-body"><p id="confirm-text" class="confirm-text"></p>
+      <div class="row-btns"><button id="confirm-no" class="btn btn-blue ol">Fortsätt</button><button id="confirm-yes" class="btn btn-red ol">Avsluta</button></div>
+    </div>
+  </div>
+</section>
+
+<section id="result" class="result" hidden>
+  <div class="res-box">
+    <div class="ribbon ol" id="res-title">SEGER!</div>
+    <div class="res-stars" id="res-stars"><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg></div>
+    <div class="res-pct ol" id="res-pct"></div>
+    <div class="res-loot"><svg class="pi"><use href="#i-coin"/></svg><b id="res-loot" class="ol">0</b></div>
+    <div class="res-capture" id="res-capture" hidden></div>
+    <div class="res-used" id="res-used"></div>
+    <button id="res-home" class="btn btn-green ol">Tillbaka till hamnen</button>
+  </div>
+</section>
+
+<div id="toast" class="toast ol" aria-live="polite"></div>
+<!--SCRIPTS-->
+<script src="js/data.js"></script>
+<script src="js/ship.js"></script>
+<script src="js/gfx.js"></script>
+<script src="js/art.js"></script>
+<script src="js/art-ship.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/battle.js"></script>
+<script src="js/harbor.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+<!--/SCRIPTS-->
+</body>
+</html>
