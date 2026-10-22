@@ -283,7 +283,7 @@ body.touch .desk-only, body:not(.touch) .touch-only { display: none; }
   <ul class="how">
     <li><b>Escape:</b> find your stuff (phone, wallet, car keys…), then get out the front door in the Grand Foyer.</li>
     <li><b>Or outlast him:</b> survive until 6 AM and the party's over.</li>
-    <li><b>Baby oil:</b> drop a puddle behind you. Diddy slips on it and goes down for a few seconds.</li>
+    <li><b>Baby oil:</b> the house is full of it, but you can only grab the bottles with a pink glow under them. Drop a puddle behind you and Diddy slips on it and goes down for a few seconds.</li>
     <li><b>Flashlight and CCTV</b> share one battery. Spare batteries are lying around.</li>
     <li><b>He hears you sprint</b>, and he spots your flashlight from further away.</li>
     <li><b>Grab the last item and he knows.</b> Run for the door.</li>
@@ -887,6 +887,11 @@ TEX.neonVip = texNeonText([['VIP', 150, 128, '#c85cff']], 512, 256);
 TEX.oilSign = texSign([['BABY OIL', 64, 58], ['1,000 BOTTLES · STAFF ONLY', 30, 124]]);
 TEX.noRun = texSign([['NO RUNNING', 58, 70], ['POOL RULES', 28, 130]], { bg: '#f4f4f0', fg: '#b3121f' });
 TEX.oilBox = texSign([['BABY OIL', 40, 54], ['× 48', 28, 98]], { bg: '#b98a52', fg: '#4a2a0a', w: 256, h: 128, border: false });
+/** Background bottle skin, mapped along the lathe profile: amber body, white label with a pink stripe, pink cap. */
+TEX.oilBottle = canvasTex(8, 256, (g, w, h) => {
+  const band = (v0, v1, c) => { g.fillStyle = c; g.fillRect(0, Math.round((1 - v1) * h), w, Math.round((v1 - v0) * h)); };
+  band(0, 1, '#f0ad37'); band(0.29, 0.415, '#fff4ea'); band(0.345, 0.37, '#ff4fa3'); band(0.5, 0.52, 'rgba(255,240,200,0.5)'); band(0.714, 1, '#ff4fa3');
+}, { repeat: false });
 TEX.banner = canvasTex(512, 256, (g, w, h) => {
   g.fillStyle = '#f7f4ee'; g.fillRect(0, 0, w, h); g.textAlign = 'center'; g.textBaseline = 'middle';
   for (let r = 0; r < 4; r++) for (let c = 0; c < 3; c++) { const x = c * 180 + (r % 2 ? 90 : 0), y = 34 + r * 62; g.font = "900 26px Impact, 'Arial Black', sans-serif"; g.fillStyle = r % 2 ? '#c9a24a' : '#e8247f'; g.fillText(r % 2 ? 'ALL WHITE' : 'DIDDY PARTY', x, y); }
@@ -987,7 +992,7 @@ const PRINT = {
 // =====================================================================
 const colliders = [];
 const lightSources = [];
-const anim = { beams: [], balloons: null, balloonData: [], confetti: null, disco: null, donut: null, waterTex: null, candles: [] };
+const anim = { beams: [], balloons: null, balloonData: [], confetti: null, disco: null, donut: null, waterTex: null, candles: [], hoard: null, hoardTotal: 0 };
 function solid(x0, x1, z0, z1) { colliders.push({ minX: Math.min(x0, x1), maxX: Math.max(x0, x1), minZ: Math.min(z0, z1), maxZ: Math.max(z0, z1) }); }
 function addMesh(geo, mat, x, y, z, { ry = 0, cast = true, receive = true, parent = scene } = {}) {
   const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.y = ry; m.castShadow = cast; m.receiveShadow = receive; parent.add(m); return m;
@@ -1049,6 +1054,13 @@ function plant(x, z, s = 1) {
 }
 function champagne(x, y, z) { cylAt(0.07, 0.08, 0.26, MAT.bottleGreen, x, y, z, 10); cylAt(0.025, 0.06, 0.12, MAT.bottleGreen, x, y + 0.26, z, 8); cylAt(0.028, 0.028, 0.05, MAT.gold, x, y + 0.36, z, 8); }
 let bottleGeo = null;
+let hoardGeo = null;
+/** Low-poly bottle for the background stockpile; the cap and label come from TEX.oilBottle. */
+function oilHoardGeo() {
+  if (hoardGeo) return hoardGeo;
+  const pts = [[0, 0], [0.075, 0], [0.08, 0.025], [0.08, 0.19], [0.05, 0.235], [0.032, 0.25], [0.032, 0.3], [0, 0.3]].map(([x, y]) => new THREE.Vector2(x, y));
+  hoardGeo = new THREE.LatheGeometry(pts, 7); return hoardGeo;
+}
 function oilBottleGeo() {
   if (bottleGeo) return bottleGeo;
   const pts = [[0, 0], [0.07, 0], [0.08, 0.02], [0.08, 0.2], [0.05, 0.25], [0.03, 0.27], [0.03, 0.3], [0, 0.3]].map(([x, y]) => new THREE.Vector2(x, y));
@@ -1257,6 +1269,62 @@ function buildProps() {
       else if ((cx * 7 + cy * 3) % 5 === 0) { art++; panel(art % 3 ? 1.1 : 1.6, art % 3 ? 1.4 : 2.0, art % 3 ? PRINT.record : PRINT.portrait, wx - dx * 0.05, 2.1, wz - dz * 0.05, ry); }
     }
   }
+  buildOilHoard();
+}
+
+/** Diddy's baby oil stockpile, everywhere: one instanced mesh (one draw call) for every background bottle. */
+function buildOilHoard() {
+  const hero = [], scatter = [], taken = new Set();
+  const free = (x, z, r = 0.12) => !colliders.some((c) => x > c.minX - r && x < c.maxX + r && z > c.minZ - r && z < c.maxZ + r);
+  const put = (list, x, y, z, s = 1, tip = 0) => list.push({ x, y, z, s, tip, ry: srand() * Math.PI * 2 });
+  const row = (x0, z0, x1, z1, y, gap = 0.18) => { const n = Math.max(1, Math.floor(Math.hypot(x1 - x0, z1 - z0) / gap)); for (let i = 0; i <= n; i++) put(hero, lerp(x0, x1, i / n), y, lerp(z0, z1, i / n), 0.95 + srand() * 0.1); };
+  const pyramid = (x, z, levels) => {
+    const g = 0.17;
+    for (let k = 0; k < levels; k++) { const n = levels - k, o = ((n - 1) * g) / 2; for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) put(hero, x - o + i * g, k * 0.3, z - o + j * g); }
+    const h = (levels * g) / 2 + 0.05; solid(x - h, x + h, z - h, z + h);
+  };
+  // stacked pyramids in corners, by the front door and around the house
+  for (const [x, z] of [[30.7, 24.7], [68.3, 24.7], [30.7, 47.3], [68.3, 47.3]]) pyramid(x, z, 6);
+  pyramid(33, 25.9, 7); pyramid(46.9, 25.9, 7); // flanking the DJ, right in the menu shot
+  for (const [x, z, n] of [[44.6, 68.1, 5], [54.4, 68.1, 5], [7.5, 25, 5], [15, 32.2, 5], [70.9, 4.1, 4], [4.2, 58.4, 4], [4.2, 67.6, 4], [20.4, 47.4, 4], [95.3, 43.3, 4], [72.2, 58.2, 4], [3.6, 14.4, 3]]) pyramid(x, z, n);
+  // shelves full of bottles on the wall behind the DJ (the menu looks right at them), and behind the bar
+  for (const y of [1.55, 1.95]) { boxAt(8, 0.04, 0.26, MAT.gold, 40, y, 24.13, { cast: false }); row(36.2, 24.14, 43.8, 24.14, y + 0.04); }
+  for (const y of [1.6, 2.4]) { boxAt(9.6, 0.04, 0.26, MAT.gold, 58, y, 47.86, { cast: false }); row(53.4, 47.86, 62.6, 47.86, y + 0.04); }
+  row(36.4, 24.2, 43.6, 24.2, 1.21); row(53.3, 47.15, 62.7, 47.15, 1.16, 0.3);
+  row(77.3, 3.55, 93.7, 3.55, 0.97); row(81.5, 8.5, 88.5, 8.5, 1.01, 0.4);
+  row(26.7, 11.2, 31.3, 11.2, 2.6, 0.2); row(37.7, 6.8, 42.3, 6.8, 2.6, 0.2);
+  row(15, 3.45, 17, 3.45, 0.9, 0.22); row(5.6, 41, 5.6, 43, 0.46, 0.4); row(80.8, 62, 84.2, 62, 0.85, 0.34);
+  for (const [px, pz] of [[34.5, 31.5], [64.5, 31.5], [34.5, 40.5], [64.5, 40.5]]) for (let a = 0; a < 14; a++) put(hero, px + Math.cos((a / 14) * Math.PI * 2) * 0.78, 0, pz + Math.sin((a / 14) * Math.PI * 2) * 0.78);
+  for (let i = 0; i < 16; i++) put(hero, rand(81.6, 92.4), -0.28, rand(30.6, 41.4), 1.1, 1); // floating in the pool
+  // rows along the foot of the walls in every room and hallway, plus a few knocked over
+  const chance = { '.': 0.32, R: 0.5, L: 0.35, M: 0.55, K: 0.4, O: 0.95, B: 0.6, P: 0.35, V: 0.65, T: 0.45, F: 0.55, C: 0.45 };
+  for (let cy = 0; cy < ROWS; cy++) for (let cx = 0; cx < COLS; cx++) {
+    const ch = tile(cx, cy); if (isWall(ch) || ch === '~' || ch === ':' || ch === 'X') continue;
+    for (const [dx, dz] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) {
+      if (!isWall(tile(cx + dx, cy + dz)) || srand() > chance[roomCode(ch)]) continue;
+      const n = 3 + Math.floor(srand() * 12), rows = n > 8 ? 2 : 1, per = Math.ceil(n / rows), start = 0.15 + srand() * Math.max(0, C - 0.3 - per * 0.17);
+      for (let r = 0; r < rows; r++) for (let i = 0; i < per; i++) {
+        const along = start + i * 0.17 + r * 0.085, depth = 0.17 + r * 0.17; if (along > C - 0.1) continue;
+        const x = dx === 0 ? cx * C + along : (dx < 0 ? cx * C : cx * C + C) - dx * depth;
+        const z = dx === 0 ? (dz < 0 ? cy * C : cy * C + C) - dz * depth : cy * C + along;
+        const key = `${Math.round(x / 0.15)},${Math.round(z / 0.15)}`; if (taken.has(key) || !free(x, z)) continue;
+        taken.add(key); put(scatter, x, 0, z, 0.9 + srand() * 0.2);
+      }
+      if (srand() < 0.35) { const a = 0.4 + srand() * 2.2, d = 0.45 + srand() * 0.25; const x = dx === 0 ? cx * C + a : (dx < 0 ? cx * C : cx * C + C) - dx * d, z = dx === 0 ? (dz < 0 ? cy * C : cy * C + C) - dz * d : cy * C + a; if (free(x, z)) put(scatter, x, 0, z, 1, 1); }
+    }
+  }
+  for (let i = scatter.length - 1; i > 0; i--) { const j = Math.floor(srand() * (i + 1)); [scatter[i], scatter[j]] = [scatter[j], scatter[i]]; }
+  const all = hero.concat(scatter);
+  const mat = new THREE.MeshStandardMaterial({ map: TEX.oilBottle, emissiveMap: TEX.oilBottle, emissive: 0xffffff, emissiveIntensity: 0.14, roughness: 0.16, envMap: ENV, envMapIntensity: 0.8 });
+  const mesh = new THREE.InstancedMesh(oilHoardGeo(), mat, all.length);
+  const m = new THREE.Matrix4(), q = new THREE.Quaternion(), tipQ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 2), up = new THREE.Vector3(0, 1, 0), pos = new THREE.Vector3(), sc = new THREE.Vector3(), tint = new THREE.Color();
+  all.forEach((b, i) => {
+    q.setFromAxisAngle(up, b.ry); if (b.tip) q.multiply(tipQ);
+    m.compose(pos.set(b.x, b.tip ? b.y + 0.08 * b.s : b.y, b.z), q, sc.setScalar(b.s)); mesh.setMatrixAt(i, m);
+    mesh.setColorAt(i, tint.setRGB(1, 0.86 + srand() * 0.14, 0.8 + srand() * 0.2));
+  });
+  mesh.frustumCulled = false; mesh.receiveShadow = true; scene.add(mesh);
+  anim.hoard = mesh; anim.hoardTotal = all.length;
 }
 
 /** Bakes every static prop into one mesh per material: hundreds of draw calls become a few dozen, which phones need. */
@@ -2227,14 +2295,17 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) pause
 document.addEventListener('mousemove', (e) => {
   if (G.mode !== 'play' || G.cctv) return;
   if (document.pointerLockElement === ui.stage || mouseDrag) {
-    const k = lookK(), mx = clamp(e.movementX, -250, 250), my = clamp(e.movementY, -250, 250);
+    // Chrome can report one huge jump as the lock engages; drop the first moves and any spike.
+    if (G.skipMoves > 0) { G.skipMoves--; return; }
+    if (Math.abs(e.movementX) > 220 || Math.abs(e.movementY) > 220) return;
+    const k = lookK(), mx = e.movementX, my = e.movementY;
     G.player.yaw -= mx * k; G.player.pitch = clamp(G.player.pitch - my * k, -1.35, 1.35); G.player.turnVel += mx * k * 0.5;
   }
 });
 ui.stage.addEventListener('mousedown', () => { if (G.mode === 'play' && !document.pointerLockElement) { mouseDrag = true; lockPointer(); } });
 addEventListener('mouseup', () => { mouseDrag = false; });
 document.addEventListener('pointerlockchange', () => {
-  if (document.pointerLockElement === ui.stage) G.hadLock = true;
+  if (document.pointerLockElement === ui.stage) { G.hadLock = true; G.skipMoves = 2; }
   else if (G.hadLock) { G.hadLock = false; pauseGame(); }
 });
 ui.card.addEventListener('click', beginPlay);
@@ -2303,9 +2374,9 @@ ui.faceReset.addEventListener('click', () => { G.face = null; paintDiddy(); try 
 // Quality, resize, main loop
 // =====================================================================
 const QUALITY = {
-  high: { ratio: 1.75, shadows: true, bloom: true, lights: 8, spots: true, confetti: 600 },
-  medium: { ratio: 1.25, shadows: false, bloom: true, lights: 6, spots: false, confetti: 400 },
-  low: { ratio: 1, shadows: false, bloom: false, lights: 5, spots: false, confetti: 220 },
+  high: { ratio: 1.75, shadows: true, bloom: true, lights: 8, spots: true, confetti: 600, hoard: 1 },
+  medium: { ratio: 1.25, shadows: false, bloom: true, lights: 6, spots: false, confetti: 400, hoard: 1 },
+  low: { ratio: 1, shadows: false, bloom: false, lights: 5, spots: false, confetti: 220, hoard: 0.55 },
 };
 const quality = () => QUALITY[Settings.quality] || QUALITY.medium;
 function applyQuality() {
@@ -2316,6 +2387,7 @@ function applyQuality() {
   initLightPool(q.lights);
   for (const b of anim.beams) if (b.light) b.light.visible = q.spots;
   anim.confetti.geometry.setDrawRange(0, q.confetti);
+  anim.hoard.count = Math.floor(anim.hoardTotal * q.hoard); // pyramids and shelves come first, so Low only thins the wall rows
   resize();
 }
 /** If a night runs below ~24 fps, step graphics down one level (once per 5 s window) and say so. */
@@ -2404,7 +2476,7 @@ function boot() {
   requestAnimationFrame(loop);
   // Test hook: advance the simulation in fixed steps without waiting for real frames.
   const simulate = (dt, n) => { for (let i = 0; i < n; i++) { const t = performance.now() / 1000 + i * dt; if (G.mode === 'play') updatePlay(dt, t); updateWorld(dt, t); } };
-  window.FNAD = { G, startNight, beginPlay, setDiddyState, findPath, simulate, NIGHTS, TUNING, renderer, camera, Settings, diddyCanvas };
+  window.FNAD = { G, startNight, beginPlay, setDiddyState, findPath, simulate, NIGHTS, TUNING, renderer, camera, Settings, diddyCanvas, anim };
 }
 boot();
 </script>

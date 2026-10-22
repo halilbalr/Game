@@ -51,6 +51,14 @@ and the fonts (Google Fonts) load from CDNs.
 - **His lines:** "Let me take you out shopping, playa!" and "You deserve it, daddy!" while
   chasing. "Ain't no party like a Diddy party!" when he catches you. They're spoken with the
   browser's speech engine and also shown as subtitles.
+- **The stockpile:** about 2,800 baby oil bottles fill the house:
+  - pyramids in the corners and flanking the DJ booth and the front door;
+  - rows along the foot of every wall;
+  - full shelves behind the DJ and the bar;
+  - the kitchen counter, the tops of the bookshelves, and some floating in the pool.
+
+  They're one instanced mesh (one draw call). The Low preset draws about 55% of them, and
+  only the wall rows are thinned. Only bottles with a pink glow under them can be picked up.
 - **Systems:** stamina, a battery shared by the flashlight and the CCTV map, baby oil
   puddles that make him slip, and a final-item trigger that sends him straight at you.
 - **Atmosphere:** party music synthesized with WebAudio (it gets muffled the further you are
