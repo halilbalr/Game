@@ -115,7 +115,16 @@ godot --headless --path . --fixed-fps 60 -- --mission=horse --autoplay   # scrip
 godot --headless --path . --fixed-fps 60 -- --mission=gate --autoplay
 godot --headless --path . --fixed-fps 60 -- --scene=arena --autoplay --bot   # scripted player through real input
 godot --headless --path . --fixed-fps 60 -- --tour --autoplay   # menu, city, menu, mission
+godot --headless --path . --fixed-fps 60 -- --mission=gate --bot --god              # whole mission, real walking and fighting
+godot --headless --path . --fixed-fps 60 -- --mission=horse --bot --god --noalarm   # the same; the bot cannot sneak
 ```
+
+`--bot` drives the player through the real input path: it walks the navigation
+mesh to the objective, fights what it meets and holds Use. `--god` makes the
+player invulnerable and `--noalarm` stops the watch from ending the mission.
+`--autoplay` is the cheaper check: the script teleports and kills for itself,
+which proves the story reaches its end but hides anything a walking player
+would trip on. Three such bugs were found only by `--bot`.
 
 Design record: `design/game-brief.md`. Where everything stands:
 `src/world/troy_layout.gd`. Numbers: `assets/data/`. Screenshots:

@@ -25,6 +25,22 @@ func _g(p: Vector3, lift: float = 0.15) -> Vector3:
 	return Vector3(p.x, TroyLayout.height(p.x, p.z) + lift, p.z)
 
 
+## A point on the Scaean Way [param dist] metres inside the gate, offset
+## [param across] metres to the side. Keeps people out of the houses that
+## line the street.
+func _way(dist: float, across: float = 0.0) -> Vector3:
+	var gate2 := Vector2(_gp.x, _gp.z)
+	var inner := gate2 + Vector2(_inward.x, _inward.z) * 10.0
+	var bend := Vector2(-96.0, 140.0)
+	var p := gate2 + Vector2(_inward.x, _inward.z) * dist
+	var dir := Vector2(_inward.x, _inward.z)
+	if dist > 10.0:
+		dir = (bend - inner).normalized()
+		p = inner + dir * minf(dist - 10.0, inner.distance_to(bend))
+	p += dir.orthogonal() * across
+	return Vector3(p.x, TroyLayout.height(p.x, p.y) + 0.15, p.y)
+
+
 func prepare() -> void:
 	var gate := world.gate("scaean_gate")
 	_gp = gate["pos"]
@@ -32,8 +48,8 @@ func prepare() -> void:
 	_inward = -_out
 	_side = Vector3(_inward.z, 0, -_inward.x)
 	_oak = world.marker("oak")
-	var start := _g(_gp + _inward * 52.0)
-	place_player(start, yaw_to(start, _gp))
+	var start := _way(56.0)
+	place_player(start, yaw_to(start, _way(30.0)))
 	player.combat_enabled = false
 	# Andromache, and the nurse with Astyanax, under the tower.
 	var meet := _g(_gp + _inward * 12.0 + _side * 3.0)
@@ -45,8 +61,8 @@ func prepare() -> void:
 	for sgn: float in [-1.0, 1.0]:
 		spawn("trojan_spearman", _g(_gp + _inward * 3.5 + _side * sgn * 4.4), yaw_to(_gp, _gp + _inward), {"stance": &"sentry", "hold": true, "engage_range": 6.0})
 	for i in 5:
-		var p := _g(_gp + _inward * (20.0 + i * 5.0) + _side * (7.0 if i % 2 == 0 else -7.0))
-		spawn("townsman" if i % 2 == 0 else "townswoman", p, yaw_to(p, _gp), {"stance": &"idle", "invulnerable": true})
+		var p := _way(22.0 + i * 6.0, 2.9 if i % 2 == 0 else -2.9)
+		spawn("townsman" if i % 2 == 0 else "townswoman", p, yaw_to(p, _way(22.0 + i * 6.0)), {"stance": &"idle", "invulnerable": true})
 	# The Trojan line at the oak.
 	_allies = spawn_group(["trojan_spearman", "trojan_swordsman", "trojan_spearman"], 10, _g(_oak + _inward * 6.0), 6.0,
 		yaw_to(_gp, _oak), {"damage_scale": 0.7, "hold": true, "engage_range": 10.0})
@@ -118,12 +134,12 @@ func run() -> void:
 	await speak("laugh")
 	await speak("prayer")
 	await speak("fate")
-	var home := _g(_gp + _inward * 70.0)
+	var home := _way(78.0)
 	andromache.set_goal(home, 2.0)
 	nurse.set_goal(home + Vector3(1.5, 0, 0), 2.0)
 	await speak("parting")
 	# Paris comes down from the citadel in his armour (Iliad 6.503-529).
-	var from := _g(_gp + _inward * 40.0)
+	var from := _way(46.0)
 	paris = spawn("paris", from, yaw_to(from, _gp), {"invulnerable": true, "damage_scale": 0.6})
 	paris.set_goal(player.global_position + _inward * 2.0, 2.0)
 	await wait(4.0)

@@ -28,6 +28,12 @@ func _physics_process(_delta: float) -> void:
 		print("bot t=%ds pos=%s objective='%s' focus=%s enemies=%d allies=%d" % [_tick / 60, str(p.global_position.round()),
 			mission.hud.objective_text(), str(p.focus != null), mission.battle.enemies_of(p.side).size(),
 			mission.battle.living(p.side).size()])
+		if Game.args.has("verbose"):
+			for e in mission.battle.enemies_of(p.side):
+				var s := e as Soldier
+				if s != null and s.global_position.distance_to(p.global_position) < 45.0:
+					print("   enemy %s at %s d=%.1f aware=%s asleep=%s state=%d hold=%s" % [s.name, str(s.global_position.round()),
+						s.global_position.distance_to(p.global_position), str(s.aware), str(s.asleep), s.state, str(s.hold)])
 	Input.action_release(&"attack")
 	Input.action_release(&"throw")
 	if p.focus != null:
@@ -46,6 +52,9 @@ func _physics_process(_delta: float) -> void:
 		dest = goal
 	if dest == Vector3.INF or not p.move_enabled:
 		Input.action_release(&"move_forward")
+		# Seated or held in talk: at least look where the script points.
+		if goal != Vector3.INF and not p.move_enabled:
+			p.look_toward(goal + Vector3(0, 0.6, 0))
 		return
 	_repath -= 1
 	if _repath <= 0:
@@ -64,7 +73,8 @@ func _physics_process(_delta: float) -> void:
 		p.look_toward(p.focus.focus_point())
 	else:
 		p.look_toward(Vector3(next.x, p.eye_position().y, next.z))
-	var arrived := (fight and dist < 2.3) or (not fight and dist < 1.6)
+	var reach := float(Data.weapons.get(p.current_weapon(), {}).get("reach", 1.8))
+	var arrived := (fight and dist < reach * 0.72) or (not fight and dist < 1.6)
 	if arrived:
 		Input.action_release(&"move_forward")
 		Input.action_release(&"sprint")
@@ -72,7 +82,7 @@ func _physics_process(_delta: float) -> void:
 		Input.action_press(&"move_forward")
 		if not fight:
 			Input.action_press(&"sprint")
-	if fight and dist < 2.9 and _tick % 42 == 0:
+	if fight and dist < reach + 0.15 and _tick % 42 == 0:
 		Input.action_press(&"attack")
 	if fight and _tick % 160 > 118 and dist < 4.0:
 		Input.action_press(&"block")

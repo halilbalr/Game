@@ -35,3 +35,16 @@ godot --path . --windowed --resolution 1280x720 -- --mission=gate --autoplay --s
 - **Run result: OBSERVED** — speech text wraps inside its box under a speaker name — `10-andromache.png`.
 - **Run result: NOT VERIFIED** — the burning-city phase of The Wooden Horse was not captured at full fire. `09` was taken at the moment the gate opens, before the fires spread. The fire, smoke and sky-glow code runs without error in the automated play-through but has not been looked at.
 - **Run result: NOT VERIFIED** — frame rate on real hardware, the feel of combat, and all sound. None can be judged on the capture machine.
+
+## Play-through runs (no screenshots)
+
+Headless, real walking, fighting and interaction, player invulnerable:
+
+- `--mission=gate --bot --god`: MISSION COMPLETE after 336 s of game time, 15 kills.
+- `--mission=horse --bot --god --noalarm`: MISSION COMPLETE after 377 s of game time, 21 kills.
+- `--mission=horse --autoplay --stop=exit --bot --god` (alarm on, bot running): MISSION FAILED (THE CITY WAKES) after 60 s, as intended.
+
+Bugs these runs found and that are now fixed: the player was set down beneath
+the horse's sledge and could not move; Hector's mission started the player
+inside a house beside the street; two script triggers began exactly at their
+objective markers.

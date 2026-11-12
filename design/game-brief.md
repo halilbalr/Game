@@ -122,6 +122,7 @@ day, the feast heard through the planks, battle and the sack.
 | Rules and formulas | 64 tests, `tests/run_tests.gd` | Pass |
 | Mission scripts reach their end | `--mission=<id> --autoplay` | Pass |
 | Player combat through real input | `--scene=arena --autoplay --bot` | Pass |
+| Whole missions with real walking, fighting and use | `--mission=<id> --bot --god` (`--noalarm` for the horse) | Pass: both reach their ending |
 | Screen transitions | `--tour --autoplay` | Pass |
 | Layout, legibility, presence | Screenshots in `production/qa/evidence/vertical-slice/` | Looked at |
 | Frame rate on real hardware | — | Not verified |
@@ -130,6 +131,11 @@ day, the feast heard through the planks, battle and the sack.
 
 The slice was built on a machine with no GPU and no audio device. The last
 three rows need a person at a real computer.
+
+The scripted player is invulnerable and does not sneak, so it proves that each
+mission can be finished, not that it is fair or fun. Sneaking past the watch
+is covered only by the perception tests and by confirming that being seen ends
+the mission.
 
 ## Out of scope for the slice
 
