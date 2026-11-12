@@ -8,6 +8,7 @@ const _SHADER_DIR := "res://assets/shaders/"
 static var _lib: Dictionary = {}
 static var _local: Dictionary = {}
 static var _sooty: Array[ShaderMaterial] = []
+static var _detail: float = 1.0
 
 
 static func _shader(file: String, params: Dictionary = {}) -> ShaderMaterial:
@@ -116,6 +117,7 @@ static func all_local() -> Dictionary:
 			if sm != null:
 				var copy := sm.duplicate() as ShaderMaterial
 				copy.set_shader_parameter("local_space", true)
+				copy.set_shader_parameter("detail_scale", _detail)
 				_local[key] = copy
 			else:
 				_local[key] = _lib[key]
@@ -128,6 +130,19 @@ static func set_soot(amount: float) -> void:
 		_build()
 	for sm in _sooty:
 		sm.set_shader_parameter("soot", amount)
+
+
+## Sets shader detail for every procedural material: 1 full, 0 the phone
+## tier (no bump pass, fewer noise octaves).
+static func set_detail(scale: float) -> void:
+	_detail = scale
+	if _lib.is_empty():
+		_build()
+	for table: Dictionary in [_lib, _local]:
+		for key: StringName in table:
+			var sm := table[key] as ShaderMaterial
+			if sm != null:
+				sm.set_shader_parameter("detail_scale", scale)
 
 
 ## Drops cached materials so a new session starts clean.

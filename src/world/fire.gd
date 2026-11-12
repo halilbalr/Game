@@ -154,6 +154,15 @@ func _init(flame_size: float = 0.25, with_smoke: bool = false, shadows: bool = f
 	light.distance_fade_length = 30.0
 	light.light_volumetric_fog_energy = 1.4
 	add_child(light)
+	if Game.mobile:
+		# Fewer sparks, and lamps that fade out sooner.
+		_flames.amount = maxi(6, _flames.amount / 2)
+		_flames.visibility_range_end = minf(_flames.visibility_range_end, 55.0 + size * 60.0)
+		light.shadow_enabled = false
+		light.distance_fade_begin = 42.0 + size * 30.0
+		light.distance_fade_length = 12.0
+		if _smoke != null:
+			_smoke.amount = maxi(8, _smoke.amount / 2)
 
 
 func _process(_delta: float) -> void:

@@ -217,6 +217,11 @@ func update(delta: float, move_speed: float, look_delta: Vector2, crouched: bool
 		_left.rotation = lr
 
 
+## True when the hero carries a shield.
+func has_shield() -> bool:
+	return _has_shield
+
+
 ## True while an attack animation is playing.
 func is_busy() -> bool:
 	return _attack_t >= 0.0

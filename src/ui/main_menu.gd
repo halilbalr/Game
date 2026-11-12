@@ -36,7 +36,7 @@ func _ready() -> void:
 	root.add_child(shade)
 
 	var col := VBoxContainer.new()
-	col.position = Vector2(110, 110)
+	col.position = Vector2(110, 60 if Game.mobile else 110)
 	col.custom_minimum_size = Vector2(640, 0)
 	col.add_theme_constant_override("separation", 10)
 	root.add_child(col)
@@ -45,7 +45,7 @@ func _ready() -> void:
 	var sub := Ui.label("THE FALL OF TROY", 30, Ui.PALE)
 	col.add_child(sub)
 	var gap := Control.new()
-	gap.custom_minimum_size = Vector2(0, 34)
+	gap.custom_minimum_size = Vector2(0, 14 if Game.mobile else 34)
 	col.add_child(gap)
 
 	var first := _entry(col, "THE WOODEN HORSE", "Attacker  ·  Odysseus  ·  the last night of Troy", func() -> void: Game.start_mission("horse"))
@@ -56,8 +56,15 @@ func _ready() -> void:
 	first.grab_focus()
 
 	var quote := Ui.label("\"Tell me, O Muse, of that ingenious hero who travelled far and wide\nafter he had sacked the famous town of Troy.\"\nHomer, Odyssey 1.1, tr. Samuel Butler", 20, Ui.DIM)
-	quote.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	quote.position = Vector2(112, -150)
+	if Game.mobile:
+		# A phone screen is too short for the quotation under the menu: set it bottom right.
+		quote.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+		quote.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		quote.position = Vector2(-760, -130)
+		quote.size = Vector2(700, 100)
+	else:
+		quote.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+		quote.position = Vector2(112, -150)
 	root.add_child(quote)
 
 	var panel := Ui.panel()
@@ -71,7 +78,7 @@ func _ready() -> void:
 	pbox.add_child(Ui.label("OPTIONS", 28, Ui.GOLD))
 	pbox.add_child(OptionsPanel.new())
 	pbox.add_child(Ui.label("CONTROLS", 28, Ui.GOLD))
-	pbox.add_child(Ui.label(OptionsPanel.CONTROLS_TEXT, 17, Ui.DIM, false))
+	pbox.add_child(Ui.label(OptionsPanel.controls_text(), 17, Ui.DIM, false))
 	var done := Ui.button("Done", 20)
 	done.pressed.connect(func() -> void:
 		panel.visible = false

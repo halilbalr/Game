@@ -44,7 +44,7 @@ void fragment() {
 	ALBEDO = wood * mix(1.0, 0.25 + 0.75 * gap, fade) * COLOR.rgb;
 	ROUGHNESS = 0.82;
 	SPECULAR = 0.3;
-	if (fade > 0.01) {
+	if (fade > 0.01 && detail_scale > 0.5) {
 		float e = 0.006;
 		float a;
 		float b;

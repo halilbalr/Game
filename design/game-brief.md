@@ -108,6 +108,24 @@ public domain, and are marked as quotations in the mission data.
 Godot 4.6, GDScript, Forward+ renderer, Jolt physics. All geometry, textures
 and sound are generated in code; the repository contains no imported art.
 
+## Mobile
+
+One project serves desktop and mobile. `Game.mobile` is true on Android and
+iOS (or with `--mobile` on a desktop) and switches on:
+
+- **Touch controls** (`src/ui/touch_controls.gd`): a thumb-stick that appears
+  under the left thumb, drag-to-look on the right, buttons for the fighting
+  hand. They press the same input actions as the keyboard, so the player code
+  is unchanged.
+- **A lighter graphics tier**: Godot's Mobile renderer; shaders without the
+  bump pass and with half the noise octaves; no ambient occlusion, volumetric
+  fog or glow; a short two-split sun shadow; a sky drawn once; terrain and
+  city cut into 48 m pieces because the Mobile renderer lights each mesh with
+  at most eight lamps.
+- **Smaller battles**: groups are fielded at 60% (`Game.crowd_scale`).
+- **Layout**: text at 1.3x, health and speech moved up out from under the
+  thumbs, hints reworded for touch.
+
 ## Sound
 
 Synthesised at start-up on a worker thread (`src/core/sfx.gd`): bronze as
@@ -119,7 +137,10 @@ day, the feast heard through the planks, battle and the sack.
 
 | Check | How | State |
 |---|---|---|
-| Rules and formulas | 64 tests, `tests/run_tests.gd` | Pass |
+| Rules and formulas, touch controls | 72 tests, `tests/run_tests.gd` | Pass |
+| Missions in mobile mode | `--mission=<id> --bot --god --mobile` | Pass |
+| Android package is complete | Debug APK built and signed; a mission finished from its contents on the Linux engine | Pass |
+| Anything on a real phone or tablet | — | Not verified |
 | Mission scripts reach their end | `--mission=<id> --autoplay` | Pass |
 | Player combat through real input | `--scene=arena --autoplay --bot` | Pass |
 | Whole missions with real walking, fighting and use | `--mission=<id> --bot --god` (`--noalarm` for the horse) | Pass: both reach their ending |

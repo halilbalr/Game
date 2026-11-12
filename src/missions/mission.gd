@@ -23,6 +23,8 @@ var gates: Dictionary = {}
 var ended: bool = false
 ## True when a script drives the mission instead of a person (test harness).
 var autoplay: bool = false
+## On-screen controls; null on a desktop.
+var touch: TouchControls
 var _pause: PauseMenu
 var _started_ms: int = 0
 var _started_frame: int = 0
@@ -48,6 +50,11 @@ func _ready() -> void:
 	hud = Hud.new()
 	add_child(hud)
 	hud.bind(player, battle)
+	if Game.mobile:
+		touch = TouchControls.new()
+		touch.player = player
+		touch.mission = self
+		add_child(touch)
 	_pause = PauseMenu.new()
 	_pause.mission = self
 	add_child(_pause)
@@ -57,7 +64,7 @@ func _ready() -> void:
 		add_child(doors)
 		doors.setup(world.gate(gate_id), true, false)
 		gates[gate_id] = doors
-	if not Game.is_harness():
+	if not Game.is_harness() and not Game.mobile:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	prepare()
 	_apply_debug_args()
@@ -115,9 +122,13 @@ func mark(label: String) -> void:
 		print("Mission %s: stopped at '%s'" % [id, label])
 
 
-## Text from the mission data file.
+## Text from the mission data file. On a touch screen a "<key>_touch"
+## entry, when present, replaces the one that names keys.
 func text(key: String, fallback: String = "") -> String:
-	return str((data.get("text", {}) as Dictionary).get(key, fallback))
+	var table: Dictionary = data.get("text", {})
+	if Game.mobile and table.has(key + "_touch"):
+		return str(table[key + "_touch"])
+	return str(table.get(key, fallback))
 
 
 ## Puts the player at a point, facing [param yaw] radians.
@@ -243,6 +254,8 @@ func spawn(role_id: String, pos: Vector3, yaw: float = 0.0, opts: Dictionary = {
 ## Spawns [param count] soldiers scattered round a point. Roles are picked in turn.
 func spawn_group(roles: Array, count: int, centre: Vector3, spread: float, yaw: float, opts: Dictionary = {}) -> Array[Soldier]:
 	var out: Array[Soldier] = []
+	if count > 3:
+		count = maxi(3, roundi(count * Game.crowd_scale()))
 	for i in count:
 		var a := TAU * i / maxf(count, 1.0) + randf() * 0.8
 		var r := spread * sqrt((i + 1.0) / count)

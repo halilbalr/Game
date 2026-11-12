@@ -12,7 +12,9 @@
     "end_title": "ILIOS HAS FALLEN",
     "end_text": "Menelaus found Helen by the hearth in the house of Deiphobus. He raised his sword, and at the sight of her he let it fall. So the city fell, as it was fated to fall once it had taken in the great horse of wood. For Odysseus the road home would take ten more years.\n\nAfter Odyssey 4.271-289 and 8.492-520, and the Little Iliad.",
     "hint_stealth": "Crouch [Ctrl] to move quietly. A man who has not seen you dies without a sound.",
-    "hint_bar": "The bar is heavy. Hold [E] to lift it."
+    "hint_bar": "The bar is heavy. Hold [E] to lift it.",
+    "hint_stealth_touch": "Tap CROUCH to move quietly. A man who has not seen you dies without a sound.",
+    "hint_bar_touch": "The bar is heavy. Hold USE to lift it."
   },
   "objectives": {
     "wait": "Keep silent in the belly of the horse",
@@ -29,26 +31,89 @@
     "kill_deiphobus": "Kill Deiphobus"
   },
   "lines": {
-    "menelaus_1": ["Menelaus", "Ten years. And tonight I sit in a box of pine and listen to them sing."],
-    "diomedes_1": ["Diomedes", "Let them sing. They have been drinking since noon."],
-    "steps": ["", "Footsteps circle the horse. A hand strikes the hollow flank, once, twice. A woman's voice."],
-    "helen_1": ["Helen", "Menelaus? Menelaus, my husband. Are you there?"],
-    "helen_2": ["Helen", "Diomedes. Aegialeia weeps for you in Argos. Will you not speak to her?"],
-    "helen_3": ["Helen", "Anticlus! It is Laodamia. It is your own wife. Answer me!"],
-    "anticlus": ["", "Anticlus starts up and draws breath to answer."],
-    "held": ["", "You clamp your hands over his mouth and hold him until the footsteps pass."],
-    "athena_gone": ["Diomedes", "She is gone. Some god has led her away."],
-    "quiet": ["", "The singing thins. One by one the torches gutter out. Then three knocks on the belly of the horse."],
-    "sinon": ["Sinon", "It is Sinon. They are asleep, every man of them, drunk as they fell. I have lit the beacon. The fleet is back from Tenedos and waits for the gate."],
-    "plan": ["Diomedes", "Menelaus and I will hold the citadel wall. The gate is yours, son of Laertes."],
-    "athena_1": ["Athena", "Softly now, Odysseus. Not one of them must cry out."],
-    "south_gate": ["Athena", "The lower town. Keep to the shadows of the Scaean Way."],
-    "at_gate": ["Athena", "There is the watch. Let none of them reach the horn."],
-    "gate_clear": ["", "The watch is dead. Beyond the gate ten thousand men are waiting in the dark."],
-    "opened": ["Agamemnon", "The gate is open! Achaeans, the city is ours. Leave nothing standing!"],
-    "menelaus_2": ["Menelaus", "Odysseus! Deiphobus has her. Helen is in his house, up on the citadel. Come with me."],
-    "menelaus_3": ["Menelaus", "The citadel gate. Up, up, before they close it!"],
-    "deiphobus_1": ["Deiphobus", "Atreides. Ten years of our lives were not enough for you?"],
-    "deiphobus_dead": ["Menelaus", "It is done. Wait here. I will go in to her alone."]
+    "menelaus_1": [
+      "Menelaus",
+      "Ten years. And tonight I sit in a box of pine and listen to them sing."
+    ],
+    "diomedes_1": [
+      "Diomedes",
+      "Let them sing. They have been drinking since noon."
+    ],
+    "steps": [
+      "",
+      "Footsteps circle the horse. A hand strikes the hollow flank, once, twice. A woman's voice."
+    ],
+    "helen_1": [
+      "Helen",
+      "Menelaus? Menelaus, my husband. Are you there?"
+    ],
+    "helen_2": [
+      "Helen",
+      "Diomedes. Aegialeia weeps for you in Argos. Will you not speak to her?"
+    ],
+    "helen_3": [
+      "Helen",
+      "Anticlus! It is Laodamia. It is your own wife. Answer me!"
+    ],
+    "anticlus": [
+      "",
+      "Anticlus starts up and draws breath to answer."
+    ],
+    "held": [
+      "",
+      "You clamp your hands over his mouth and hold him until the footsteps pass."
+    ],
+    "athena_gone": [
+      "Diomedes",
+      "She is gone. Some god has led her away."
+    ],
+    "quiet": [
+      "",
+      "The singing thins. One by one the torches gutter out. Then three knocks on the belly of the horse."
+    ],
+    "sinon": [
+      "Sinon",
+      "It is Sinon. They are asleep, every man of them, drunk as they fell. I have lit the beacon. The fleet is back from Tenedos and waits for the gate."
+    ],
+    "plan": [
+      "Diomedes",
+      "Menelaus and I will hold the citadel wall. The gate is yours, son of Laertes."
+    ],
+    "athena_1": [
+      "Athena",
+      "Softly now, Odysseus. Not one of them must cry out."
+    ],
+    "south_gate": [
+      "Athena",
+      "The lower town. Keep to the shadows of the Scaean Way."
+    ],
+    "at_gate": [
+      "Athena",
+      "There is the watch. Let none of them reach the horn."
+    ],
+    "gate_clear": [
+      "",
+      "The watch is dead. Beyond the gate ten thousand men are waiting in the dark."
+    ],
+    "opened": [
+      "Agamemnon",
+      "The gate is open! Achaeans, the city is ours. Leave nothing standing!"
+    ],
+    "menelaus_2": [
+      "Menelaus",
+      "Odysseus! Deiphobus has her. Helen is in his house, up on the citadel. Come with me."
+    ],
+    "menelaus_3": [
+      "Menelaus",
+      "The citadel gate. Up, up, before they close it!"
+    ],
+    "deiphobus_1": [
+      "Deiphobus",
+      "Atreides. Ten years of our lives were not enough for you?"
+    ],
+    "deiphobus_dead": [
+      "Menelaus",
+      "It is done. Wait here. I will go in to her alone."
+    ]
   }
 }

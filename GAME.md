@@ -21,6 +21,62 @@ mesh. The navigation mesh is then cached, so later launches are quicker.
 A desktop GPU that supports Vulkan (or Direct3D 12 on Windows) is needed.
 If it runs slowly, set **Options > Graphics** to **Low**.
 
+## On a phone or tablet
+
+The same project runs on Android and iOS. On a mobile device it switches by
+itself to touch controls, larger text, smaller battles and a lighter
+renderer. **It has not been run on a real phone**: see the caution below.
+
+**Android, the quick way.** A debug build, `the-odyssey.apk` (28 MB, 64-bit
+ARM, Android 7 or later), was made alongside this project. Copy it to the
+phone, open it, and allow installing from that source when asked. It is not
+kept in the repository.
+
+**Android, building it yourself.** In Godot: *Editor > Manage Export
+Templates > Download and Install*, then set the Android SDK and Java paths
+under *Editor Settings > Export > Android*
+([Godot's guide](https://docs.godotengine.org/en/stable/tutorials/export/exporting_for_android.html)).
+Then *Project > Export*, choose the **Android** preset that ships with the
+project, and *Export Project*. With a phone plugged in, the one-click deploy
+button in the top bar installs and runs it.
+
+**iPhone and iPad.** This needs a Mac with Xcode and an Apple developer
+account, so no build is supplied. In Godot on the Mac: *Project > Export >
+Add > iOS*, enter your Team ID and a bundle identifier, export, then open the
+Xcode project and run it on the device
+([Godot's guide](https://docs.godotengine.org/en/stable/tutorials/export/exporting_for_ios.html)).
+
+**Touch controls**
+
+| | |
+|---|---|
+| Move | Left thumb, anywhere on the left half. Push the stick to its rim to run. |
+| Look | Drag anywhere on the right. A thumb resting on STRIKE or SHIELD can still turn the view. |
+| STRIKE | Tap. |
+| SHIELD | Hold. |
+| THROW | Tap. Shown while a spear is in hand. |
+| ARMS | Next weapon. |
+| CROUCH | Tap to crouch, tap again to stand. |
+| JUMP | Tap. |
+| USE | Appears only when there is something to use. Some things must be held. |
+| READ | Walk the City only: the chronicle of the place you are standing in. |
+| II | Pause. The Android back gesture pauses too. |
+
+**Caution.** Phones are far weaker than desktop graphics cards, and this
+game draws its stone, plaster and ground with procedural shaders rather than
+stored textures. The mobile tier drops the bump pass, half the noise detail,
+ambient occlusion, volumetric fog and glow, shortens shadows, and fields about
+60% of the soldiers. Whether that is enough for a smooth frame rate on a given
+phone is unknown. If it is slow, set **Options > Graphics** to **Low**, which
+on a phone lowers the 3D resolution. The first launch also spends some
+seconds building the city and its navigation mesh.
+
+To try the touch layout on a desktop, with the mouse standing in for a finger:
+
+```
+godot --path . -- --mobile
+```
+
 ## The three modes
 
 | Mode | You are | What happens |
@@ -110,13 +166,15 @@ on or off, inverted look, head bob, fullscreen.
 
 ```
 godot --headless --path . --import                              # once after cloning
-godot --headless --path . -s res://tests/run_tests.gd           # 64 tests
+godot --headless --path . -s res://tests/run_tests.gd           # 72 tests
 godot --headless --path . --fixed-fps 60 -- --mission=horse --autoplay   # script plays itself; exit 0 on completion
 godot --headless --path . --fixed-fps 60 -- --mission=gate --autoplay
 godot --headless --path . --fixed-fps 60 -- --scene=arena --autoplay --bot   # scripted player through real input
 godot --headless --path . --fixed-fps 60 -- --tour --autoplay   # menu, city, menu, mission
 godot --headless --path . --fixed-fps 60 -- --mission=gate --bot --god              # whole mission, real walking and fighting
 godot --headless --path . --fixed-fps 60 -- --mission=horse --bot --god --noalarm   # the same; the bot cannot sneak
+godot --headless --path . --fixed-fps 60 -- --mission=gate --bot --god --mobile     # add --mobile to any of these for the phone tier
+godot --headless --path . --export-debug "Android" builds/the-odyssey.apk           # needs export templates and an Android SDK
 ```
 
 `--bot` drives the player through the real input path: it walks the navigation

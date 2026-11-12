@@ -5,9 +5,17 @@ extends VBoxContainer
 const CONTROLS_TEXT := "Move  W A S D        Look  Mouse\nStrike  Left mouse        Shield  Right mouse (hold)\nThrow spear  G or middle mouse\nWeapons  1 2 3 or wheel        Use  E\nRun  Shift        Crouch  Ctrl or C        Jump  Space\nChronicle  Tab        Pause  Esc\nA gamepad also works."
 
 
+const TOUCH_TEXT := "Move  left thumb, anywhere on the left\nPush the stick to its rim to run\nLook  drag on the right\nSTRIKE, SHIELD (hold), THROW, JUMP, CROUCH, ARMS\nUSE appears when there is something to use"
+
+
+## The controls summary for the device in hand.
+static func controls_text() -> String:
+	return TOUCH_TEXT if Game.mobile else CONTROLS_TEXT
+
+
 func _init() -> void:
 	add_theme_constant_override("separation", 8)
-	_slider("Mouse sensitivity", "mouse_sensitivity", 0.3, 2.5, 0.05)
+	_slider("Look sensitivity" if Game.mobile else "Mouse sensitivity", "mouse_sensitivity", 0.3, 2.5, 0.05)
 	_slider("Field of view", "fov", 60.0, 100.0, 1.0)
 	_slider("Volume", "master_volume", 0.0, 1.0, 0.05)
 	_choice("Difficulty", "difficulty", ["Bard's tale", "Warrior", "Hero"])
@@ -15,7 +23,8 @@ func _init() -> void:
 	_toggle("Blood", "blood")
 	_toggle("Invert look", "invert_y")
 	_toggle("Head bob", "head_bob")
-	_toggle("Fullscreen", "fullscreen")
+	if not Game.mobile:
+		_toggle("Fullscreen", "fullscreen")
 
 
 func _row(text: String) -> HBoxContainer:

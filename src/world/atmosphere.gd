@@ -39,6 +39,8 @@ var sky_material: ShaderMaterial
 var _world_env: WorldEnvironment
 var _preset: Dictionary = {}
 var _fire: float = 0.0
+var _mobile: bool = false
+var _sky_frozen: bool = false
 
 
 func _init() -> void:
@@ -70,8 +72,19 @@ func _init() -> void:
 	add_child(sun)
 
 
-## Applies the named preset and the given quality level.
-func apply(preset_name: String, quality: int = 1) -> void:
+## Applies the named preset and the given quality level. [param mobile]
+## selects the phone tier: no screen-space or volumetric effects, a short
+## two-split sun shadow and a sky that is drawn once instead of every frame.
+func apply(preset_name: String, quality: int = 1, mobile: bool = false) -> void:
+	_mobile = mobile
+	if mobile and not _sky_frozen:
+		_sky_frozen = true
+		var frozen := Shader.new()
+		frozen.code = sky_material.shader.code.replace("TIME", "frozen_time") \
+			.replace("shader_type sky;", "shader_type sky;\nuniform float frozen_time = 0.0;")
+		sky_material.shader = frozen
+		env.sky.radiance_size = Sky.RADIANCE_SIZE_64
+		env.sky.process_mode = Sky.PROCESS_MODE_QUALITY
 	_preset = PRESETS.get(preset_name, PRESETS["day"])
 	var p := _preset
 	var dir: Vector3 = (p["sun_dir"] as Vector3).normalized()
@@ -140,6 +153,16 @@ func _apply_quality(quality: int) -> void:
 	sun.directional_shadow_max_distance = [120.0, 220.0, 320.0][clampi(quality, 0, 2)]
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS if quality == 0 \
 		else DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
+	if _mobile:
+		env.ssao_enabled = false
+		env.ssil_enabled = false
+		env.sdfgi_enabled = false
+		env.volumetric_fog_enabled = false
+		env.glow_enabled = false
+		env.adjustment_enabled = false
+		sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+		sun.directional_shadow_max_distance = 70.0
+		sun.directional_shadow_blend_splits = false
 
 
 ## Sets how far the city is alight (0 none, 1 the whole town burning). Tints
@@ -153,5 +176,8 @@ func set_fire(amount: float) -> void:
 	env.fog_light_color = base_fog.lerp(Color(0.55, 0.20, 0.07), _fire * 0.8)
 	env.fog_density = lerpf(_preset["fog_density"], 0.006, _fire)
 	env.volumetric_fog_density = lerpf(_preset.get("vol_density", 0.005), 0.03, _fire)
+	if _mobile:
+		# No volumetric smoke on a phone: thicken the plain fog a little instead.
+		env.fog_density = lerpf(_preset["fog_density"], 0.011, _fire)
 	env.volumetric_fog_albedo = Color(0.9, 0.88, 0.84).lerp(Color(0.75, 0.55, 0.45), _fire)
 	env.ambient_light_energy = lerpf(_preset["ambient"], _preset["ambient"] * 1.8, _fire)

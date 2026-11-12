@@ -65,6 +65,9 @@ dist/
 !**/.godot/global_script_class_cache.cfg
 *.translation
 export_presets.cfg
+# The Odyssey ships its Android preset so the game exports in one step.
+# Godot 4 keeps keystore passwords in .godot/export_credentials.cfg, not here.
+!/export_presets.cfg
 # Uncomment if using Godot:
 # *.import
 

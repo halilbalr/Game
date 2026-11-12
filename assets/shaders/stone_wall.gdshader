@@ -64,7 +64,7 @@ void fragment() {
 	SPECULAR = 0.25;
 	AO = mix(1.0, 0.55 + 0.45 * blk, fade);
 	AO_LIGHT_AFFECT = 0.4;
-	if (fade > 0.01) {
+	if (fade > 0.01 && detail_scale > 0.5) {
 		float e = 0.012;
 		float h0 = surface(uv_m, fade);
 		vec2 grad = vec2(surface(uv_m + vec2(e, 0.0), fade) - h0, surface(uv_m + vec2(0.0, e), fade) - h0) / e;

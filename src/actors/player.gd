@@ -145,6 +145,12 @@ func look_toward(point: Vector3) -> void:
 	_head.rotation.x = _pitch
 
 
+## Turns the view by the given angles in radians (touch look).
+func add_look(yaw: float, pitch: float) -> void:
+	if not _dead and control_enabled:
+		_turn(yaw, pitch)
+
+
 ## Sets the up/down angle of the view in radians.
 func set_pitch(pitch: float) -> void:
 	_pitch = clampf(pitch, -1.45, 1.45)
@@ -318,7 +324,7 @@ func receive_hit(attacker: Node3D, base_damage: float, height: float, dir: Vecto
 	_grace = float(cfg.get("player_hit_grace", 0.7))
 	var to_att := attacker.global_position - global_position if attacker != null else -dir
 	var fwd := -global_transform.basis.z
-	var can_block := blocking and viewmodel._has_shield \
+	var can_block := blocking and viewmodel.has_shield() \
 		and Combat.in_block_arc(fwd, to_att, float(_cfg.get("block_arc_deg", 115.0)))
 	if can_block:
 		stamina = maxf(stamina - float(_cfg.get("block_hit_cost", 16.0)), 0.0)
@@ -401,7 +407,7 @@ func _physics_process(delta: float) -> void:
 		velocity.y -= GRAVITY * delta
 		move_and_slide()
 		return
-	var active := control_enabled and (Input.mouse_mode == Input.MOUSE_MODE_CAPTURED or bot_control)
+	var active := control_enabled and (Input.mouse_mode == Input.MOUSE_MODE_CAPTURED or bot_control or Game.mobile)
 	var can_move := active and move_enabled
 
 	# Gamepad look.
@@ -421,7 +427,7 @@ func _physics_process(delta: float) -> void:
 	_head.position.y = lerpf(_head.position.y, eye_target, 1.0 - exp(-12.0 * delta))
 
 	# Shield.
-	blocking = active and combat_enabled and Input.is_action_pressed(&"block") and viewmodel._has_shield and _attack_t < 0.0
+	blocking = active and combat_enabled and Input.is_action_pressed(&"block") and viewmodel.has_shield() and _attack_t < 0.0
 	if debug_block:
 		blocking = true
 	viewmodel.blocking = blocking

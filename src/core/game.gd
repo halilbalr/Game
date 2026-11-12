@@ -17,6 +17,9 @@ var settings: Dictionary = {
 	"master_volume": 0.8, "fullscreen": true, "invert_y": false, "head_bob": true,
 	"difficulty": 1,
 }
+## True on phones and tablets (or with `--mobile` on a desktop, for testing):
+## touch controls, lighter graphics, smaller crowds.
+var mobile: bool = false
 var main: Node
 var screen: Node
 var world: TroyWorld
@@ -32,11 +35,41 @@ func _ready() -> void:
 			args[a.substr(0, eq)] = a.substr(eq + 1)
 		else:
 			args[a] = "1"
+	mobile = OS.has_feature("mobile") or args.has("mobile")
 	_register_inputs()
+	if mobile:
+		_prepare_for_touch()
 	_load_settings()
 	if args.has("quality"):
 		settings["quality"] = int(args["quality"])
 	apply_settings()
+
+
+func _prepare_for_touch() -> void:
+	# Touches are also reported as left clicks; a look-drag must not strike.
+	for action: StringName in [&"attack", &"block", &"throw", &"weapon_next", &"weapon_prev"]:
+		for ev in InputMap.action_get_events(action):
+			if ev is InputEventMouseButton:
+				InputMap.action_erase_event(action, ev)
+	settings["quality"] = 0
+	get_tree().set_quit_on_go_back(false)
+	if not OS.has_feature("mobile"):
+		# Desktop trial of the touch layout: let the mouse stand in for a finger.
+		Input.emulate_touch_from_mouse = true
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		# Android's back gesture pauses rather than quits.
+		var ev := InputEventAction.new()
+		ev.action = &"pause"
+		ev.pressed = true
+		Input.parse_input_event(ev)
+
+
+## How many soldiers a mission should field, relative to the desktop count.
+func crowd_scale() -> float:
+	return 0.6 if mobile else 1.0
 
 
 ## True when the game was started by the automated capture or test harness.
@@ -125,17 +158,24 @@ func save_settings() -> void:
 ## Applies settings to the window, audio and renderer, and notifies listeners.
 func apply_settings() -> void:
 	AudioServer.set_bus_volume_db(0, linear_to_db(clampf(float(settings["master_volume"]), 0.0001, 1.0)))
-	if not is_harness():
+	if not is_harness() and not mobile:
 		var mode := DisplayServer.WINDOW_MODE_FULLSCREEN if settings["fullscreen"] else DisplayServer.WINDOW_MODE_WINDOWED
 		if DisplayServer.window_get_mode() != mode:
 			DisplayServer.window_set_mode(mode)
-	var q := int(settings["quality"])
+	var q := clampi(int(settings["quality"]), 0, 2)
 	var vp := get_viewport()
 	if vp != null:
-		vp.msaa_3d = Viewport.MSAA_DISABLED if q == 0 else Viewport.MSAA_2X
-		vp.scaling_3d_scale = 0.8 if q == 0 else 1.0
+		if mobile:
+			# On a phone the option trades sharpness for frame rate.
+			vp.msaa_3d = Viewport.MSAA_DISABLED
+			vp.scaling_3d_scale = [0.6, 0.75, 0.9][q]
+			# Text sized for a desk is too small in the hand.
+			get_tree().root.content_scale_factor = 1.3
+		else:
+			vp.msaa_3d = Viewport.MSAA_DISABLED if q == 0 else Viewport.MSAA_2X
+			vp.scaling_3d_scale = 0.8 if q == 0 else 1.0
 	if world != null and world.atmosphere != null:
-		world.atmosphere.apply(world.preset, q)
+		world.atmosphere.apply(world.preset, q, mobile)
 	settings_changed.emit()
 
 

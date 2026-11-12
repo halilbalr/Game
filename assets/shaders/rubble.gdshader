@@ -37,7 +37,7 @@ void fragment() {
 	ROUGHNESS = mix(0.94, 0.62, polish * m);
 	SPECULAR = 0.25;
 	AO = mix(1.0, 0.6 + 0.4 * m, fade);
-	if (fade > 0.01) {
+	if (fade > 0.01 && detail_scale > 0.5) {
 		float d = 0.012;
 		float h0 = surface(uv_m, fade);
 		vec2 grad = vec2(surface(uv_m + vec2(d, 0.0), fade) - h0, surface(uv_m + vec2(0.0, d), fade) - h0) / d;

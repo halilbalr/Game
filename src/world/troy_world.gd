@@ -31,11 +31,15 @@ func build(preset_name: String, quality: int) -> void:
 	night = preset == "night"
 	atmosphere = Atmosphere.new()
 	add_child(atmosphere)
-	atmosphere.apply(preset, quality)
+	atmosphere.apply(preset, quality, Game.mobile)
+	# Phones light each mesh with at most eight lamps, so the world is cut
+	# into smaller pieces there; smaller pieces also cull better.
+	Mats.set_detail(0.0 if Game.mobile else 1.0)
 	var t0 := Time.get_ticks_msec()
-	Terrain.build(self)
+	Terrain.build(self, 16 if Game.mobile else 32)
 	var t1 := Time.get_ticks_msec()
 	var builder := TroyBuilder.new()
+	builder.b.chunk_size = 48.0 if Game.mobile else 96.0
 	builder.build()
 	info = builder.info
 	Props.build_awnings(builder.b, info)
@@ -59,7 +63,7 @@ func set_preset(preset_name: String, quality: int) -> void:
 	preset = preset_name
 	night = preset == "night"
 	atmosphere.set_fire(0.0)
-	atmosphere.apply(preset, quality)
+	atmosphere.apply(preset, quality, Game.mobile)
 	Mats.set_soot(0.0)
 	for f in fires:
 		f.set_lit(night)

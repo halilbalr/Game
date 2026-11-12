@@ -65,7 +65,7 @@ void fragment() {
 	ALBEDO = col;
 	ROUGHNESS = 0.96;
 	SPECULAR = 0.15;
-	if (fade > 0.01) {
+	if (fade > 0.01 && detail_scale > 0.5) {
 		float e = 0.012;
 		float h0 = surface(uv_m, height, fade);
 		vec2 grad = vec2(surface(uv_m + vec2(e, 0.0), height, fade) - h0,

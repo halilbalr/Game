@@ -60,14 +60,15 @@ static func _seg_dist(p: Vector2, a: Vector2, b: Vector2) -> float:
 	return p.distance_to(a + ab * t)
 
 
-## Builds terrain, sea and river under [param parent].
-static func build(parent: Node3D) -> void:
-	_build_fine(parent)
+## Builds terrain, sea and river under [param parent]. The walkable grid is
+## drawn as square tiles [param tile_cells] cells on a side.
+static func build(parent: Node3D, tile_cells: int = 32) -> void:
+	_build_fine(parent, tile_cells)
 	_build_far(parent)
 	_build_water(parent)
 
 
-static func _build_fine(parent: Node3D) -> void:
+static func _build_fine(parent: Node3D, tile_cells: int) -> void:
 	var nx := int(FINE.size.x / CELL) + 1
 	var nz := int(FINE.size.y / CELL) + 1
 	# Heights are sampled once on a grid one cell wider than the mesh, so the
@@ -96,8 +97,6 @@ static func _build_fine(parent: Node3D) -> void:
 			norms[k] = Vector3(heights[hk - 1] - heights[hk + 1], 2.0 * CELL,
 				heights[hk - gx] - heights[hk + gx]).normalized()
 			cols[k] = blend_at(x, z)
-	var idx := PackedInt32Array()
-	idx.resize((nx - 1) * (nz - 1) * 6)
 	var faces := PackedVector3Array()
 	faces.resize((nx - 1) * (nz - 1) * 6)
 	var w := 0
@@ -108,25 +107,55 @@ static func _build_fine(parent: Node3D) -> void:
 			var c := a + nx
 			var d := c + 1
 			# Clockwise seen from above (+Y), Godot's front face.
-			idx[w] = a; idx[w + 1] = b; idx[w + 2] = c
-			idx[w + 3] = b; idx[w + 4] = d; idx[w + 5] = c
 			faces[w] = verts[a]; faces[w + 1] = verts[b]; faces[w + 2] = verts[c]
 			faces[w + 3] = verts[b]; faces[w + 4] = verts[d]; faces[w + 5] = verts[c]
 			w += 6
-	var arrays := []
-	arrays.resize(Mesh.ARRAY_MAX)
-	arrays[Mesh.ARRAY_VERTEX] = verts
-	arrays[Mesh.ARRAY_NORMAL] = norms
-	arrays[Mesh.ARRAY_COLOR] = cols
-	arrays[Mesh.ARRAY_INDEX] = idx
-	var mesh := ArrayMesh.new()
-	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-	mesh.surface_set_material(0, Mats.get_mat(&"ground"))
-	var mi := MeshInstance3D.new()
-	mi.name = "TerrainFine"
-	mi.mesh = mesh
-	mi.gi_mode = GeometryInstance3D.GI_MODE_STATIC
-	parent.add_child(mi)
+	# One mesh per tile, so distant ground is culled and each tile takes
+	# the lamps nearest to it.
+	var material := Mats.get_mat(&"ground")
+	var holder := Node3D.new()
+	holder.name = "TerrainFine"
+	parent.add_child(holder)
+	for tj in range(0, nz - 1, tile_cells):
+		for ti in range(0, nx - 1, tile_cells):
+			var tw := mini(tile_cells, nx - 1 - ti)
+			var th := mini(tile_cells, nz - 1 - tj)
+			var tv := PackedVector3Array()
+			var tn := PackedVector3Array()
+			var tc := PackedColorArray()
+			tv.resize((tw + 1) * (th + 1))
+			tn.resize(tv.size())
+			tc.resize(tv.size())
+			for j in th + 1:
+				for i in tw + 1:
+					var src := (tj + j) * nx + ti + i
+					var dst := j * (tw + 1) + i
+					tv[dst] = verts[src]
+					tn[dst] = norms[src]
+					tc[dst] = cols[src]
+			var tidx := PackedInt32Array()
+			tidx.resize(tw * th * 6)
+			var k := 0
+			for j in th:
+				for i in tw:
+					var a := j * (tw + 1) + i
+					var c := a + tw + 1
+					tidx[k] = a; tidx[k + 1] = a + 1; tidx[k + 2] = c
+					tidx[k + 3] = a + 1; tidx[k + 4] = c + 1; tidx[k + 5] = c
+					k += 6
+			var arrays := []
+			arrays.resize(Mesh.ARRAY_MAX)
+			arrays[Mesh.ARRAY_VERTEX] = tv
+			arrays[Mesh.ARRAY_NORMAL] = tn
+			arrays[Mesh.ARRAY_COLOR] = tc
+			arrays[Mesh.ARRAY_INDEX] = tidx
+			var mesh := ArrayMesh.new()
+			mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+			mesh.surface_set_material(0, material)
+			var mi := MeshInstance3D.new()
+			mi.mesh = mesh
+			mi.gi_mode = GeometryInstance3D.GI_MODE_STATIC
+			holder.add_child(mi)
 
 	var body := StaticBody3D.new()
 	body.name = "TerrainBody"

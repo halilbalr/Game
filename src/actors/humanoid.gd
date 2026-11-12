@@ -26,6 +26,25 @@ class Pose:
 	var shield_pos := Vector3(-0.31, 0.12, -0.36)
 	var shield_rot := Vector3(0.0, 0.62, 0.0)
 
+	## Restores the neutral standing pose so one object can be reused every frame.
+	func reset() -> void:
+		body_y = 0.0
+		body_rot = Vector3.ZERO
+		spine = Vector3.ZERO
+		head = Vector3.ZERO
+		arm_l = Vector3(0.05, 0.0, -0.08)
+		fore_l = 0.15
+		arm_r = Vector3(0.05, 0.0, 0.08)
+		fore_r = 0.15
+		thigh_l = Vector3.ZERO
+		shin_l = 0.0
+		thigh_r = Vector3.ZERO
+		shin_r = 0.0
+		weapon_pitch = 0.0
+		weapon_yaw = 0.0
+		shield_pos = Vector3(-0.31, 0.12, -0.36)
+		shield_rot = Vector3(0.0, 0.62, 0.0)
+
 	func blend(to: Pose, t: float) -> void:
 		body_y = lerpf(body_y, to.body_y, t)
 		body_rot = body_rot.lerp(to.body_rot, t)
@@ -74,6 +93,7 @@ var _shield: Node3D
 var _weapon: MeshInstance3D
 var _head_mesh: MeshInstance3D
 var _cur := Pose.new()
+var _scratch := Pose.new()
 var _phase: float = 0.0
 var _attack_kind: StringName = &""
 var _attack_t: float = -1.0
@@ -363,6 +383,9 @@ static func _part(parent: Node3D, mesh: Mesh, pos: Vector3, shadow: bool = true)
 	mi.position = pos
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if shadow \
 		else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	if not shadow and Game.mobile:
+		# Forearms and shins are not worth a draw call across the field.
+		mi.visibility_range_end = 60.0
 	parent.add_child(mi)
 	return mi
 
@@ -454,7 +477,8 @@ func head_position() -> Vector3:
 # --- animation ---------------------------------------------------------------------
 
 func _stance_pose() -> Pose:
-	var p := Pose.new()
+	var p := _scratch
+	p.reset()
 	match stance:
 		&"guard":
 			p.arm_r = Vector3(-0.3, 0.0, 0.14)
@@ -688,7 +712,8 @@ func _process(delta: float) -> void:
 	var cam := get_viewport().get_camera_3d()
 	if cam != null and not _dying:
 		var d2 := cam.global_position.distance_squared_to(global_position)
-		if d2 > 70.0 * 70.0 and (_frame + _lod_slot) % 3 != 0:
+		var far := 28.0 if Game.mobile else 70.0
+		if d2 > far * far and (_frame + _lod_slot) % 3 != 0:
 			return
 	var target := _stance_pose()
 	if _dying:
@@ -696,7 +721,7 @@ func _process(delta: float) -> void:
 		_cur.blend(target, 1.0 - exp(-22.0 * delta))
 		_apply(_cur)
 		if _death_t >= 1.0:
-			_cur = target
+			_cur.blend(target, 1.0)
 			_apply(_cur)
 			set_process(false)
 		return

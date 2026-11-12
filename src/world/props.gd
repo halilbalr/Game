@@ -11,7 +11,28 @@ const TREE_KINDS := {
 	"tamarisk": {"trunk": 1.0, "radius": 0.12, "crown": 1.6, "leaf": Color(0.38, 0.45, 0.36), "blobs": 5, "leaf_size": 0.9, "squash": 1.1},
 }
 
-static var _leaf_material: StandardMaterial3D
+static var _leaf_material: ShaderMaterial
+
+## Leaves take both their outline and their shading from the alpha channel
+## of one small generated texture. (Its colour channels read as black under
+## the mobile renderer, so they are not used.)
+const LEAF_SHADER := "shader_type spatial;
+render_mode cull_disabled, depth_draw_opaque;
+uniform sampler2D leaf_tex : filter_linear_mipmap, repeat_disable;
+void fragment() {
+	float a = texture(leaf_tex, UV).a;
+	if (a < 0.4) {
+		discard;
+	}
+	ALBEDO = COLOR.rgb * 0.78 * mix(0.7, 1.12, clamp((a - 0.7) / 0.3, 0.0, 1.0));
+	ROUGHNESS = 0.75;
+	SPECULAR = 0.25;
+	if (!FRONT_FACING) {
+		NORMAL = -NORMAL;
+	}
+	//BACKLIGHT
+}
+"
 
 
 static func _leaf_texture() -> ImageTexture:
@@ -36,24 +57,21 @@ static func _leaf_texture() -> ImageTexture:
 				var u := p.dot(dir) / len
 				var v := p.dot(perp) / wid
 				if u * u + v * v < 1.0:
+					# Alpha above 0.7 is leaf; how far above is how bright.
 					var rib := 1.0 - 0.25 * absf(v)
-					img.set_pixel(x, y, Color(shade * rib, shade * rib, shade * rib, 1.0))
+					img.set_pixel(x, y, Color(1.0, 1.0, 1.0, 0.7 + 0.3 * shade * rib))
 	img.generate_mipmaps()
 	return ImageTexture.create_from_image(img)
 
 
-static func leaf_material() -> StandardMaterial3D:
+static func leaf_material() -> ShaderMaterial:
 	if _leaf_material == null:
-		var m := StandardMaterial3D.new()
-		m.albedo_texture = _leaf_texture()
-		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
-		m.alpha_scissor_threshold = 0.4
-		m.cull_mode = BaseMaterial3D.CULL_DISABLED
-		m.vertex_color_use_as_albedo = true
-		m.roughness = 0.75
-		m.backlight_enabled = true
-		m.backlight = Color(0.35, 0.42, 0.15)
-		m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		var sh := Shader.new()
+		# Light through the leaf on desktops; the mobile renderer has no such term.
+		sh.code = LEAF_SHADER if Game.mobile else LEAF_SHADER.replace("//BACKLIGHT", "BACKLIGHT = vec3(0.35, 0.42, 0.15);")
+		var m := ShaderMaterial.new()
+		m.shader = sh
+		m.set_shader_parameter("leaf_tex", _leaf_texture())
 		_leaf_material = m
 	return _leaf_material
 

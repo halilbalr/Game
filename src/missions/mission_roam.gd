@@ -43,6 +43,8 @@ func prepare() -> void:
 
 
 func run() -> void:
+	if touch != null:
+		touch.chronicle_enabled = true
 	hud.set_fade(1.0)
 	Sfx.ambience(&"day")
 	Sfx.music(&"lyre")
@@ -71,7 +73,7 @@ func run() -> void:
 			_current = best
 			if best != "":
 				var entry: Dictionary = places[best]
-				hud.set_objective(str(entry.get("name", best)), null, "Tab: read the chronicle")
+				hud.set_objective(str(entry.get("name", best)), null, "Tap READ for the chronicle" if Game.mobile else "Tab: read the chronicle")
 				if not _seen.has(best):
 					_seen[best] = true
 					hud.toast(str(entry.get("name", best)), 3.0)

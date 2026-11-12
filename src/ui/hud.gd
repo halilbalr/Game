@@ -79,17 +79,27 @@ func _init() -> void:
 	_root.add_child(_objective_sub)
 
 	_speaker = Ui.label("", 22, Ui.GOLD)
-	_speaker.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	_speaker.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_speaker.position = Vector2(-700, -238)
-	_speaker.size = Vector2(1400, 30)
-	_root.add_child(_speaker)
 	_speech = Ui.label("", 27, Ui.PALE)
-	_speech.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	_speech.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_speech.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_speech.position = Vector2(-640, -204)
-	_speech.size = Vector2(1280, 110)
+	if Game.mobile:
+		# Thumbs and buttons own the bottom of a phone screen: speech goes up top.
+		_speaker.set_anchors_preset(Control.PRESET_CENTER_TOP)
+		_speaker.position = Vector2(-430, 192)
+		_speaker.size = Vector2(860, 30)
+		_speech.set_anchors_preset(Control.PRESET_CENTER_TOP)
+		_speech.position = Vector2(-430, 224)
+		_speech.size = Vector2(860, 130)
+		_speech.add_theme_font_size_override("font_size", 24)
+	else:
+		_speaker.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+		_speaker.position = Vector2(-700, -238)
+		_speaker.size = Vector2(1400, 30)
+		_speech.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+		_speech.position = Vector2(-640, -204)
+		_speech.size = Vector2(1280, 110)
+	_root.add_child(_speaker)
 	_root.add_child(_speech)
 
 	_prompt = Ui.label("", 22, Ui.PALE, false)
@@ -100,9 +110,14 @@ func _init() -> void:
 	_root.add_child(_prompt)
 
 	_weapon = Ui.label("", 20, Ui.DIM)
-	_weapon.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 	_weapon.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_weapon.position = Vector2(-560, -84)
+	if Game.mobile:
+		# Clear of the buttons: top right, left of the pause button.
+		_weapon.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+		_weapon.position = Vector2(-760, 46)
+	else:
+		_weapon.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+		_weapon.position = Vector2(-560, -84)
 	_weapon.size = Vector2(512, 30)
 	_root.add_child(_weapon)
 
@@ -294,8 +309,10 @@ func _process(delta: float) -> void:
 		_vignette_mat.set_shader_parameter("low_health", clampf((0.4 - frac) / 0.4, 0.0, 1.0) if player.is_alive() else 1.0)
 		var focus := player.focus
 		if focus != null and player.control_enabled:
-			var key := "E"
-			_prompt.text = ("Hold [%s]  %s" if focus.hold_seconds > 0.0 else "[%s]  %s") % [key, focus.prompt]
+			if Game.mobile:
+				_prompt.text = ("Hold USE:  %s" if focus.hold_seconds > 0.0 else "USE:  %s") % focus.prompt
+			else:
+				_prompt.text = ("Hold [E]  %s" if focus.hold_seconds > 0.0 else "[E]  %s") % focus.prompt
 		else:
 			_prompt.text = ""
 	_bars.queue_redraw()
@@ -307,9 +324,11 @@ func _draw_bars() -> void:
 	var vp := _bars.size
 	var hidden := not player.control_enabled and not player.is_alive()
 	if not hidden:
-		# Health and stamina, bottom left.
+		# Health and stamina: bottom left, or under the objective where thumbs do not cover them.
 		var x := 48.0
 		var y := vp.y - 78.0
+		if Game.mobile:
+			y = 122.0
 		var w := 300.0
 		_bars.draw_rect(Rect2(x - 2, y - 2, w + 4, 16), Color(0, 0, 0, 0.55))
 		_bars.draw_rect(Rect2(x, y, w * clampf(player.health / player.max_health, 0.0, 1.0), 12), Color(0.62, 0.10, 0.07))

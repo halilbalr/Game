@@ -52,7 +52,7 @@ func _init() -> void:
 	_options = OptionsPanel.new()
 	sbox.add_child(_options)
 	sbox.add_child(Ui.label("CONTROLS", 26, Ui.GOLD))
-	var controls := Ui.label(OptionsPanel.CONTROLS_TEXT, 17, Ui.DIM, false)
+	var controls := Ui.label(OptionsPanel.controls_text(), 17, Ui.DIM, false)
 	sbox.add_child(controls)
 
 
@@ -83,4 +83,5 @@ func _resume() -> void:
 	_root.visible = false
 	get_tree().paused = false
 	Game.save_settings()
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	if not Game.mobile:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED

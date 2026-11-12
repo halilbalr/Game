@@ -2,6 +2,8 @@
 // from world position and face normal, so generated geometry needs no UVs.
 
 uniform bool local_space = false;
+// 1 on desktops; 0 on phones, where the bump pass and half the noise octaves are dropped.
+uniform float detail_scale = 1.0;
 
 varying vec2 uv_m;
 varying vec3 w_pos;
@@ -39,12 +41,14 @@ float vnoise(vec2 p) {
 float fbm(vec2 p) {
 	float a = 0.5;
 	float s = 0.0;
-	for (int i = 0; i < 4; i++) {
+	int octaves = detail_scale > 0.5 ? 4 : 2;
+	for (int i = 0; i < octaves; i++) {
 		s += a * vnoise(p);
 		p = p * 2.03 + vec2(17.1, 9.3);
 		a *= 0.5;
 	}
-	return s;
+	// Two octaves sum to 0.75 where four sum to 0.94: keep the same brightness.
+	return detail_scale > 0.5 ? s : s * 1.25;
 }
 
 // Distance to the nearest cell edge of a Voronoi tiling, plus the cell id.
