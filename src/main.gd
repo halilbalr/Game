@@ -5,6 +5,7 @@ extends Node
 ##   -- --scene=figures             line-up of outfits
 ##   -- --shot=/abs/file.png        save screenshots and quit (with --cams, --frames)
 ##   -- --autoplay                  let the mission script play itself (logic test)
+##   -- --tour --autoplay           menu, city, menu, mission: tests the transitions
 
 
 func _ready() -> void:
@@ -14,12 +15,27 @@ func _ready() -> void:
 		add_child((load("res://src/debug/figure_stage.gd") as GDScript).new())
 	elif scene == "arena":
 		add_child((load("res://src/debug/arena.gd") as GDScript).new())
+	elif Game.args.has("tour"):
+		# Harness: walk every screen in turn to prove the transitions hold.
+		await Game.start_menu()
+		await _frames(40)
+		await Game.start_mission("roam")
+		await _frames(150)
+		await Game.start_menu()
+		await _frames(40)
+		await Game.start_mission("gate")
+		await _frames(100000)
 	elif Game.args.has("mission"):
 		await Game.start_mission(Game.args["mission"])
 	else:
 		await Game.start_menu()
 	if Game.args.has("shot"):
 		await _capture()
+
+
+func _frames(count: int) -> void:
+	for i in count:
+		await get_tree().process_frame
 
 
 func _capture() -> void:

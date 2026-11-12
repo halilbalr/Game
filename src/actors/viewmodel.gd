@@ -13,6 +13,8 @@ static var _mats: Dictionary = {}
 
 var weapon_id: String = ""
 var blocking: bool = false
+## When true the weapon hangs low, out of the way (talk, not war).
+var lowered: bool = false
 var _right: Node3D
 var _left: Node3D
 var _weapon: MeshInstance3D
@@ -28,6 +30,7 @@ var _has_shield: bool = false
 var _hide_weapon_until_recover: bool = false
 var _flinch: float = 0.0
 var _shield_radius: float = 0.44
+var _lower_k: float = 0.0
 
 
 static func _mat(tint: Color, metal: float, rough: float, vertex_color: bool) -> ShaderMaterial:
@@ -153,6 +156,9 @@ func update(delta: float, move_speed: float, look_delta: Vector2, crouched: bool
 	var rot: Vector3 = rest[1]
 	if crouched:
 		pos += Vector3(-0.02, 0.03, 0.02)
+	_lower_k = lerpf(_lower_k, 1.0 if lowered else 0.0, 1.0 - exp(-5.0 * delta))
+	pos += Vector3(0.08, -0.22, 0.12) * _lower_k
+	rot += Vector3(-0.45, -0.1, 0.0) * _lower_k
 	if _attack_t >= 0.0:
 		_attack_t += delta
 		var tw := _attack_times.x

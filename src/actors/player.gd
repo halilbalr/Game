@@ -61,6 +61,7 @@ var _step_t: float = 0.0
 var _dead: bool = false
 var _shake: float = 0.0
 var _long_spear: bool = false
+var _focus_wait: int = 0
 
 
 ## Applies a hero role. Call before adding to the tree.
@@ -361,8 +362,13 @@ func heal(amount: float) -> void:
 
 
 func _update_focus() -> void:
+	# A tree query: run it a few times a second, not every tick.
+	_focus_wait -= 1
+	if _focus_wait > 0:
+		return
+	_focus_wait = 6
 	var best: Interactable = null
-	var best_score := 0.35
+	var best_score := INF
 	var origin := camera.global_position
 	var aim := -camera.global_transform.basis.z
 	for node in get_tree().get_nodes_in_group(&"interactables"):
@@ -374,7 +380,7 @@ func _update_focus() -> void:
 		if dist > it.radius:
 			continue
 		var ang := aim.angle_to(to) if dist > 0.4 else 0.0
-		if ang < best_score:
+		if ang <= it.aim_cone and ang < best_score:
 			best_score = ang
 			best = it
 	if best != focus:
@@ -495,6 +501,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _process(delta: float) -> void:
+	viewmodel.lowered = not combat_enabled
 	viewmodel.update(delta, move_speed() if is_on_floor() else 0.0, _look_delta, crouching)
 	_look_delta = Vector2.ZERO
 	# Camera shake from blows given and taken.

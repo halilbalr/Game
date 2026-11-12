@@ -16,10 +16,10 @@ const PRESETS := {
 	},
 	# The long gold light of late afternoon: Hector at the Scaean Gate.
 	"evening": {
-		"sun_dir": Vector3(-0.83, 0.26, 0.30), "sun_color": Color(1.0, 0.74, 0.46), "sun_energy": 2.3,
-		"zenith": Color(0.16, 0.26, 0.50), "horizon": Color(0.96, 0.66, 0.38), "ground": Color(0.30, 0.24, 0.18),
-		"ambient": 0.75, "stars": 0.0, "clouds": 0.5, "sun_glow": 1.1, "moon": false,
-		"fog_color": Color(0.90, 0.68, 0.46), "fog_density": 0.0011, "vol_density": 0.007,
+		"sun_dir": Vector3(-0.80, 0.33, 0.30), "sun_color": Color(1.0, 0.82, 0.60), "sun_energy": 2.2,
+		"zenith": Color(0.17, 0.30, 0.56), "horizon": Color(0.93, 0.74, 0.52), "ground": Color(0.30, 0.26, 0.21),
+		"ambient": 0.85, "stars": 0.0, "clouds": 0.45, "sun_glow": 0.9, "moon": false,
+		"fog_color": Color(0.80, 0.72, 0.62), "fog_density": 0.0008, "vol_density": 0.005,
 		"exposure": 1.0, "disk": 16.0, "sky_exposure": 1.0,
 	},
 	# Moonlit night of the horse.

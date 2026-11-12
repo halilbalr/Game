@@ -45,10 +45,10 @@ static func _build() -> void:
 		"plaster_color": Color(0.90, 0.86, 0.76), "reveal": 0.0, "bump": 0.5})
 	_lib[&"roof"] = _shader("plaster.gdshader", {
 		"plaster_color": Color(0.60, 0.50, 0.37), "reveal": 0.0, "bump": 1.4})
-	_lib[&"rubble"] = _shader("rubble.gdshader")
+	_lib[&"rubble"] = _shader("rubble.gdshader", {"stone_scale": 4.0, "joint_width": 0.03})
 	_lib[&"paving"] = _shader("rubble.gdshader", {
-		"base_color": Color(0.66, 0.62, 0.53), "stone_scale": 1.5, "joint_width": 0.03,
-		"variation": 0.14, "polish": 0.55, "bump": 0.7})
+		"base_color": Color(0.60, 0.56, 0.48), "stone_scale": 2.3, "joint_width": 0.022,
+		"variation": 0.16, "polish": 0.5, "bump": 0.7})
 	_lib[&"wood"] = _shader("wood.gdshader")
 	_lib[&"wood_dark"] = _shader("wood.gdshader", {
 		"base_color": Color(0.20, 0.13, 0.08), "weathered": 0.15})

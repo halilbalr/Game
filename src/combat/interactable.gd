@@ -12,6 +12,8 @@ var radius: float = 2.4
 var enabled: bool = true
 ## Seconds the key must be held; 0 for an instant use.
 var hold_seconds: float = 0.0
+## How far off the aim point the player may look, in radians.
+var aim_cone: float = 0.35
 ## Height above this node's origin that the player must look at.
 var focus_height: float = 1.0
 

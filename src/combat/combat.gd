@@ -92,5 +92,5 @@ static func detection_gain(distance: float, angle_deg: float, crouched: bool, mo
 	if asleep:
 		hear *= sleeper
 	if hear > 0.0 and distance <= hear:
-		gain = maxf(gain, rate * (0.5 + 1.2 * (1.0 - distance / hear)))
+		gain = maxf(gain, rate * (0.8 + 2.0 * (1.0 - distance / hear)))
 	return gain

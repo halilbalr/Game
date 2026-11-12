@@ -108,6 +108,29 @@ public domain, and are marked as quotations in the mission data.
 Godot 4.6, GDScript, Forward+ renderer, Jolt physics. All geometry, textures
 and sound are generated in code; the repository contains no imported art.
 
+## Sound
+
+Synthesised at start-up on a worker thread (`src/core/sfx.gd`): bronze as
+inharmonic partials, voices as a pulse train through two formant filters, a
+plucked-string lyre in the Greek Dorian mode, and looping ambience for night,
+day, the feast heard through the planks, battle and the sack.
+
+## Verification
+
+| Check | How | State |
+|---|---|---|
+| Rules and formulas | 64 tests, `tests/run_tests.gd` | Pass |
+| Mission scripts reach their end | `--mission=<id> --autoplay` | Pass |
+| Player combat through real input | `--scene=arena --autoplay --bot` | Pass |
+| Screen transitions | `--tour --autoplay` | Pass |
+| Layout, legibility, presence | Screenshots in `production/qa/evidence/vertical-slice/` | Looked at |
+| Frame rate on real hardware | — | Not verified |
+| Feel of combat, difficulty | Human play | Not verified |
+| Sound | Listening | Not verified |
+
+The slice was built on a machine with no GPU and no audio device. The last
+three rows need a person at a real computer.
+
 ## Out of scope for the slice
 
 Chariots, archery for the player, ship combat, multiplayer, saving mid-mission.

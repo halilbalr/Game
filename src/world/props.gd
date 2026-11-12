@@ -252,3 +252,112 @@ static func place(world: Node3D, info: Dictionary, quality: int) -> Array[Fire]:
 		world.add_child(f)
 		fires.append(f)
 	return fires
+
+
+## One beached ship of the Achaean fleet: black-pitched hull, curved stern
+## and prow, mast lowered. Local -Z is the bow.
+static func ship_mesh(red_bow: bool) -> ArrayMesh:
+	var gb := GeoBuilder.new()
+	gb.chunk_size = 0.0
+	var pitch := Color(0.075, 0.065, 0.06)
+	var bow := Color(0.5, 0.11, 0.07) if red_bow else pitch
+	# Ribs: z, width scale, keel rise.
+	var ribs: Array = [[-10.5, 0.1, 2.0], [-8.0, 0.55, 0.6], [-4.0, 0.92, 0.08], [0.0, 1.0, 0.0],
+		[4.0, 0.94, 0.06], [8.0, 0.6, 0.6], [10.5, 0.14, 2.3]]
+	var half_beam := 1.75
+	var depth := 1.55
+	var steps := 7
+	for i in ribs.size() - 1:
+		var a: Array = ribs[i]
+		var b: Array = ribs[i + 1]
+		var col := bow if i == 0 else pitch
+		for k in steps:
+			var a0 := PI + PI * k / steps
+			var a1 := PI + PI * (k + 1) / steps
+			var p0 := Vector3(cos(a0) * half_beam * a[1], depth + a[2] * 0.5 + sin(a0) * depth * (1.0 - a[2] * 0.25), a[0])
+			var p1 := Vector3(cos(a1) * half_beam * a[1], depth + a[2] * 0.5 + sin(a1) * depth * (1.0 - a[2] * 0.25), a[0])
+			var q0 := Vector3(cos(a0) * half_beam * b[1], depth + b[2] * 0.5 + sin(a0) * depth * (1.0 - b[2] * 0.25), b[0])
+			var q1 := Vector3(cos(a1) * half_beam * b[1], depth + b[2] * 0.5 + sin(a1) * depth * (1.0 - b[2] * 0.25), b[0])
+			var mid := (p0 + q1) * 0.5
+			gb.quad_h(&"tint_2s", p0, p1, q1, q0, Vector3(mid.x, mid.y - depth, 0.0), col, false)
+	# Stern post curving up and over; prow post with its horn.
+	gb.frustum(&"tint", Transform3D(Basis(Vector3.RIGHT, 0.5), Vector3(0, 2.3, 10.2)), Vector2(0.3, 0.5), Vector2(0.16, 0.2), 2.6, pitch, false)
+	gb.frustum(&"tint", Transform3D(Basis(Vector3.RIGHT, -0.75), Vector3(0, 4.4, 11.4)), Vector2(0.16, 0.2), Vector2(0.1, 0.1), 1.3, pitch, false)
+	gb.frustum(&"tint", Transform3D(Basis(Vector3.RIGHT, -0.3), Vector3(0, 2.1, -10.2)), Vector2(0.3, 0.5), Vector2(0.18, 0.22), 2.0, bow, false)
+	# Thwarts and the lowered mast.
+	var wood := Color(0.36, 0.26, 0.16)
+	for z: float in [-6.0, -3.0, 0.0, 3.0, 6.0]:
+		gb.box(&"tint", Transform3D(Basis.IDENTITY, Vector3(0, depth + 0.05, z)), Vector3(half_beam * 1.8, 0.1, 0.35), wood, false, 0)
+	gb.cylinder(&"tint", Vector3(0.4, depth + 0.3, 7.0), 0.13, 0.09, 13.0, 6, wood, false, true, Basis(Vector3.RIGHT, -PI * 0.5))
+	return gb.build_mesh(Mats.all())
+
+
+## A camp hut: timber walls under reed thatch, as Homer describes the
+## lodge of Achilles (Iliad 24.448-456).
+static func hut_mesh() -> ArrayMesh:
+	var gb := GeoBuilder.new()
+	gb.chunk_size = 0.0
+	var timber := Color(0.38, 0.28, 0.18)
+	var thatch := Color(0.62, 0.54, 0.32)
+	gb.box(&"tint", Transform3D(Basis.IDENTITY, Vector3(0, 1.1, 0)), Vector3(4.6, 2.2, 6.4), timber, false, 8 | 4)
+	for sx: float in [-1.0, 1.0]:
+		gb.quad_h(&"tint_2s", Vector3(sx * 2.7, 1.9, -3.6), Vector3(sx * 2.7, 1.9, 3.6), Vector3(0, 3.7, 3.6), Vector3(0, 3.7, -3.6),
+			Vector3(sx, 1, 0), thatch.darkened(0.1 if sx > 0 else 0.0), false)
+	for sz: float in [-1.0, 1.0]:
+		gb.poly(&"tint_2s", [Vector3(-2.3, 2.2, sz * 3.2), Vector3(2.3, 2.2, sz * 3.2), Vector3(0, 3.7, sz * 3.2)] as Array[Vector3],
+			Vector3(0, 0, sz), timber.darkened(0.15), false)
+	return gb.build_mesh(Mats.all())
+
+
+## The Achaean camp on the shore of the Hellespont: ships drawn up stern to
+## land, huts behind them, and the wall and ditch of Iliad 7. Scenery only.
+static func build_camp(world: Node3D) -> Node3D:
+	var camp := Node3D.new()
+	camp.name = "AchaeanCamp"
+	world.add_child(camp)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 1250
+	var sea := Vector2(-0.75, -0.66).normalized()
+	var along := Vector2(sea.y, -sea.x)
+	var base := sea * 1168.0
+	var yaw := atan2(-sea.x, -sea.y)
+	var black: Array[Transform3D] = []
+	var red: Array[Transform3D] = []
+	for row in 2:
+		for i in 34:
+			var t := (i - 16.5) * 21.0 + rng.randf_range(-3.0, 3.0)
+			var p := base + along * t - sea * (row * 30.0 + rng.randf_range(0.0, 6.0))
+			var y := maxf(TroyLayout.height(p.x, p.y), TroyLayout.SEA_Y + 0.2) - 0.25
+			var basis := Basis(Vector3.UP, yaw + rng.randf_range(-0.08, 0.08)) * Basis(Vector3(0, 0, 1), rng.randf_range(-0.12, 0.12))
+			var xf := Transform3D(basis, Vector3(p.x, y, p.y))
+			if (i + row) % 7 == 0:
+				red.append(xf)
+			else:
+				black.append(xf)
+	_multimesh(camp, ship_mesh(false), black, "Ships")
+	_multimesh(camp, ship_mesh(true), red, "ShipsRedBowed")
+	var huts: Array[Transform3D] = []
+	for i in 120:
+		var t := rng.randf_range(-360.0, 360.0)
+		var back := rng.randf_range(75.0, 150.0)
+		var p := base + along * t - sea * back
+		var y := TroyLayout.height(p.x, p.y) - 0.1
+		huts.append(Transform3D(Basis(Vector3.UP, yaw + rng.randf_range(-0.4, 0.4)), Vector3(p.x, y, p.y)))
+	_multimesh(camp, hut_mesh(), huts, "Huts")
+	# Wall and towers on the landward side.
+	var gb := GeoBuilder.new()
+	gb.chunk_size = 0.0
+	var earth := Color(0.52, 0.44, 0.32)
+	for i in 38:
+		var t := (i - 18.5) * 20.0
+		var p := base + along * t - sea * 185.0
+		var y := TroyLayout.height(p.x, p.y)
+		var xf := Transform3D(Basis(Vector3.UP, yaw), Vector3(p.x, y - 0.5, p.y))
+		gb.frustum(&"tint", xf, Vector2(21.0, 5.0), Vector2(20.5, 2.2), 3.6, earth, false)
+		if i % 5 == 2:
+			gb.frustum(&"tint", xf, Vector2(6.0, 6.5), Vector2(5.0, 5.0), 6.2, earth.darkened(0.08), false)
+	var mi := MeshInstance3D.new()
+	mi.name = "CampWall"
+	mi.mesh = gb.build_mesh(Mats.all())
+	camp.add_child(mi)
+	return camp

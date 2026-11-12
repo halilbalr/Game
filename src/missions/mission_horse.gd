@@ -134,19 +134,23 @@ func _process(delta: float) -> void:
 		for s in battle.living(&"trojan"):
 			if not s.aware or s.asleep:
 				worst = maxf(worst, s.detection)
-		var least := -1.0
+		var alarmed := false
+		var least := INF
+		var total := float(Data.tune("stealth.alarm_seconds", 7.0))
 		for s: Soldier in _alarms.keys():
 			if not is_instance_valid(s) or not s.is_alive():
 				_alarms.erase(s)
 				continue
-			_alarms[s] = float(_alarms[s]) - delta
-			least = float(_alarms[s]) if least < 0.0 else minf(least, float(_alarms[s]))
+			_alarms[s] = maxf(float(_alarms[s]) - delta, 0.0)
+			alarmed = true
+			least = minf(least, float(_alarms[s]))
 			# His shout wakes the men nearest him.
-			for o in battle.living(&"trojan"):
-				if (not o.aware or o.asleep) and o.global_position.distance_to(s.global_position) < 9.0 and float(_alarms[s]) < 5.0:
-					o.alert(player)
-		hud.set_stealth(true, 1.0 if least >= 0.0 else worst, least, float(Data.tune("stealth.alarm_seconds", 7.0)))
-		if least >= 0.0 and least <= 0.0001 and not autoplay:
+			if float(_alarms[s]) < total - 2.0:
+				for o in battle.living(&"trojan"):
+					if (not o.aware or o.asleep) and o.global_position.distance_to(s.global_position) < 9.0:
+						o.alert(player)
+		hud.set_stealth(true, 1.0 if alarmed else worst, least if alarmed else -1.0, total)
+		if alarmed and least <= 0.0 and not autoplay:
 			fail(text("alarm_title"), text("alarm_text"))
 	if _sack:
 		_fire_level = move_toward(_fire_level, _fire_target, delta * 0.02)
@@ -221,15 +225,16 @@ func run() -> void:
 	# Anticlus must be stopped (Odyssey 4.285-288).
 	var anticlus := _inside[2]
 	anticlus.figure.stance = &"idle"
-	hud.say("", str((data["lines"]["anticlus"] as Array)[1]), 5.0)
+	hud.say("", str((data["lines"]["anticlus"] as Array)[1]), 8.0)
 	objective("anticlus", anticlus)
 	var held := {"done": false}
 	var it := add_interactable(anticlus.global_position, "Stop his mouth", 0.0, 4.5, 1.0)
+	it.aim_cone = 1.2
 	it.used.connect(func(_p: Node3D) -> void: held["done"] = true)
 	if autoplay:
 		it.interact(player)
 	var t := 0.0
-	while not held["done"] and t < 6.0:
+	while not held["done"] and t < 9.0:
 		await wait(0.1)
 		t += 0.1
 	it.queue_free()

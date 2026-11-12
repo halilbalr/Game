@@ -70,6 +70,8 @@ func _apply_debug_args() -> void:
 		var c: PackedStringArray = (Game.args["at"] as String).split(",")
 		place_player(Vector3(float(c[0]), float(c[1]), float(c[2])), float(c[3]))
 		player.set_pitch(float(c[4]))
+	if Game.args.has("pause"):
+		_pause.open.call_deferred()
 	match str(Game.args.get("pose", "")):
 		"block":
 			player.debug_block = true

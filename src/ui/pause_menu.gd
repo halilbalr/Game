@@ -67,11 +67,16 @@ func _unhandled_input(event: InputEvent) -> void:
 		if _root.visible:
 			_resume()
 		else:
-			_root.visible = true
-			get_tree().paused = true
-			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-			(_main_box.get_child(1) as Button).grab_focus()
+			open()
 		get_viewport().set_input_as_handled()
+
+
+## Pauses the game and shows the menu.
+func open() -> void:
+	_root.visible = true
+	get_tree().paused = true
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	(_main_box.get_child(1) as Button).grab_focus()
 
 
 func _resume() -> void:

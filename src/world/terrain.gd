@@ -170,7 +170,10 @@ static func _build_far(parent: Node3D) -> void:
 			var u := heights[k - n] if j > 0 else heights[k]
 			var d := heights[k + n] if j < n - 1 else heights[k]
 			norms[k] = Vector3(l - r, 2.0 * FAR_CELL, u - d).normalized()
-			cols[k] = Color(0.1, 0.9, 0.0, 1.0)
+			# Bare sand along the shore where the ships are drawn up.
+			var v := verts[k]
+			var sand := TroyLayout._smooth(960.0, 1120.0, -v.x * 0.75 - v.z * 0.66)
+			cols[k] = Color(maxf(0.1, sand), 1.0 - maxf(0.1, sand), 0.0, 1.0)
 	var idx := PackedInt32Array()
 	var inner := FINE.grow(-FAR_CELL)
 	for j in n - 1:

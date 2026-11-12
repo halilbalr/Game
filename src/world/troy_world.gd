@@ -15,6 +15,8 @@ var night: bool = false
 ## Torches and hearths, lit only at night.
 var fires: Array[Fire] = []
 var nav_region: NavigationRegion3D
+## The Achaean ships and huts on the far shore (hidden on the last night).
+var camp: Node3D
 ## Triangle count of the built city: changes whenever the geometry does.
 var _signature: int = 0
 
@@ -44,6 +46,9 @@ func build(preset_name: String, quality: int) -> void:
 	fires = Props.place(self, info, quality)
 	for f in fires:
 		f.set_lit(night)
+	camp = Props.build_camp(self)
+	# On the night of the horse the fleet has sailed.
+	camp.visible = not night
 	var t2 := Time.get_ticks_msec()
 	print("TroyWorld: terrain %d ms, city %d ms, %d triangles, %d houses" % [t1 - t0, t2 - t1, tris,
 		(info["houses"] as Array).size()])
@@ -58,6 +63,7 @@ func set_preset(preset_name: String, quality: int) -> void:
 	Mats.set_soot(0.0)
 	for f in fires:
 		f.set_lit(night)
+	camp.visible = not night
 
 
 ## World position of a named place, or the citadel court when unknown.

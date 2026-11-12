@@ -13,6 +13,8 @@ var nav_ready: bool = false
 var _corpses: Array[Soldier] = []
 var _player_slots: Array[Soldier] = []
 var _variant: int = 0
+var _enemy_cache: Dictionary = {}
+var _cache_frame: int = -1
 
 
 func _init() -> void:
@@ -61,14 +63,22 @@ func living(side: StringName) -> Array[Soldier]:
 	return out
 
 
-## Everything hostile to [param side] that can be struck: soldiers and the player.
+## Everything hostile to [param side] that can be struck: soldiers and the
+## player. The list is built once per physics tick and shared: do not modify it.
 func enemies_of(side: StringName) -> Array[Node3D]:
+	var frame := Engine.get_physics_frames()
+	if frame != _cache_frame:
+		_cache_frame = frame
+		_enemy_cache.clear()
+	if _enemy_cache.has(side):
+		return _enemy_cache[side]
 	var out: Array[Node3D] = []
 	for s in soldiers:
 		if s.side != side and s.is_alive() and not s.civilian:
 			out.append(s)
 	if player != null and player.side != side and player.is_alive():
 		out.append(player)
+	_enemy_cache[side] = out
 	return out
 
 
