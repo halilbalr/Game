@@ -53,7 +53,9 @@ func run() -> void:
 	else:
 		await wait(0.4)
 		hud.fade(0.0, 2.0)
-		await hud.title_card(text("title", "Ilios"), text("intro", ""), 5.0)
+		scene_begin()
+		await card(5.0)
+		scene_end()
 	hud.set_objective(text("hint", "Walk where you will"))
 	# Name each place as the walker comes to it.
 	var places: Dictionary = Data.codex.get("places", {})

@@ -24,6 +24,7 @@ func _init() -> void:
 	id = "horse"
 	hero = "odysseus"
 	preset = "night"
+	music = [&"night", &"battle", &"lament"]
 
 
 func _watch(pos: Vector3, yaw: float, opts: Dictionary = {}) -> Soldier:
@@ -151,7 +152,7 @@ func _process(delta: float) -> void:
 						o.alert(player)
 		hud.set_stealth(true, 1.0 if alarmed else worst, least if alarmed else -1.0, total)
 		if alarmed and least <= 0.0 and not autoplay and not Game.args.has("noalarm"):
-			fail(text("alarm_title"), text("alarm_text"))
+			fail(text("alarm_title"), text("alarm_text"), "text_alarm_text")
 	if _sack:
 		_fire_level = move_toward(_fire_level, _fire_target, delta * 0.02)
 		world.atmosphere.set_fire(_fire_level)
@@ -203,9 +204,10 @@ func _reinforce() -> void:
 
 func run() -> void:
 	hud.set_fade(1.0)
+	Sfx.music(&"night")
+	scene_begin()
 	await wait(0.5)
-	if not autoplay:
-		await hud.title_card(text("title"), text("intro"), 9.0)
+	await card(9.0)
 	hud.fade(0.0, 3.0 if not autoplay else 0.1)
 	objective("wait")
 	mark("inside")
@@ -221,11 +223,14 @@ func run() -> void:
 	await speak("helen_2")
 	await wait(0.8)
 	await speak("helen_3")
+	scene_end()
 
 	# Anticlus must be stopped (Odyssey 4.285-288).
 	var anticlus := _inside[2]
 	anticlus.figure.stance = &"idle"
 	hud.say("", str((data["lines"]["anticlus"] as Array)[1]), 8.0)
+	if not autoplay:
+		Sfx.speak(id, "anticlus")
 	objective("anticlus", anticlus)
 	var held := {"done": false}
 	var it := add_interactable(anticlus.global_position, "Stop his mouth", 0.0, 4.5, 1.0)
@@ -239,10 +244,11 @@ func run() -> void:
 		t += 0.1
 	it.queue_free()
 	if not held["done"]:
-		fail(text("anticlus_title"), text("anticlus_text"))
+		fail(text("anticlus_title"), text("anticlus_text"), "text_anticlus_text")
 		return
 	anticlus.figure.stance = &"hide"
 	objective("wait")
+	scene_begin()
 	await speak("held")
 	await speak("athena_gone")
 	await wait(1.5)
@@ -250,6 +256,7 @@ func run() -> void:
 	await speak("quiet")
 	Sfx.play(&"knock")
 	await speak("sinon")
+	scene_end()
 
 	# Out through the belly.
 	var hatch := add_interactable(horse.hatch(), "Open the hatch", 1.2, 4.0, 0.0)
@@ -318,6 +325,7 @@ func _begin_sack(gp: Vector3, inward: Vector3) -> void:
 	_sack = true
 	_fire_target = 0.85
 	Sfx.ambience(&"sack")
+	Sfx.music(&"battle")
 	Sfx.play(&"horn")
 	# The army that sailed back from Tenedos.
 	var outside := gp - inward * 9.0
@@ -359,7 +367,10 @@ func _begin_sack(gp: Vector3, inward: Vector3) -> void:
 	await all_dead([deiphobus])
 	hud.set_boss(null)
 	hud.set_objective("")
+	Sfx.music(&"lament")
+	scene_begin()
 	await wait(1.2)
 	await speak("deiphobus_dead")
+	scene_end()
 	await hud.fade(1.0, 2.5)
 	complete(text("end_title"), text("end_text"))

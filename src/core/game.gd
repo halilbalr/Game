@@ -17,6 +17,19 @@ var settings: Dictionary = {
 	"master_volume": 0.8, "fullscreen": true, "invert_y": false, "head_bob": true,
 	"difficulty": 1,
 }
+## Bumped when a default changes meaning, so an old saved value is not kept.
+const SETTINGS_VERSION := 2
+## The graphics option on phones, tablets and browsers, low to high. `scale`
+## is the share of the screen's own pixels the 3D view is drawn at (the
+## interface is always drawn at full sharpness); `detail` 1 turns on the bump
+## pass and full noise in the procedural shaders; `shadow` is how far the sun
+## casts, in metres; `lamps` how far a torch stays lit; `crowd` the share of
+## the desktop head-count.
+const LITE_TIERS := [
+	{"scale": 0.5, "detail": 0.0, "shadow": 70.0, "splits": 2, "glow": false, "lamps": 60.0, "crowd": 0.6},
+	{"scale": 0.67, "detail": 1.0, "shadow": 120.0, "splits": 2, "glow": true, "lamps": 80.0, "crowd": 0.75},
+	{"scale": 0.85, "detail": 1.0, "shadow": 180.0, "splits": 4, "glow": true, "lamps": 110.0, "crowd": 0.9},
+]
 ## True on phones and tablets (or with `--mobile` on a desktop, for testing):
 ## touch controls, lighter graphics, smaller crowds.
 var mobile: bool = false
@@ -24,6 +37,9 @@ var mobile: bool = false
 var web: bool = false
 ## True wherever the reduced graphics tier applies: phones, tablets, browsers.
 var lite: bool = false
+## True on a phone-sized screen (or with `--phone`): the interface is drawn
+## larger still and the touch controls closer together.
+var phone: bool = false
 ## Browser only: the page could not capture the pointer, so the view turns
 ## with the free cursor and at the screen edges instead.
 var free_look: bool = false
@@ -31,6 +47,11 @@ var main: Node
 var screen: Node
 var world: TroyWorld
 var _loading: CanvasLayer
+## Share of the chosen 3D resolution in use: lowered when frames run slow.
+var _res_scale: float = 1.0
+var _fps_time: float = 0.0
+var _fps_frames: int = 0
+var _settle: float = 0.0
 
 
 func _ready() -> void:
@@ -49,12 +70,18 @@ func _ready() -> void:
 		# A phone or tablet browser: an iPad reports itself as a Mac with a touch screen.
 		mobile = true
 	lite = mobile or web
+	phone = args.has("phone") or (OS.has_feature("mobile") and _short_side_inches() < 3.7)
 	_register_inputs()
 	if web:
 		_prepare_for_browser()
 	if mobile:
 		_prepare_for_touch()
 	_load_settings()
+	# Stock controls (drop-downs, switches) take their face and size from here.
+	var theme := Theme.new()
+	theme.default_font = Ui.sans()
+	theme.default_font_size = Ui.fs(18)
+	get_tree().root.theme = theme
 	if args.has("quality"):
 		settings["quality"] = int(args["quality"])
 	apply_settings()
@@ -75,7 +102,6 @@ func _prepare_for_touch() -> void:
 		for ev in InputMap.action_get_events(action):
 			if ev is InputEventMouseButton:
 				InputMap.action_erase_event(action, ev)
-	settings["quality"] = 0
 	get_tree().set_quit_on_go_back(false)
 	if not OS.has_feature("mobile"):
 		# Desktop trial of the touch layout: let the mouse stand in for a finger.
@@ -91,9 +117,36 @@ func _notification(what: int) -> void:
 		Input.parse_input_event(ev)
 
 
+func _short_side_inches() -> float:
+	var size := DisplayServer.screen_get_size()
+	return minf(size.x, size.y) / maxf(float(DisplayServer.screen_get_dpi()), 1.0)
+
+
+## The row of [constant LITE_TIERS] the graphics option selects.
+func lite_tier() -> Dictionary:
+	return LITE_TIERS[clampi(int(settings["quality"]), 0, 2)]
+
+
 ## How many soldiers a mission should field, relative to the desktop count.
 func crowd_scale() -> float:
-	return 0.6 if lite else 1.0
+	return float(lite_tier()["crowd"]) if lite else 1.0
+
+
+## Shader detail for the procedural materials (see [method Mats.set_detail]).
+func detail() -> float:
+	return float(lite_tier()["detail"]) if lite else 1.0
+
+
+## How much larger than on a desk the whole interface is drawn.
+func ui_scale() -> float:
+	if phone:
+		return 1.7
+	return 1.3 if mobile else 1.0
+
+
+## Extra enlargement of running text, on top of [method ui_scale].
+func text_scale() -> float:
+	return 1.25 if phone else 1.0
 
 
 ## True when the game was started by the automated capture or test harness.
@@ -160,6 +213,7 @@ func _register_inputs() -> void:
 	# P as well as Esc: in a browser Esc belongs to the page (it frees the pointer).
 	_action(&"pause", [_key(KEY_ESCAPE), _key(KEY_P), _pad(JOY_BUTTON_START)])
 	_action(&"chronicle", [_key(KEY_TAB), _pad(JOY_BUTTON_BACK)])
+	_action(&"skip", [_key(KEY_ENTER), _key(KEY_KP_ENTER), _pad(JOY_BUTTON_RIGHT_STICK)])
 
 
 # --- settings -------------------------------------------------------------------
@@ -168,13 +222,18 @@ func _load_settings() -> void:
 	var cf := ConfigFile.new()
 	if cf.load(SETTINGS_PATH) != OK:
 		return
+	var current := int(cf.get_value("settings", "version", 1)) >= SETTINGS_VERSION
 	for key: String in settings:
+		if key == "quality" and lite and not current:
+			# Saved when "Low" was the only tier a phone or browser was given.
+			continue
 		settings[key] = cf.get_value("settings", key, settings[key])
 
 
 ## Writes the current settings to user://.
 func save_settings() -> void:
 	var cf := ConfigFile.new()
+	cf.set_value("settings", "version", SETTINGS_VERSION)
 	for key: String in settings:
 		cf.set_value("settings", key, settings[key])
 	cf.save(SETTINGS_PATH)
@@ -201,8 +260,37 @@ func apply_settings() -> void:
 			vp.msaa_3d = Viewport.MSAA_DISABLED if q == 0 else Viewport.MSAA_2X
 			vp.scaling_3d_scale = 0.8 if q == 0 else 1.0
 	if world != null and world.atmosphere != null:
-		world.atmosphere.apply(world.preset, q, lite)
+		world.atmosphere.apply(world.preset, q, lite, lite_tier() if lite else {})
 	settings_changed.emit()
+
+
+func _process(delta: float) -> void:
+	# Nobody can know in advance how fast a given phone or browser draws
+	# this: watch the frame rate and trade 3D sharpness for it when needed.
+	if not lite or is_harness() or args.has("noadapt") or get_tree().paused or delta > 0.25:
+		return
+	if (_loading != null and _loading.visible) or Sfx.is_building():
+		_settle = 3.0
+	if _settle > 0.0:
+		_settle -= delta
+		_fps_time = 0.0
+		_fps_frames = 0
+		return
+	_fps_time += delta
+	_fps_frames += 1
+	if _fps_time < 1.5:
+		return
+	var fps := _fps_frames / _fps_time
+	_fps_time = 0.0
+	_fps_frames = 0
+	var next := _res_scale
+	if fps < 26.0:
+		next = maxf(_res_scale * 0.86, 0.5)
+	elif fps > 52.0:
+		next = minf(_res_scale * 1.08, 1.0)
+	if not is_equal_approx(next, _res_scale):
+		_res_scale = next
+		get_viewport().scaling_3d_scale = float(lite_tier()["scale"]) * _res_scale
 
 
 ## Multiplier on damage the player takes, from the difficulty option.
@@ -225,7 +313,7 @@ func _show_loading(text: String) -> void:
 		label.set_anchors_preset(Control.PRESET_FULL_RECT)
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		label.add_theme_font_override("font", Ui.serif())
+		label.add_theme_font_override("font", Ui.display())
 		label.add_theme_font_size_override("font_size", 30)
 		label.add_theme_color_override("font_color", Ui.GOLD)
 		_loading.add_child(label)
@@ -253,6 +341,8 @@ func acquire_world(preset: String) -> TroyWorld:
 
 func _swap(next: Node) -> void:
 	get_tree().paused = false
+	Sfx.hush_voice()
+	_settle = 3.0
 	if world != null and world.get_parent() != null:
 		world.get_parent().remove_child(world)
 	if screen != null:

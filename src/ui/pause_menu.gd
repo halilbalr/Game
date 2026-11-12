@@ -48,7 +48,16 @@ func _init() -> void:
 	var sbox := VBoxContainer.new()
 	sbox.add_theme_constant_override("separation", 10)
 	sbox.custom_minimum_size = Vector2(520, 0)
-	side.add_child(sbox)
+	if Game.phone:
+		# Taller than a phone screen: scroll it.
+		var scroll := ScrollContainer.new()
+		scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		scroll.custom_minimum_size = Vector2(640, 500)
+		side.add_child(scroll)
+		sbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		scroll.add_child(sbox)
+	else:
+		side.add_child(sbox)
 	sbox.add_child(Ui.label("OPTIONS", 26, Ui.GOLD))
 	_options = OptionsPanel.new()
 	sbox.add_child(_options)

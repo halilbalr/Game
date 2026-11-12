@@ -19,6 +19,7 @@ func _init() -> void:
 	id = "gate"
 	hero = "hector"
 	preset = "evening"
+	music = [&"lament", &"battle"]
 
 
 func _g(p: Vector3, lift: float = 0.15) -> Vector3:
@@ -107,9 +108,11 @@ func _wave(roles: Array, count: int, offset: Vector3) -> Array[Soldier]:
 
 func run() -> void:
 	hud.set_fade(1.0)
+	Sfx.music(&"lament")
+	scene_begin()
 	await wait(0.5)
-	if not autoplay:
-		await hud.title_card(text("title"), text("intro"), 8.0)
+	await card(8.0)
+	scene_end()
 	hud.fade(0.0, 2.5 if not autoplay else 0.1)
 	Sfx.ambience(&"battle_far")
 	objective("find", andromache)
@@ -118,6 +121,7 @@ func run() -> void:
 	player.look_toward(andromache.global_position + Vector3(0, 1.5, 0))
 	hud.set_objective("")
 	mark("andromache")
+	scene_begin()
 	await speak("andromache_1")
 	await speak("andromache_2")
 	await speak("andromache_3")
@@ -125,12 +129,14 @@ func run() -> void:
 	await speak("hector_2")
 	player.look_toward(nurse.global_position + Vector3(0, 1.3, 0))
 	await speak("child")
+	scene_end()
 	var helm := add_interactable(nurse.global_position, "Take off your helmet", 0.0, 6.0, 1.2)
 	objective("helmet", nurse)
 	await used(helm)
 	helm.queue_free()
 	hud.set_objective("")
 	Sfx.play(&"helmet")
+	scene_begin()
 	await speak("laugh")
 	await speak("prayer")
 	await speak("fate")
@@ -145,6 +151,7 @@ func run() -> void:
 	await wait(4.0)
 	await speak("paris_1")
 	await speak("hector_3")
+	scene_end()
 	paris.clear_goal()
 	paris.leader = player
 	paris.follow_offset = Vector3(-2.0, 0, 1.5)
@@ -154,6 +161,7 @@ func run() -> void:
 	# The sortie.
 	objective("sortie", _oak)
 	await reach(_oak + _inward * 8.0, 13.0)
+	Sfx.music(&"battle")
 	await speak("rally")
 	_release_allies()
 	var wave := _wave(["achaean_spearman", "achaean_swordsman", "achaean_spearman"], 8, Vector3.ZERO)
@@ -227,9 +235,12 @@ func run() -> void:
 	await all_dead([patroclus])
 	hud.set_boss(null)
 	hud.set_objective("")
+	Sfx.music(&"lament")
+	scene_begin()
 	await wait(1.0)
 	await speak("patroclus_2")
 	await speak("patroclus_3")
 	await speak("hector_5")
+	scene_end()
 	await hud.fade(1.0, 2.5)
 	complete(text("end_title"), text("end_text"))

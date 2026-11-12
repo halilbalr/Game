@@ -32,10 +32,10 @@ func build(preset_name: String, quality: int) -> void:
 	night = preset == "night"
 	atmosphere = Atmosphere.new()
 	add_child(atmosphere)
-	atmosphere.apply(preset, quality, Game.lite)
+	atmosphere.apply(preset, quality, Game.lite, Game.lite_tier() if Game.lite else {})
 	# Phones light each mesh with at most eight lamps, so the world is cut
 	# into smaller pieces there; smaller pieces also cull better.
-	Mats.set_detail(0.0 if Game.lite else 1.0)
+	Mats.set_detail(Game.detail())
 	var t0 := Time.get_ticks_msec()
 	Terrain.build(self, 16 if Game.lite else 32)
 	var t1 := Time.get_ticks_msec()
@@ -64,7 +64,7 @@ func set_preset(preset_name: String, quality: int) -> void:
 	preset = preset_name
 	night = preset == "night"
 	atmosphere.set_fire(0.0)
-	atmosphere.apply(preset, quality, Game.lite)
+	atmosphere.apply(preset, quality, Game.lite, Game.lite_tier() if Game.lite else {})
 	Mats.set_soot(0.0)
 	for f in fires:
 		f.set_lit(night)
@@ -84,8 +84,9 @@ func _process(delta: float) -> void:
 	if cam == null:
 		return
 	var eye := cam.global_position
+	var reach := float(Game.lite_tier()["lamps"])
 	for f in fires:
-		f.visible = f.global_position.distance_squared_to(eye) < 60.0 * 60.0
+		f.visible = f.global_position.distance_squared_to(eye) < reach * reach
 
 
 ## World position of a named place, or the citadel court when unknown.

@@ -17,6 +17,18 @@ const BUTTONS := {
 	"weapon": [Vector2(-560, -265), 44.0, "ARMS", &"weapon_next", "tap"],
 	"use": [Vector2(-150, -575), 58.0, "USE", &"interact", "hold"],
 }
+## The same buttons for a phone held sideways: a short screen drawn at a
+## larger scale, so they sit closer together. Radii keep every button at
+## least 9 mm across on a 6-inch screen.
+const PHONE_OFFSETS := {
+	"strike": [Vector2(-124, -132), 78.0],
+	"shield": [Vector2(-296, -92), 60.0],
+	"throw": [Vector2(-92, -302), 50.0],
+	"jump": [Vector2(-254, -238), 47.0],
+	"crouch": [Vector2(-438, -72), 47.0],
+	"weapon": [Vector2(-408, -194), 45.0],
+	"use": [Vector2(-92, -418), 54.0],
+}
 
 var player: Player
 var mission: Mission
@@ -30,6 +42,9 @@ var _look_ids: Dictionary = {}
 var _button_ids: Dictionary = {}
 var _crouched: bool = false
 var _inset: float = 0.0
+## id -> font size at which the button's label fits inside it.
+var _label_size: Dictionary = {}
+var _skip_box := StyleBoxFlat.new()
 
 
 func _init() -> void:
@@ -42,6 +57,15 @@ func _init() -> void:
 
 
 func _ready() -> void:
+	_skip_box.bg_color = Color(0.05, 0.04, 0.03, 0.6)
+	_skip_box.border_color = Color(1.0, 0.9, 0.6, 0.9)
+	_skip_box.set_border_width_all(2)
+	for id: String in BUTTONS:
+		# As large as fits: a label nobody can read is no label.
+		var size := int(_radius(id) * 0.5)
+		while size > 10 and Ui.display().get_string_size(str(BUTTONS[id][2]), HORIZONTAL_ALIGNMENT_LEFT, -1, size).x > _radius(id) * 1.6:
+			size -= 1
+		_label_size[id] = size
 	# Keep clear of a notch or rounded corner.
 	var safe := DisplayServer.get_display_safe_area()
 	var win := DisplayServer.window_get_size()
@@ -58,9 +82,18 @@ func _usable() -> bool:
 	return player != null and player.is_alive() and not get_tree().paused and (mission == null or not mission.ended)
 
 
+## True while only Skip and Pause are offered: a title card fills the screen.
+func _watching() -> bool:
+	return mission != null and mission.cinematic
+
+
+func _radius(id: String) -> float:
+	return PHONE_OFFSETS[id][1] if Game.phone else BUTTONS[id][1]
+
+
 func _button_centre(id: String) -> Vector2:
 	var s := _size()
-	return Vector2(s.x - _inset, s.y) + (BUTTONS[id][0] as Vector2)
+	return Vector2(s.x - _inset, s.y) + ((PHONE_OFFSETS[id][0] if Game.phone else BUTTONS[id][0]) as Vector2)
 
 
 func _small_buttons() -> Dictionary:
@@ -72,7 +105,23 @@ func _small_buttons() -> Dictionary:
 	return out
 
 
+## The Skip button, shown only during a scene: beside Pause on a phone
+## (where USE lives under it), beneath Pause on a tablet.
+func _skip_rect() -> Rect2:
+	var s := _size()
+	var right := s.x - _inset
+	if Game.phone:
+		return Rect2(right - (372.0 if chronicle_enabled else 276.0), 30.0, 160.0, 64.0)
+	return Rect2(right - 176.0, 118.0, 150.0, 60.0)
+
+
+func _skip_shown() -> bool:
+	return mission != null and mission.can_skip()
+
+
 func _button_shown(id: String) -> bool:
+	if _watching():
+		return false
 	match id:
 		"use":
 			return player.focus != null
@@ -90,8 +139,10 @@ func _button_shown(id: String) -> bool:
 
 
 func _hit_button(pos: Vector2) -> String:
+	if _skip_shown() and _skip_rect().grow(10.0).has_point(pos):
+		return "skip"
 	for id: String in BUTTONS:
-		if _button_shown(id) and pos.distance_to(_button_centre(id)) <= (BUTTONS[id][1] as float) * 1.12:
+		if _button_shown(id) and pos.distance_to(_button_centre(id)) <= _radius(id) * 1.12:
 			return id
 	var small := _small_buttons()
 	for id: String in small:
@@ -112,7 +163,7 @@ func _tap(action: StringName) -> void:
 
 
 func _press_button(id: String, index: int) -> void:
-	if id == "pause" or id == "chronicle":
+	if id == "pause" or id == "chronicle" or id == "skip":
 		_tap(StringName(id))
 		return
 	var action: StringName = BUTTONS[id][3]
@@ -176,6 +227,8 @@ func _input(event: InputEvent) -> void:
 			var id := _hit_button(touch.position)
 			if id != "":
 				_press_button(id, touch.index)
+			elif _watching():
+				pass
 			elif touch.position.x < s.x * 0.42 and touch.position.y > s.y * 0.2 and _stick_id == -1:
 				_stick_id = touch.index
 				_stick_origin = touch.position
@@ -216,8 +269,8 @@ func _ring(centre: Vector2, radius: float, fill: Color, edge: Color, label: Stri
 	_canvas.draw_circle(centre, radius, fill)
 	_canvas.draw_arc(centre, radius, 0.0, TAU, 40, edge, 2.5, true)
 	if label != "":
-		_canvas.draw_string(Ui.sans(), centre + Vector2(-radius, size * 0.38), label, HORIZONTAL_ALIGNMENT_CENTER,
-			radius * 2.0, size, Color(1, 1, 1, 0.9))
+		_canvas.draw_string(Ui.display(), centre + Vector2(-radius, size * 0.36), label, HORIZONTAL_ALIGNMENT_CENTER,
+			radius * 2.0, size, Color(1, 1, 1, 0.92))
 
 
 func _draw_controls() -> void:
@@ -227,8 +280,9 @@ func _draw_controls() -> void:
 	var fill := Color(0.05, 0.04, 0.03, 0.34)
 	var edge := Color(0.86, 0.68, 0.36, 0.7)
 	# Thumb-stick.
-	if player.move_enabled:
-		var origin := _stick_origin if _stick_id != -1 else Vector2(190.0 + _inset, s.y - 190.0)
+	if player.move_enabled and not _watching():
+		var rest := Vector2(170.0 + _inset, s.y - 160.0) if Game.phone else Vector2(190.0 + _inset, s.y - 190.0)
+		var origin := _stick_origin if _stick_id != -1 else rest
 		_canvas.draw_circle(origin, STICK_RADIUS, Color(0.05, 0.04, 0.03, 0.22 if _stick_id == -1 else 0.34))
 		_canvas.draw_arc(origin, STICK_RADIUS, 0.0, TAU, 48, Color(0.86, 0.68, 0.36, 0.35 if _stick_id == -1 else 0.7), 2.5, true)
 		_canvas.draw_circle(origin + _stick_vec * STICK_RADIUS, 44.0, Color(0.86, 0.68, 0.36, 0.3 if _stick_id == -1 else 0.6))
@@ -243,10 +297,16 @@ func _draw_controls() -> void:
 			f = Color(0.86, 0.68, 0.36, 0.55)
 			e = Color(1.0, 0.9, 0.6, 0.95)
 			if player.hold_progress > 0.0:
-				_canvas.draw_arc(_button_centre(id), (BUTTONS[id][1] as float) + 9.0, -PI * 0.5,
+				_canvas.draw_arc(_button_centre(id), _radius(id) + 9.0, -PI * 0.5,
 					-PI * 0.5 + TAU * player.hold_progress, 40, Color(1, 1, 1, 0.9), 5.0, true)
-		_ring(_button_centre(id), BUTTONS[id][1], f, e, BUTTONS[id][2], 17 if id == "strike" else 14)
+		_ring(_button_centre(id), _radius(id), f, e, BUTTONS[id][2], _label_size[id])
 	var small := _small_buttons()
-	_ring(small["pause"], 34.0, fill, edge, "II", 20)
+	_ring(small["pause"], 34.0, fill, edge, "II", 22)
 	if small.has("chronicle"):
-		_ring(small["chronicle"], 34.0, fill, edge, "READ", 12)
+		_ring(small["chronicle"], 34.0, fill, edge, "READ", 15)
+	if _skip_shown():
+		var rect := _skip_rect()
+		_skip_box.set_corner_radius_all(int(rect.size.y * 0.5))
+		_canvas.draw_style_box(_skip_box, rect)
+		_canvas.draw_string(Ui.display(), rect.position + Vector2(0.0, rect.size.y * 0.5 + 9.0), "SKIP",
+			HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, 25, Color(1, 1, 1, 0.95))

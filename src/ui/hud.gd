@@ -5,6 +5,10 @@ extends CanvasLayer
 
 var player: Player
 var battle: Battlefield
+## The mission on screen; asked whether there is anything to skip.
+var mission: Mission
+var _skip: Label
+var _card_tween: Tween
 var _root: Control
 var _bars: Control
 var _objective: Label
@@ -24,8 +28,8 @@ var _boss: Soldier
 var _marker: Variant = null
 var _marker_label: String = ""
 var _hurt: float = 0.0
-var _speech_until: float = 0.0
-var _toast_until: float = 0.0
+var _speech_left: float = 0.0
+var _toast_left: float = 0.0
 var _detection: float = 0.0
 var _alarm: float = -1.0
 var _alarm_total: float = 1.0
@@ -69,16 +73,19 @@ func _init() -> void:
 	_bars.draw.connect(_draw_bars)
 	_root.add_child(_bars)
 
+	var phone := Game.phone
 	_objective = Ui.label("", 24, Ui.PALE)
-	_objective.position = Vector2(48, 40)
+	# (Room on the left for the diamond that _draw_bars sets before it.)
+	_objective.position = Vector2(72, 22) if phone else Vector2(80, 40)
 	_objective.size = Vector2(900, 34)
 	_root.add_child(_objective)
 	_objective_sub = Ui.label("", 17, Ui.DIM, false)
-	_objective_sub.position = Vector2(50, 76)
+	_objective_sub.position = Vector2(42, 60) if phone else Vector2(50, 76)
 	_objective_sub.size = Vector2(900, 26)
 	_root.add_child(_objective_sub)
 
 	_speaker = Ui.label("", 22, Ui.GOLD)
+	_speaker.add_theme_font_override("font", Ui.display())
 	_speaker.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_speech = Ui.label("", 27, Ui.PALE)
 	_speech.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -86,12 +93,12 @@ func _init() -> void:
 	if Game.mobile:
 		# Thumbs and buttons own the bottom of a phone screen: speech goes up top.
 		_speaker.set_anchors_preset(Control.PRESET_CENTER_TOP)
-		_speaker.position = Vector2(-430, 192)
-		_speaker.size = Vector2(860, 30)
+		_speaker.position = Vector2(-450, 126) if phone else Vector2(-430, 192)
+		_speaker.size = Vector2(900, 30) if phone else Vector2(860, 30)
 		_speech.set_anchors_preset(Control.PRESET_CENTER_TOP)
-		_speech.position = Vector2(-430, 224)
-		_speech.size = Vector2(860, 130)
-		_speech.add_theme_font_size_override("font_size", 24)
+		_speech.position = Vector2(-450, 160) if phone else Vector2(-430, 224)
+		_speech.size = Vector2(900, 130) if phone else Vector2(860, 130)
+		_speech.add_theme_font_size_override("font_size", Ui.fs(24))
 	else:
 		_speaker.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 		_speaker.position = Vector2(-700, -238)
@@ -111,21 +118,36 @@ func _init() -> void:
 
 	_weapon = Ui.label("", 20, Ui.DIM)
 	_weapon.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	if Game.mobile:
+	_weapon.size = Vector2(512, 30)
+	if phone:
+		# The top right is Pause and Skip, the bottom right the buttons: the
+		# weapon is named along the bottom edge, between the thumbs.
+		_weapon.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+		_weapon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_weapon.position = Vector2(-270, -40)
+		_weapon.size = Vector2(480, 30)
+	elif Game.mobile:
 		# Clear of the buttons: top right, left of the pause button.
 		_weapon.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 		_weapon.position = Vector2(-760, 46)
 	else:
 		_weapon.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 		_weapon.position = Vector2(-560, -84)
-	_weapon.size = Vector2(512, 30)
 	_root.add_child(_weapon)
 
 	_toast = Ui.label("", 19, Ui.GOLD, false)
-	_toast.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_toast.position = Vector2(-500, 150)
-	_toast.size = Vector2(1000, 28)
+	if phone:
+		# The top of a phone screen belongs to speech: notices go between the thumbs.
+		_toast.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+		_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_toast.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+		_toast.position = Vector2(-270, -128)
+		_toast.size = Vector2(480, 80)
+	else:
+		_toast.set_anchors_preset(Control.PRESET_CENTER_TOP)
+		_toast.position = Vector2(-500, 150)
+		_toast.size = Vector2(1000, 28)
 	_root.add_child(_toast)
 
 	_fade = ColorRect.new()
@@ -149,6 +171,15 @@ func _init() -> void:
 	_subtitle.size = Vector2(1240, 220)
 	_subtitle.modulate.a = 0.0
 	_root.add_child(_subtitle)
+
+	# On a touch screen the SKIP button is drawn by TouchControls instead.
+	_skip = Ui.label("Enter   skip", 19, Ui.DIM, false)
+	_skip.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	_skip.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_skip.position = Vector2(-348, -64)
+	_skip.size = Vector2(300, 28)
+	_skip.visible = false
+	_root.add_child(_skip)
 
 
 ## Connects the HUD to the player and the battle it reports on.
@@ -176,7 +207,7 @@ func _refresh_weapon() -> void:
 func set_objective(text: String, marker: Variant = null, sub: String = "") -> void:
 	if text != _objective.text and text != "":
 		Sfx.play(&"objective", -8.0)
-	_objective.text = ("◆  " + text) if text != "" else ""
+	_objective.text = text
 	_objective_sub.text = sub
 	_marker = marker
 	_marker_label = ""
@@ -200,18 +231,18 @@ func marker_position() -> Vector3:
 func say(speaker: String, text: String, seconds: float) -> void:
 	_speaker.text = speaker.to_upper()
 	_speech.text = text
-	_speech_until = Time.get_ticks_msec() * 0.001 + seconds
+	_speech_left = seconds
 
 
 ## Clears any speech on screen.
 func hush() -> void:
-	_speech_until = 0.0
+	_speech_left = 0.0
 
 
 ## A brief notice at the top of the screen.
 func toast(text: String, seconds: float = 2.5) -> void:
 	_toast.text = text
-	_toast_until = Time.get_ticks_msec() * 0.001 + seconds
+	_toast_left = seconds
 
 
 ## Shows or hides the watchman's-eye meter.
@@ -239,17 +270,26 @@ func set_fade(alpha: float) -> void:
 	_fade.color.a = alpha
 
 
-## Shows a title and a few lines beneath it, then lets them fade.
-func title_card(title: String, text: String, seconds: float) -> void:
+## Brings up a title with a few lines beneath it. It stays until
+## [method hide_card].
+func show_card(title: String, text: String) -> void:
 	_title.text = title
 	_subtitle.text = text
-	var tw := create_tween()
-	tw.tween_property(_title, "modulate:a", 1.0, 1.2)
-	tw.parallel().tween_property(_subtitle, "modulate:a", 1.0, 1.8)
-	tw.tween_interval(seconds)
-	tw.tween_property(_title, "modulate:a", 0.0, 1.2)
-	tw.parallel().tween_property(_subtitle, "modulate:a", 0.0, 1.2)
-	await tw.finished
+	if _card_tween != null:
+		_card_tween.kill()
+	_card_tween = create_tween()
+	_card_tween.tween_property(_title, "modulate:a", 1.0, 1.2)
+	_card_tween.parallel().tween_property(_subtitle, "modulate:a", 1.0, 1.8)
+
+
+## Fades the title card out over [param seconds].
+func hide_card(seconds: float = 1.2) -> void:
+	if _card_tween != null:
+		_card_tween.kill()
+	_card_tween = create_tween()
+	_card_tween.tween_property(_title, "modulate:a", 0.0, seconds)
+	_card_tween.parallel().tween_property(_subtitle, "modulate:a", 0.0, seconds)
+	await _card_tween.finished
 
 
 ## Shows the end-of-mission panel. [param buttons] maps label -> Callable.
@@ -268,7 +308,8 @@ func show_end(title: String, text: String, buttons: Dictionary, success: bool) -
 	_overlay.add_child(centre)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 22)
-	box.custom_minimum_size = Vector2(900, 0)
+	var width := 1100.0 if Game.phone else 900.0
+	box.custom_minimum_size = Vector2(width, 0)
 	centre.add_child(box)
 	var t := Ui.label(title, 54, Ui.GOLD if success else Ui.BLOOD.lightened(0.25))
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -276,7 +317,7 @@ func show_end(title: String, text: String, buttons: Dictionary, success: bool) -
 	var body := Ui.label(text, 24, Ui.PALE)
 	body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	body.custom_minimum_size = Vector2(900, 0)
+	body.custom_minimum_size = Vector2(width, 0)
 	box.add_child(body)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -297,11 +338,13 @@ func show_end(title: String, text: String, buttons: Dictionary, success: bool) -
 
 
 func _process(delta: float) -> void:
-	var now := Time.get_ticks_msec() * 0.001
-	var speaking := now < _speech_until
-	_speaker.visible = speaking
-	_speech.visible = speaking
-	_toast.visible = now < _toast_until
+	# Counted in game time, so a line stays up through a pause.
+	_speech_left = maxf(_speech_left - delta, 0.0)
+	_toast_left = maxf(_toast_left - delta, 0.0)
+	_speaker.visible = _speech_left > 0.0
+	_speech.visible = _speech_left > 0.0
+	_toast.visible = _toast_left > 0.0
+	_skip.visible = not Game.mobile and mission != null and mission.can_skip()
 	_hurt = maxf(_hurt - delta * 0.9, 0.0)
 	if player != null:
 		_vignette_mat.set_shader_parameter("amount", _hurt)
@@ -325,13 +368,17 @@ func _draw_bars() -> void:
 	if player == null:
 		return
 	var vp := _bars.size
+	if _objective.text != "":
+		# Drawn rather than typed: the bundled faces have no diamond glyph.
+		var d := _objective.position + Vector2(-20.0, _objective.size.y * 0.5 + 2.0)
+		_bars.draw_colored_polygon(PackedVector2Array([d + Vector2(0, -9), d + Vector2(8, 0), d + Vector2(0, 9), d + Vector2(-8, 0)]), Ui.GOLD)
 	var hidden := not player.control_enabled and not player.is_alive()
 	if not hidden:
 		# Health and stamina: bottom left, or under the objective where thumbs do not cover them.
 		var x := 48.0
 		var y := vp.y - 78.0
 		if Game.mobile:
-			y = 122.0
+			y = 100.0 if Game.phone else 122.0
 		var w := 300.0
 		_bars.draw_rect(Rect2(x - 2, y - 2, w + 4, 16), Color(0, 0, 0, 0.55))
 		_bars.draw_rect(Rect2(x, y, w * clampf(player.health / player.max_health, 0.0, 1.0), 12), Color(0.62, 0.10, 0.07))
@@ -365,7 +412,7 @@ func _draw_bars() -> void:
 		var pts := PackedVector2Array([sp + Vector2(0, -9), sp + Vector2(8, 0), sp + Vector2(0, 9), sp + Vector2(-8, 0)])
 		_bars.draw_colored_polygon(pts, Color(0.86, 0.68, 0.36, 0.9))
 		_bars.draw_polyline(PackedVector2Array([pts[0], pts[1], pts[2], pts[3], pts[0]]), Color(0, 0, 0, 0.7), 1.5)
-		_bars.draw_string(Ui.sans(), sp + Vector2(-40, 30), "%d m" % int(dist), HORIZONTAL_ALIGNMENT_CENTER, 80, 16,
+		_bars.draw_string(Ui.sans(), sp + Vector2(-40, 30), "%d m" % int(dist), HORIZONTAL_ALIGNMENT_CENTER, 80, Ui.fs(16),
 			Color(0.93, 0.89, 0.80, 0.9))
 	# Watchman's eye.
 	if _stealth_visible and player.is_alive():
@@ -386,7 +433,7 @@ func _draw_bars() -> void:
 			word = "SILENCE HIM"
 		elif open > 0.45:
 			word = "SUSPECTED"
-		_bars.draw_string(Ui.serif(), c + Vector2(-100, 42), word, HORIZONTAL_ALIGNMENT_CENTER, 200, 16, col)
+		_bars.draw_string(Ui.display(), c + Vector2(-100, 42), word, HORIZONTAL_ALIGNMENT_CENTER, 200, 16, col)
 		if _alarm >= 0.0:
 			var bw := 220.0
 			_bars.draw_rect(Rect2(c.x - bw * 0.5, c.y + 52, bw, 6), Color(0, 0, 0, 0.6))
@@ -396,7 +443,7 @@ func _draw_bars() -> void:
 		var bw := 520.0
 		var bx := vp.x * 0.5 - bw * 0.5
 		var by := 112.0 if _stealth_visible else 54.0
-		_bars.draw_string(Ui.serif(), Vector2(bx, by - 8), _boss.display_name.to_upper(), HORIZONTAL_ALIGNMENT_CENTER, bw, 22, Ui.GOLD)
+		_bars.draw_string(Ui.display(), Vector2(bx, by - 8), _boss.display_name.to_upper(), HORIZONTAL_ALIGNMENT_CENTER, bw, 22, Ui.GOLD)
 		_bars.draw_rect(Rect2(bx - 2, by, bw + 4, 12), Color(0, 0, 0, 0.6))
 		_bars.draw_rect(Rect2(bx, by + 2, bw * clampf(_boss.health / _boss.max_health, 0.0, 1.0), 8), Color(0.62, 0.10, 0.07))
 		_bars.draw_rect(Rect2(bx - 2, by, bw + 4, 12), Ui.BRONZE, false, 1.5)

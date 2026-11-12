@@ -175,3 +175,33 @@ func test_buttons_all_sit_inside_a_phone_screen() -> void:
 			check(gap > (TouchControls.BUTTONS[ids[i]][1] as float) + (TouchControls.BUTTONS[ids[j]][1] as float),
 				"%s overlaps %s" % [ids[i], ids[j]])
 	await _clear(st)
+
+
+## An iPhone held sideways: 956 x 440 points, drawn at the phone interface
+## scale of 1.7 over a 1080-unit-high design.
+const PHONE_SCREEN := Vector2(1380.0, 635.0)
+
+
+func test_phone_buttons_fit_a_phone_held_sideways_without_touching() -> void:
+	# Arrange: every button of the phone layout as a circle on that screen.
+	var circles := {}
+	for id: String in TouchControls.PHONE_OFFSETS:
+		circles[id] = [PHONE_SCREEN + (TouchControls.PHONE_OFFSETS[id][0] as Vector2), TouchControls.PHONE_OFFSETS[id][1] as float]
+	check(circles.size() == TouchControls.BUTTONS.size(), "every button has a phone position")
+	# Fixed furniture they must stay clear of: the resting stick, Pause, Skip.
+	var stick := [Vector2(170.0, PHONE_SCREEN.y - 160.0), TouchControls.STICK_RADIUS]
+	var pause := [Vector2(PHONE_SCREEN.x - 64.0, 62.0), 34.0]
+	var skip := Rect2(PHONE_SCREEN.x - 276.0, 30.0, 160.0, 64.0)
+	# Assert.
+	var ids := circles.keys()
+	for i in ids.size():
+		var c: Vector2 = circles[ids[i]][0]
+		var r: float = circles[ids[i]][1]
+		check(c.x - r >= 0.0 and c.x + r <= PHONE_SCREEN.x and c.y - r >= 0.0 and c.y + r <= PHONE_SCREEN.y, "%s is off screen" % ids[i])
+		# 45 units is 5.2 mm on a 6.9-inch phone: a button at least 10 mm across.
+		check(r >= 45.0, "%s is too small to hit" % ids[i])
+		check(c.distance_to(stick[0]) > r + (stick[1] as float), "%s sits on the stick" % ids[i])
+		check(c.distance_to(pause[0]) > r + (pause[1] as float), "%s sits on Pause" % ids[i])
+		check(not skip.grow(r).has_point(c), "%s sits on Skip" % ids[i])
+		for j in range(i + 1, ids.size()):
+			check(c.distance_to(circles[ids[j]][0]) > r + (circles[ids[j]][1] as float), "%s overlaps %s" % [ids[i], ids[j]])

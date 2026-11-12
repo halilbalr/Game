@@ -16,7 +16,7 @@ func _ready() -> void:
 	_cam.make_current()
 	_place_camera()
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	Sfx.music(&"lyre")
+	Sfx.music(&"theme")
 	Sfx.ambience(&"")
 
 	var layer := CanvasLayer.new()
@@ -39,13 +39,17 @@ func _ready() -> void:
 	col.position = Vector2(110, 60 if Game.mobile else 110)
 	col.custom_minimum_size = Vector2(640, 0)
 	col.add_theme_constant_override("separation", 10)
+	if Game.phone:
+		# A phone held sideways is a short screen: draw the menu tighter.
+		col.position = Vector2(64, 14)
+		col.add_theme_constant_override("separation", 3)
 	root.add_child(col)
-	var title := Ui.label("THE ODYSSEY", 92, Ui.GOLD)
+	var title := Ui.label("THE ODYSSEY", 72 if Game.phone else 92, Ui.GOLD)
 	col.add_child(title)
 	var sub := Ui.label("THE FALL OF TROY", 30, Ui.PALE)
 	col.add_child(sub)
 	var gap := Control.new()
-	gap.custom_minimum_size = Vector2(0, 14 if Game.mobile else 34)
+	gap.custom_minimum_size = Vector2(0, (4 if Game.phone else 14) if Game.mobile else 34)
 	col.add_child(gap)
 
 	var first := _entry(col, "THE WOODEN HORSE", "Attacker  ·  Odysseus  ·  the last night of Troy", func() -> void: Game.start_mission("horse"))
@@ -63,28 +67,47 @@ func _ready() -> void:
 		quote.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		quote.position = Vector2(-760, -130)
 		quote.size = Vector2(700, 100)
+		if Game.phone:
+			quote.text = "\"Tell me, O Muse, of that ingenious hero\nwho travelled far and wide after he had\nsacked the famous town of Troy.\"\nHomer, Odyssey 1.1, tr. Samuel Butler"
+			quote.position = Vector2(-600, -150)
+			quote.size = Vector2(560, 130)
 	else:
 		quote.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 		quote.position = Vector2(112, -150)
 	root.add_child(quote)
 
 	var panel := Ui.panel()
-	panel.set_anchors_preset(Control.PRESET_CENTER_RIGHT)
-	panel.position = Vector2(-700, -330)
-	panel.custom_minimum_size = Vector2(600, 0)
-	root.add_child(panel)
 	var pbox := VBoxContainer.new()
 	pbox.add_theme_constant_override("separation", 10)
-	panel.add_child(pbox)
-	pbox.add_child(Ui.label("OPTIONS", 28, Ui.GOLD))
-	pbox.add_child(OptionsPanel.new())
-	pbox.add_child(Ui.label("CONTROLS", 28, Ui.GOLD))
-	pbox.add_child(Ui.label(OptionsPanel.controls_text(), 17, Ui.DIM, false))
 	var done := Ui.button("Done", 20)
 	done.pressed.connect(func() -> void:
 		panel.visible = false
 		Game.save_settings())
-	pbox.add_child(done)
+	if Game.mobile:
+		# Taller than a phone screen: the panel fills the right side and scrolls.
+		panel.set_anchors_preset(Control.PRESET_RIGHT_WIDE)
+		panel.offset_left = -720.0
+		panel.offset_right = -24.0
+		panel.offset_top = 16.0
+		panel.offset_bottom = -16.0
+		var scroll := ScrollContainer.new()
+		scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		panel.add_child(scroll)
+		pbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		scroll.add_child(pbox)
+		pbox.add_child(done)
+	else:
+		panel.set_anchors_preset(Control.PRESET_CENTER_RIGHT)
+		panel.position = Vector2(-700, -330)
+		panel.custom_minimum_size = Vector2(600, 0)
+		panel.add_child(pbox)
+	root.add_child(panel)
+	pbox.add_child(Ui.label("OPTIONS", 28, Ui.GOLD))
+	pbox.add_child(OptionsPanel.new())
+	pbox.add_child(Ui.label("CONTROLS", 28, Ui.GOLD))
+	pbox.add_child(Ui.label(OptionsPanel.controls_text(), 17, Ui.DIM, false))
+	if not Game.mobile:
+		pbox.add_child(done)
 	panel.visible = false
 	_options = panel
 

@@ -1,14 +1,25 @@
 extends Node
-## Autoload "Sfx": every sound in the game, synthesised at start-up.
+## Autoload "Sfx": effects, ambience, music and the characters' voices.
 ##
-## Nothing is recorded: bronze is a handful of inharmonic partials, a voice is
-## a pulse train through two formant filters, the lyre is a plucked-string
-## model. The bank is built on a worker thread so the menu appears at once;
-## a sound asked for before it exists is simply skipped.
+## Effects and ambience are synthesised at start-up: bronze is a handful of
+## inharmonic partials, a grunt is a pulse train through two formant filters.
+## The bank is built on a worker thread so the menu appears at once; a sound
+## asked for before it exists is simply skipped.
+##
+## Music and speech are files under assets/audio, rendered ahead of time by
+## tools/audio (also synthetic: no recordings). They play whether or not the
+## bank is ready.
 
 const RATE := 22050
 const POOL_3D := 14
 const POOL_2D := 5
+const MUSIC_DIR := "res://assets/audio/music/"
+const VOICE_DIR := "res://assets/audio/voice/"
+const MUSIC_DB := -9.0
+const AMBIENCE_DB := -9.0
+const VOICE_DB := 1.5
+## How far music and ambience drop while someone is speaking.
+const DUCK_DB := 8.0
 
 var _bank: Dictionary = {}
 var _ready_flag: bool = false
@@ -19,11 +30,18 @@ var _next_3d: int = 0
 var _next_2d: int = 0
 var _ambience_a: AudioStreamPlayer
 var _ambience_b: AudioStreamPlayer
-var _music: AudioStreamPlayer
+var _music_a: AudioStreamPlayer
+var _music_b: AudioStreamPlayer
+var _music_now: AudioStreamPlayer
+var _ambience_now: AudioStreamPlayer
+var _speech: AudioStreamPlayer
+var _voice_until: float = 0.0
+var _tracks: Dictionary = {}
 var _want_ambience: StringName = &""
 var _want_music: StringName = &""
 var _playing_ambience: StringName = &""
 var _playing_music: StringName = &""
+var _building: bool = false
 var _rng := RandomNumberGenerator.new()
 
 
@@ -42,13 +60,20 @@ func _ready() -> void:
 		_players_2d.append(p)
 	_ambience_a = AudioStreamPlayer.new()
 	_ambience_b = AudioStreamPlayer.new()
-	_music = AudioStreamPlayer.new()
-	for p: AudioStreamPlayer in [_ambience_a, _ambience_b, _music]:
+	_music_a = AudioStreamPlayer.new()
+	_music_b = AudioStreamPlayer.new()
+	for p: AudioStreamPlayer in [_ambience_a, _ambience_b, _music_a, _music_b]:
 		p.volume_db = -60.0
 		add_child(p)
+	_speech = AudioStreamPlayer.new()
+	_speech.volume_db = VOICE_DB
+	# Speech stops with the game when it is paused; music does not.
+	_speech.process_mode = Node.PROCESS_MODE_PAUSABLE
+	add_child(_speech)
 	_rng.seed = 2401
 	if DisplayServer.get_name() == "headless":
 		return
+	_building = true
 	if OS.has_feature("web") or OS.get_cmdline_user_args().has("--web"):
 		# A browser build has no worker threads: build the bank a sound at a
 		# time between frames instead.
@@ -63,34 +88,113 @@ func _exit_tree() -> void:
 		_thread.wait_to_finish()
 
 
-func _process(_delta: float) -> void:
-	if not _ready_flag:
-		return
-	if _want_ambience != _playing_ambience:
-		_playing_ambience = _want_ambience
-		_crossfade(_want_ambience)
-	if _want_music != _playing_music:
+func _process(delta: float) -> void:
+	# (A synthesised loop asked for before the bank exists waits for it.)
+	if _want_music != _playing_music and (_ready_flag or _want_music == &"" \
+			or ResourceLoader.exists(MUSIC_DIR + String(_want_music) + ".ogg")):
 		_playing_music = _want_music
-		_music.stop()
-		if _bank.has(_want_music):
-			_music.stream = _bank[_want_music]
-			_music.volume_db = -13.0
-			_music.play()
+		_music_now = _start(_want_music, _music_a, _music_b, _music_now)
+	if _ready_flag and _want_ambience != _playing_ambience:
+		_playing_ambience = _want_ambience
+		_ambience_now = _start(_want_ambience, _ambience_a, _ambience_b, _ambience_now)
+	var duck := DUCK_DB if is_speaking() else 0.0
+	_fade(_music_a, MUSIC_DB - duck if _music_a == _music_now else -60.0, delta)
+	_fade(_music_b, MUSIC_DB - duck if _music_b == _music_now else -60.0, delta)
+	_fade(_ambience_a, AMBIENCE_DB - duck * 0.6 if _ambience_a == _ambience_now else -60.0, delta)
+	_fade(_ambience_b, AMBIENCE_DB - duck * 0.6 if _ambience_b == _ambience_now else -60.0, delta)
 
 
-func _crossfade(id: StringName) -> void:
-	var old := _ambience_a if _ambience_a.playing else _ambience_b
-	var fresh := _ambience_b if old == _ambience_a else _ambience_a
-	var tw := create_tween()
-	tw.set_parallel(true)
-	if old.playing:
-		tw.tween_property(old, "volume_db", -60.0, 2.0)
-		tw.chain().tween_callback(old.stop)
-	if _bank.has(id):
-		fresh.stream = _bank[id]
-		fresh.volume_db = -60.0
-		fresh.play()
-		tw.tween_property(fresh, "volume_db", -9.0, 2.0)
+## Starts a loop on whichever of two players is free and returns it (null
+## for silence); [method _fade] brings it up and the other one down.
+func _start(id: StringName, a: AudioStreamPlayer, b: AudioStreamPlayer, now: AudioStreamPlayer) -> AudioStreamPlayer:
+	var stream := _loop(id)
+	if stream == null:
+		return null
+	var fresh := b if now == a else a
+	fresh.stream = stream
+	fresh.volume_db = -40.0
+	fresh.play()
+	return fresh
+
+
+func _fade(p: AudioStreamPlayer, target: float, delta: float) -> void:
+	if not p.playing:
+		return
+	# Up quickly, down slowly: about a second in, two and a half out.
+	p.volume_db = move_toward(p.volume_db, target, delta * (34.0 if target > p.volume_db else 20.0))
+	if target <= -60.0 and p.volume_db <= -59.0:
+		p.stop()
+
+
+## A looping stream by name: a rendered track from assets/audio/music, or
+## one of the synthesised loops in the bank.
+func _loop(id: StringName) -> AudioStream:
+	if id == &"":
+		return null
+	if _tracks.has(id):
+		return _tracks[id]
+	var path := MUSIC_DIR + String(id) + ".ogg"
+	if ResourceLoader.exists(path):
+		var track := load(path) as AudioStreamOggVorbis
+		track.loop = true
+		_tracks[id] = track
+		return track
+	return _bank.get(id)
+
+
+## Loads music ahead of need, during a loading screen, so that the first
+## bar does not cost a dropped frame in the middle of a fight. In a browser
+## this also decodes the track for the page's audio engine.
+## [codeblock]Sfx.preload_music([&"night", &"battle"])[/codeblock]
+func preload_music(ids: Array) -> void:
+	for id: StringName in ids:
+		var stream := _loop(id)
+		if stream != null and OS.has_feature("web") and not AudioServer.is_stream_registered_as_sample(stream):
+			AudioServer.register_stream_as_sample(stream)
+
+
+## Speaks a recorded line: assets/audio/voice/<group>/<key>.ogg. Returns its
+## length in seconds, or 0 when there is no such file.
+## [codeblock]var seconds := Sfx.speak("horse", "helen_1")[/codeblock]
+func speak(group: String, key: String) -> float:
+	var path := "%s%s/%s.ogg" % [VOICE_DIR, group, key]
+	if not ResourceLoader.exists(path):
+		return 0.0
+	var stream := load(path) as AudioStream
+	_speech.stop()
+	_forget(_speech.stream)
+	_speech.stream = stream
+	_speech.play()
+	_voice_until = Time.get_ticks_msec() * 0.001 + stream.get_length()
+	return stream.get_length()
+
+
+## Cuts off whoever is speaking.
+func hush_voice() -> void:
+	_speech.stop()
+	_forget(_speech.stream)
+	_speech.stream = null
+	_voice_until = 0.0
+
+
+## In a browser the page's audio engine keeps a decoded copy of every stream
+## it has played, and the engine never lets go of one. A line of speech is
+## heard once, so its copy is released by hand through a hook that
+## tools/web/pack_artifact.py adds to the engine script. Without the hook
+## (the plain web export) this does nothing.
+func _forget(stream: AudioStream) -> void:
+	if stream != null and OS.has_feature("web"):
+		JavaScriptBridge.eval("window.__odysseyDropSample && window.__odysseyDropSample('%d')" % stream.get_instance_id(), true)
+
+
+## True while a spoken line is playing.
+func is_speaking() -> bool:
+	return _speech.playing and Time.get_ticks_msec() * 0.001 < _voice_until + 0.3
+
+
+## True while the synthesised bank is still being built.
+func is_building() -> bool:
+	return _building
 
 
 ## Plays a named sound at a world position.
@@ -579,6 +683,7 @@ func _build_bank(yielding: bool = false) -> void:
 func _finish(bank: Dictionary) -> void:
 	_bank = bank
 	_ready_flag = true
+	_building = false
 	if _thread != null:
 		_thread.wait_to_finish()
 		_thread = null

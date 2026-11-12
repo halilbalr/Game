@@ -29,6 +29,23 @@ WEB = ROOT / "builds" / "web"
 OUT = ROOT / "builds" / "artifact"
 SHELL = Path(__file__).with_name("artifact_shell.html")
 TEXT_LIMIT = 16 * 1024 * 1024
+POINTER = (
+    "computePosition:function(evt,rect){const canvas=GodotConfig.canvas;"
+    "const rw=canvas.width/rect.width;const rh=canvas.height/rect.height;"
+    "const x=(evt.clientX-rect.x)*rw;const y=(evt.clientY-rect.y)*rh;return[x,y]}"
+)
+AUDIO = "var GodotAudio={MAX_VOLUME_CHANNELS:"
+AUDIO_HOOK = (
+    "window.__odysseyDropSample=function(id){const s=GodotAudio.Sample.getSampleOrNull(id);"
+    "if(s!=null){s.clear();return true}return false};"
+)
+POINTER_TURNED = (
+    "computePosition:function(evt,rect){const canvas=GodotConfig.canvas;"
+    "if(window.__odysseyTurned){const u=(evt.clientY-rect.y)/rect.height;"
+    "const v=1-(evt.clientX-rect.x)/rect.width;return[u*canvas.width,v*canvas.height]}"
+    "const rw=canvas.width/rect.width;const rh=canvas.height/rect.height;"
+    "const x=(evt.clientX-rect.x)*rw;const y=(evt.clientY-rect.y)*rh;return[x,y]}"
+)
 
 
 def main() -> None:
@@ -56,6 +73,18 @@ def main() -> None:
     engine_js = (WEB / "index.js").read_text(encoding="utf-8")
     if "</script" in engine_js.lower():
         raise SystemExit("index.js contains </script and cannot be inlined")
+    # On a phone held upright the page turns the game a quarter (see the
+    # shell). The engine maps a finger to the canvas assuming it is upright,
+    # so teach that one function about the turn.
+    if POINTER not in engine_js:
+        raise SystemExit("the engine's pointer mapping has changed; update POINTER in pack_artifact.py")
+    engine_js = engine_js.replace(POINTER, POINTER_TURNED)
+    # The engine decodes every sound a page plays into the browser's audio
+    # engine and never releases one. Give the game a way to release a spoken
+    # line once it has been heard (see Sfx._forget).
+    if AUDIO not in engine_js:
+        raise SystemExit("the engine's audio library has changed; update AUDIO in pack_artifact.py")
+    engine_js = engine_js.replace(AUDIO, AUDIO_HOOK + AUDIO, 1)
 
     hero = OUT / "hero.jpg"
     hero_uri = ""

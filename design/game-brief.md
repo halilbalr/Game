@@ -117,14 +117,24 @@ iOS (or with `--mobile` on a desktop) and switches on:
   under the left thumb, drag-to-look on the right, buttons for the fighting
   hand. They press the same input actions as the keyboard, so the player code
   is unchanged.
-- **A lighter graphics tier**: Godot's Mobile renderer; shaders without the
-  bump pass and with half the noise octaves; no ambient occlusion, volumetric
-  fog or glow; a short two-split sun shadow; a sky drawn once; terrain and
-  city cut into 48 m pieces because the Mobile renderer lights each mesh with
-  at most eight lamps.
-- **Smaller battles**: groups are fielded at 60% (`Game.crowd_scale`).
-- **Layout**: text at 1.3x, health and speech moved up out from under the
-  thumbs, hints reworded for touch.
+- **A lighter graphics tier**: Godot's Mobile renderer; no ambient occlusion
+  or volumetric fog; a sky drawn once; terrain and city cut into 48 m pieces
+  because the Mobile renderer lights each mesh with at most eight lamps. The
+  Graphics option picks a row of `Game.LITE_TIERS`: the share of the screen's
+  pixels given to the 3D view (0.5 / 0.67 / 0.85; the interface is always at
+  full resolution), shader detail (the bump pass and full noise from Medium
+  up), shadow reach, glow, torch range and crowd size (60 / 75 / 90%). Medium
+  is the default.
+- **Adaptive resolution**: `Game._process` watches the frame rate and scales
+  the 3D resolution down under 26 fps and back up over 52, between half and
+  all of the chosen tier. Nobody has measured a phone, so the game measures
+  itself.
+- **Layout**: on a tablet, text at 1.3x. On a phone (`Game.phone`: a screen
+  under 3.7 inches on its short side, or `--phone`) the interface is drawn at
+  1.7x with running text a quarter larger again, the touch buttons take their
+  own closer-set positions (`TouchControls.PHONE_OFFSETS`, none under 10 mm
+  across), speech sits at the top and notices between the thumbs, and the
+  option panels scroll.
 
 ## Web
 
@@ -137,23 +147,57 @@ frames because there are no worker threads; torches far from the eye are put
 out because that renderer draws only a few dozen lamps. `tools/web/` packs the
 export as a claude.ai Artifact.
 
+The Artifact page sizes the canvas itself, at the screen's own pixel density
+(up to 3x, capped at 4.2 million pixels), so text is sharp on a phone. A
+phone held upright gets the game turned a quarter: the page rotates the
+canvas with CSS and the packer patches the one function in Godot's loader
+that maps a touch to canvas coordinates. The page tells the game what it is
+running on (`--mobile`, `--phone`).
+
 ## Sound
 
-Synthesised at start-up on a worker thread (`src/core/sfx.gd`): bronze as
-inharmonic partials, voices as a pulse train through two formant filters, a
-plucked-string lyre in the Greek Dorian mode, and looping ambience for night,
-day, the feast heard through the planks, battle and the sack.
+Three sources, all synthetic, none recorded:
+
+- **Effects and ambience** are synthesised at start-up (`src/core/sfx.gd`):
+  bronze as inharmonic partials, grunts as a pulse train through two formant
+  filters, looping ambience for night, day, the feast heard through the
+  planks, battle and the sack.
+- **Music** is composed and rendered by `tools/audio/make_music.py` into four
+  looping tracks (`assets/audio/music/`): `theme` (title screen), `battle`,
+  `night` (the horse, the sleeping city) and `lament` (Andromache, endings,
+  defeat). D minor leaning on the lowered second, the nearest modern scale to
+  the Greek Dorian. Mixed for phone speakers: little below 150 Hz.
+- **Voices** are rendered by `tools/audio/make_voices.py` with the Kokoro
+  text-to-speech model, one file per line of the mission data
+  (`assets/audio/voice/<mission>/<key>.ogg`) and one per narrated text. Each
+  speaker has a cast voice; gods get a long hall, voices outside the horse
+  are muffled. Homeric names are spelled out in phonemes because the model's
+  dictionary gets most of them wrong.
+
+`Sfx.speak` plays a line and returns its length, which sets how long the
+subtitle stays. Music and ambience duck 8 dB under speech.
+
+## Scenes and skipping
+
+A mission script brackets each stretch of story with `scene_begin()` and
+`scene_end()`. Inside one, the Skip action (Enter, right stick, the SKIP
+button) ends every line, wait and title card until the scene closes. Anything
+the player must do stays outside a scene, so a skip always lands on the next
+thing to do. Title cards are narrated and are scenes too.
 
 ## Verification
 
 | Check | How | State |
 |---|---|---|
-| Rules and formulas, touch controls | 72 tests, `tests/run_tests.gd` | Pass |
-| Missions in mobile mode | `--mission=<id> --bot --god --mobile` | Pass |
+| Rules and formulas, touch controls, phone button layout | 73 tests, `tests/run_tests.gd` | Pass |
+| Missions in mobile and phone mode | `--mission=<id> --bot --god --mobile --phone` | Pass |
 | Android package is complete | Debug APK built and signed; a mission finished from its contents on the Linux engine | Pass |
-| Anything on a real phone or tablet | — | Not verified |
+| The app builds on a real phone or tablet | — | Not verified |
 | Web build boots and takes input | Exported build and the packed Artifact page in headless Chromium | Pass |
-| The published Artifact inside claude.ai | — | Not verified |
+| Phone page: landscape turn, 3x canvas, touches mapped through the turn, SKIP | Chromium emulating a 440 x 956 touch screen | Pass |
+| The published Artifact inside claude.ai | The owner's screenshot from an iPhone (first version) | Runs; the phone upgrade itself not yet seen on a device |
+| Voices and music play; a heard line is released from browser memory | Instrumented page in Chromium (streams registered, started, dropped) | Pass |
+| How the voices and music sound | Listening | Not verified |
 | Mission scripts reach their end | `--mission=<id> --autoplay` | Pass |
 | Player combat through real input | `--scene=arena --autoplay --bot` | Pass |
 | Whole missions with real walking, fighting and use | `--mission=<id> --bot --god` (`--noalarm` for the horse) | Pass: both reach their ending |

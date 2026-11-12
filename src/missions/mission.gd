@@ -9,6 +9,8 @@ extends Node3D
 
 ## Never emitted: a finished mission parks its script on this.
 signal _never
+## Emitted when a wait may have ended: its timer ran out, or the player skipped.
+signal _wake
 
 var id: String = ""
 var hero: String = "odysseus"
@@ -25,6 +27,13 @@ var ended: bool = false
 var autoplay: bool = false
 ## On-screen controls; null on a desktop.
 var touch: TouchControls
+## True while a title card fills the screen: the HUD and the touch controls
+## stand down.
+var cinematic: bool = false
+## Music this mission will ask for, loaded behind the loading screen.
+var music: Array[StringName] = []
+var _scene: bool = false
+var _skipping: bool = false
 var _pause: PauseMenu
 var _started_ms: int = 0
 var _started_frame: int = 0
@@ -35,6 +44,7 @@ func _ready() -> void:
 	data = Data.mission(id)
 	Sfx.music(&"")
 	Sfx.ambience(&"")
+	Sfx.preload_music(music)
 	world = Game.acquire_world(preset)
 	add_child(world)
 	world.ensure_navigation()
@@ -50,6 +60,7 @@ func _ready() -> void:
 	hud = Hud.new()
 	add_child(hud)
 	hud.bind(player, battle)
+	hud.mission = self
 	if Game.mobile:
 		touch = TouchControls.new()
 		touch.player = player
@@ -123,6 +134,12 @@ func mark(label: String) -> void:
 		print("Mission %s: stopped at '%s'" % [id, label])
 
 
+## Harness only (`--verbose`): logs each step of the script as it starts.
+func _trace(what: String) -> void:
+	if Game.args.has("verbose"):
+		print("Mission %s @%.0fs: %s" % [id, (Engine.get_physics_frames() - _started_frame) / 60.0, what])
+
+
 ## Text from the mission data file. On a touch screen a "<key>_touch"
 ## entry, when present, replaces the one that names keys.
 func text(key: String, fallback: String = "") -> String:
@@ -139,41 +156,111 @@ func place_player(pos: Vector3, yaw: float) -> void:
 	player.velocity = Vector3.ZERO
 
 
-## Waits [param seconds] of game time.
+## Waits [param seconds] of game time. Inside a scene the wait ends at once
+## if the player skips.
 func wait(seconds: float) -> void:
 	if ended:
 		await _never
 	if autoplay:
 		seconds = minf(seconds, 0.05)
+	if _skipping:
+		seconds = 0.02
+	var state := {"done": false}
 	var t := Timer.new()
 	t.one_shot = true
 	t.wait_time = maxf(seconds, 0.02)
 	add_child(t)
+	t.timeout.connect(func() -> void:
+		state["done"] = true
+		_wake.emit())
 	t.start()
-	await t.timeout
+	while not state["done"] and not _skipping:
+		await _wake
 	t.queue_free()
 	if ended:
 		await _never
 
 
-## Shows a line of speech and waits while it is read.
-func say(speaker: String, line: String, seconds: float = 0.0) -> void:
+## Opens a stretch of story the player may skip whole: until
+## [method scene_end], one press of Skip ends every line, wait and card.
+## Keep anything the player must do outside it.
+## [codeblock]
+## scene_begin()
+## await speak("helen_1")
+## await speak("helen_2")
+## scene_end()
+## [/codeblock]
+func scene_begin() -> void:
+	_scene = true
+	_skipping = false
+
+
+## Closes the scene opened by [method scene_begin].
+func scene_end() -> void:
+	_scene = false
+	_skipping = false
+
+
+## True while a press of Skip would do something.
+func can_skip() -> bool:
+	return _scene and not ended and not autoplay and not _skipping
+
+
+## Skips to the end of the scene in progress.
+func skip() -> void:
+	if not can_skip():
+		return
+	_skipping = true
+	Sfx.hush_voice()
+	hud.hush()
+	_wake.emit()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed(&"skip") and can_skip() and not get_tree().paused:
+		skip()
+		get_viewport().set_input_as_handled()
+
+
+## Shows the mission's title and introduction, read aloud, for at least
+## [param seconds]; then clears it. Call inside a scene to make it skippable.
+func card(seconds: float) -> void:
+	if autoplay:
+		return
+	cinematic = true
+	var spoken: float = Sfx.speak(id, "text_intro") if not _skipping else 0.0
+	hud.show_card(text("title"), text("intro"))
+	await wait(maxf(seconds, spoken + 1.2))
+	await hud.hide_card(0.3 if _skipping else 1.2)
+	cinematic = false
+
+
+## Shows a line of speech and waits while it is read. [param voice] names
+## the recording to play with it (see [method Sfx.speak]).
+func say(speaker: String, line: String, seconds: float = 0.0, voice: String = "") -> void:
 	if ended:
 		await _never
-	if seconds <= 0.0:
+	if _skipping:
+		return
+	var spoken: float = Sfx.speak(id, voice) if voice != "" and not autoplay else 0.0
+	if spoken > 0.0:
+		seconds = spoken + 0.4
+	elif seconds <= 0.0:
 		seconds = maxf(2.4, 1.3 + line.split(" ").size() * 0.34)
 	hud.say(speaker, line, seconds)
 	await wait(seconds + 0.25)
 
 
 ## Speaks a line from the mission data: "lines": {"key": ["Speaker", "Text"]}.
+## The voice is assets/audio/voice/<mission>/<key>.ogg when it exists.
 func speak(key: String) -> void:
 	var lines: Dictionary = data.get("lines", {})
 	if not lines.has(key):
 		push_warning("Mission %s: no line '%s'" % [id, key])
 		return
 	var entry: Array = lines[key]
-	await say(str(entry[0]), str(entry[1]))
+	_trace("speak " + key)
+	await say(str(entry[0]), str(entry[1]), 0.0, key)
 
 
 ## Sets the objective from the mission data: "objectives": {"key": "Text"}.
@@ -200,6 +287,7 @@ func until(condition: Callable, poll: float = 0.15) -> void:
 
 ## Waits until the player stands within [param radius] of [param pos].
 func reach(pos: Vector3, radius: float = 3.0) -> void:
+	_trace("reach %s within %.0f m" % [str(pos.round()), radius])
 	if autoplay:
 		await wait(0.1)
 		place_player(pos + Vector3(0, 0.3, 0), player.rotation.y)
@@ -212,6 +300,7 @@ func reach(pos: Vector3, radius: float = 3.0) -> void:
 
 ## Waits until every soldier in [param group] is dead.
 func all_dead(group: Array) -> void:
+	_trace("all_dead (%d)" % group.size())
 	if autoplay:
 		for s: Soldier in group:
 			if is_instance_valid(s) and s.is_alive():
@@ -279,15 +368,19 @@ func _on_player_died() -> void:
 	if ended:
 		return
 	await get_tree().create_timer(1.6).timeout
-	fail(text("death_title", "You have fallen"), text("death_text", ""))
+	fail(text("death_title", "You have fallen"), text("death_text", ""), "text_death_text")
 
 
-## Ends the mission in defeat.
-func fail(title: String, body: String) -> void:
+## Ends the mission in defeat. [param voice] names the narration to read.
+func fail(title: String, body: String, voice: String = "") -> void:
 	if ended:
 		return
 	ended = true
+	_wake.emit()
 	player.control_enabled = false
+	Sfx.music(&"lament")
+	if voice != "" and not autoplay:
+		Sfx.speak(id, voice)
 	_report("MISSION FAILED (%s)" % title)
 	hud.show_end(title, body, {"Try again": retry, "Main menu": Game.start_menu}, false)
 	if autoplay or Game.args.has("bot"):
@@ -299,8 +392,12 @@ func complete(title: String, body: String) -> void:
 	if ended:
 		return
 	ended = true
+	_wake.emit()
 	player.control_enabled = false
 	player.invulnerable = true
+	Sfx.music(&"lament")
+	if not autoplay:
+		Sfx.speak(id, "text_end_text")
 	_report("MISSION COMPLETE")
 	hud.show_end(title, body, {"Continue": Game.start_menu, "Play again": retry}, true)
 	if autoplay or Game.args.has("bot"):

@@ -42,6 +42,7 @@ var _fire: float = 0.0
 var _mobile: bool = false
 var _sky_frozen: bool = false
 var _compat: bool = false
+var _tier: Dictionary = {}
 
 
 func _init() -> void:
@@ -76,8 +77,11 @@ func _init() -> void:
 ## Applies the named preset and the given quality level. [param mobile]
 ## selects the phone tier: no screen-space or volumetric effects, a short
 ## two-split sun shadow and a sky that is drawn once instead of every frame.
-func apply(preset_name: String, quality: int = 1, mobile: bool = false) -> void:
+## [param tier] refines that tier: "shadow" (metres), "splits" (2 or 4) and
+## "glow" (bool). See [constant Game.LITE_TIERS].
+func apply(preset_name: String, quality: int = 1, mobile: bool = false, tier: Dictionary = {}) -> void:
 	_mobile = mobile
+	_tier = tier
 	if mobile and not _sky_frozen:
 		_sky_frozen = true
 		var frozen := Shader.new()

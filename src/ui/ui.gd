@@ -1,6 +1,7 @@
 class_name Ui
 extends RefCounted
-## Shared look for menus and HUD: bronze and gold on dark, serif capitals.
+## Shared look for menus and HUD: bronze and gold on dark, inscriptional
+## capitals over a book serif. Both faces ship with the game (assets/fonts).
 
 const GOLD := Color(0.86, 0.68, 0.36)
 const BRONZE := Color(0.62, 0.42, 0.22)
@@ -9,34 +10,62 @@ const DIM := Color(0.70, 0.66, 0.58)
 const DARK := Color(0.045, 0.038, 0.03)
 const BLOOD := Color(0.60, 0.07, 0.05)
 
-static var _serif: SystemFont
-static var _sans: SystemFont
+const CINZEL := "res://assets/fonts/cinzel.woff2"
+const CRIMSON := "res://assets/fonts/crimson-pro.woff2"
+
+static var _display: Font
+static var _serif: Font
+static var _sans: Font
 
 
-## Display serif for titles and speech.
+static func _face(path: String, weight: int, fallback: PackedStringArray) -> Font:
+	var system := SystemFont.new()
+	system.font_names = fallback
+	system.antialiasing = TextServer.FONT_ANTIALIASING_GRAY
+	if not ResourceLoader.exists(path):
+		return system
+	var fv := FontVariation.new()
+	fv.base_font = load(path)
+	fv.variation_opentype = {"wght": weight}
+	fv.fallbacks = [system]
+	return fv
+
+
+## Inscriptional capitals for titles, buttons and names (Cinzel).
+static func display() -> Font:
+	if _display == null:
+		_display = _face(CINZEL, 600, PackedStringArray(["Trajan Pro", "Palatino Linotype", "Georgia", "DejaVu Serif", "serif"]))
+	return _display
+
+
+## Book serif for speech and running text (Crimson Pro).
 static func serif() -> Font:
 	if _serif == null:
-		_serif = SystemFont.new()
-		_serif.font_names = PackedStringArray(["Cinzel", "Trajan Pro", "Palatino Linotype", "Book Antiqua",
-			"Palatino", "Georgia", "DejaVu Serif", "Times New Roman", "serif"])
-		_serif.antialiasing = TextServer.FONT_ANTIALIASING_GRAY
+		_serif = _face(CRIMSON, 500, PackedStringArray(["Palatino Linotype", "Book Antiqua", "Palatino", "Georgia",
+			"DejaVu Serif", "Times New Roman", "serif"]))
 	return _serif
 
 
-## Plain face for small interface text.
+## The same serif a little heavier, for small interface text: it stays
+## legible at sizes where a thin sans would not.
 static func sans() -> Font:
 	if _sans == null:
-		_sans = SystemFont.new()
-		_sans.font_names = PackedStringArray(["Segoe UI", "Helvetica Neue", "Noto Sans", "DejaVu Sans", "Arial", "sans-serif"])
+		_sans = _face(CRIMSON, 600, PackedStringArray(["Segoe UI", "Helvetica Neue", "Noto Sans", "DejaVu Sans", "Arial", "sans-serif"]))
 	return _sans
+
+
+## Font size for the device in hand: running text is set larger on a phone.
+static func fs(size: int) -> int:
+	return roundi(size * Game.text_scale()) if size < 40 else size
 
 
 ## A label in the house style.
 static func label(text: String, size: int, color: Color = PALE, use_serif: bool = true) -> Label:
 	var l := Label.new()
 	l.text = text
-	l.add_theme_font_override("font", serif() if use_serif else sans())
-	l.add_theme_font_size_override("font_size", size)
+	# Large serif text is a heading: set it in the display capitals.
+	l.add_theme_font_override("font", (display() if size >= 28 else serif()) if use_serif else sans())
+	l.add_theme_font_size_override("font_size", fs(size))
 	l.add_theme_color_override("font_color", color)
 	l.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.85))
 	l.add_theme_constant_override("shadow_offset_x", 1)
@@ -61,7 +90,7 @@ static func button(text: String, size: int = 24) -> Button:
 	var b := Button.new()
 	b.text = text
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	b.add_theme_font_override("font", serif())
+	b.add_theme_font_override("font", display())
 	b.add_theme_font_size_override("font_size", size)
 	b.add_theme_color_override("font_color", PALE)
 	b.add_theme_color_override("font_hover_color", GOLD)

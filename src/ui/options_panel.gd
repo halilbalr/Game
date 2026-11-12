@@ -2,10 +2,10 @@ class_name OptionsPanel
 extends VBoxContainer
 ## The options shared by the main menu and the pause screen.
 
-const CONTROLS_TEXT := "Move  W A S D        Look  Mouse\nStrike  Left mouse        Shield  Right mouse (hold)\nThrow spear  G or middle mouse\nWeapons  1 2 3 or wheel        Use  E\nRun  Shift        Crouch  Ctrl or C        Jump  Space\nChronicle  Tab        Pause  Esc\nA gamepad also works."
+const CONTROLS_TEXT := "Move  W A S D        Look  Mouse\nStrike  Left mouse        Shield  Right mouse (hold)\nThrow spear  G or middle mouse\nWeapons  1 2 3 or wheel        Use  E\nRun  Shift        Crouch  Ctrl or C        Jump  Space\nChronicle  Tab        Pause  Esc        Skip a scene  Enter\nA gamepad also works."
 
 
-const TOUCH_TEXT := "Move  left thumb, anywhere on the left\nPush the stick to its rim to run\nLook  drag on the right\nSTRIKE, SHIELD (hold), THROW, JUMP, CROUCH, ARMS\nUSE appears when there is something to use"
+const TOUCH_TEXT := "Move  left thumb, anywhere on the left\nPush the stick to its rim to run\nLook  drag on the right\nSTRIKE, SHIELD (hold), THROW, JUMP, CROUCH, ARMS\nUSE appears when there is something to use\nSKIP passes over a scene you have heard before"
 
 
 const WEB_NOTE := "\nIn a browser: click the game to take control. Esc frees the pointer; P pauses."
@@ -50,7 +50,7 @@ func _slider(text: String, key: String, lo: float, hi: float, step: float) -> vo
 	s.max_value = hi
 	s.step = step
 	s.value = float(Game.settings[key])
-	s.custom_minimum_size = Vector2(240, 24)
+	s.custom_minimum_size = Vector2(240, 44 if Game.mobile else 24)
 	s.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	s.value_changed.connect(func(v: float) -> void:
 		Game.settings[key] = v
