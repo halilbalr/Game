@@ -167,6 +167,20 @@ func set_objective(text: String, marker: Variant = null, sub: String = "") -> vo
 	_marker_label = ""
 
 
+## The objective line as shown.
+func objective_text() -> String:
+	return _objective.text
+
+
+## World position of the objective marker, or Vector3.INF when there is none.
+func marker_position() -> Vector3:
+	if _marker is Vector3:
+		return _marker
+	if _marker is Node3D and is_instance_valid(_marker):
+		return (_marker as Node3D).global_position
+	return Vector3.INF
+
+
 ## Shows a line of speech for [param seconds].
 func say(speaker: String, text: String, seconds: float) -> void:
 	_speaker.text = speaker.to_upper()
@@ -310,11 +324,9 @@ func _draw_bars() -> void:
 		if player.hold_progress > 0.0:
 			_bars.draw_arc(c, 22.0, -PI * 0.5, -PI * 0.5 + TAU * player.hold_progress, 40, Ui.GOLD, 4.0, true)
 	# Objective marker.
-	var target := Vector3.INF
-	if _marker is Vector3:
-		target = _marker
-	elif _marker is Node3D and is_instance_valid(_marker):
-		target = (_marker as Node3D).global_position + Vector3(0, 2.2, 0)
+	var target := marker_position()
+	if _marker is Node3D and target != Vector3.INF:
+		target += Vector3(0, 2.2, 0)
 	if target != Vector3.INF and player.camera != null and player.is_alive():
 		var cam := player.camera
 		var dist := cam.global_position.distance_to(target)

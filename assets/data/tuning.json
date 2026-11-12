@@ -9,8 +9,8 @@
     "eye_height": 1.62,
     "crouch_eye_height": 1.02,
     "max_health": 100.0,
-    "regen_delay": 6.0,
-    "regen_rate": 5.0,
+    "regen_delay": 5.0,
+    "regen_rate": 7.0,
     "max_stamina": 100.0,
     "stamina_regen": 24.0,
     "stamina_regen_delay": 0.9,
@@ -30,10 +30,11 @@
     "max_attackers_on_player": 2,
     "hit_stun": 0.38,
     "block_stun": 0.22,
-    "player_damage_taken_scale": 0.5,
+    "player_damage_taken_scale": 0.38,
     "ally_damage_scale": 0.6,
     "corpse_limit": 70,
-    "ai_vs_ai_damage_scale": 0.5
+    "ai_vs_ai_damage_scale": 0.5,
+    "player_hit_grace": 0.7
   },
   "stealth": {
     "view_range": 21.0,

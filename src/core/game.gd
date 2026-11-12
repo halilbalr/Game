@@ -15,6 +15,7 @@ var args: Dictionary = {}
 var settings: Dictionary = {
 	"mouse_sensitivity": 1.0, "fov": 75.0, "blood": true, "quality": 1,
 	"master_volume": 0.8, "fullscreen": true, "invert_y": false, "head_bob": true,
+	"difficulty": 1,
 }
 var main: Node
 var screen: Node
@@ -136,6 +137,11 @@ func apply_settings() -> void:
 	if world != null and world.atmosphere != null:
 		world.atmosphere.apply(world.preset, q)
 	settings_changed.emit()
+
+
+## Multiplier on damage the player takes, from the difficulty option.
+func damage_taken_scale() -> float:
+	return [0.55, 1.0, 1.5][clampi(int(settings.get("difficulty", 1)), 0, 2)]
 
 
 # --- screens ---------------------------------------------------------------------

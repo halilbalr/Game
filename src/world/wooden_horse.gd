@@ -5,8 +5,9 @@ extends Node3D
 ## builds the cramped compartment inside, which the game keeps out of sight
 ## below the ground and moves the player into.
 
-## Where the player stands at the foot of the rope, in local space.
-const ROPE_FOOT := Vector3(0.0, 0.2, 0.6)
+## Where the player stands at the foot of the rope, in local space: on the
+## deck of the sledge, between the legs.
+const ROPE_FOOT := Vector3(0.0, 1.5, 0.6)
 ## Offset of the hidden interior set from the horse's origin.
 const INTERIOR_OFFSET := Vector3(0.0, -70.0, 0.0)
 

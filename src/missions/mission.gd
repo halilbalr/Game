@@ -25,6 +25,7 @@ var ended: bool = false
 var autoplay: bool = false
 var _pause: PauseMenu
 var _started_ms: int = 0
+var _started_frame: int = 0
 
 
 func _ready() -> void:
@@ -61,6 +62,7 @@ func _ready() -> void:
 	prepare()
 	_apply_debug_args()
 	_started_ms = Time.get_ticks_msec()
+	_started_frame = Engine.get_physics_frames()
 	_begin.call_deferred()
 
 
@@ -72,6 +74,12 @@ func _apply_debug_args() -> void:
 		player.set_pitch(float(c[4]))
 	if Game.args.has("pause"):
 		_pause.open.call_deferred()
+	if Game.args.has("bot"):
+		var bot: Node = (load("res://src/debug/bot.gd") as GDScript).new()
+		bot.set("mission", self)
+		add_child(bot)
+	if Game.args.has("god"):
+		player.invulnerable = true
 	match str(Game.args.get("pose", "")):
 		"block":
 			player.debug_block = true
@@ -266,9 +274,9 @@ func fail(title: String, body: String) -> void:
 		return
 	ended = true
 	player.control_enabled = false
-	_report("MISSION FAILED")
+	_report("MISSION FAILED (%s)" % title)
 	hud.show_end(title, body, {"Try again": retry, "Main menu": Game.start_menu}, false)
-	if autoplay:
+	if autoplay or Game.args.has("bot"):
 		get_tree().quit(1)
 
 
@@ -281,12 +289,14 @@ func complete(title: String, body: String) -> void:
 	player.invulnerable = true
 	_report("MISSION COMPLETE")
 	hud.show_end(title, body, {"Continue": Game.start_menu, "Play again": retry}, true)
-	if autoplay:
+	if autoplay or Game.args.has("bot"):
 		get_tree().quit(0)
 
 
 func _report(what: String) -> void:
-	print("%s: %s after %.1f s, kills %d" % [what, id, (Time.get_ticks_msec() - _started_ms) * 0.001, player.kills])
+	print("%s: %s after %.1f s wall, %.0f s game time, kills %d, health %.0f" % [what, id,
+		(Time.get_ticks_msec() - _started_ms) * 0.001, (Engine.get_physics_frames() - _started_frame) / 60.0,
+		player.kills, player.health])
 
 
 ## Restarts this mission.

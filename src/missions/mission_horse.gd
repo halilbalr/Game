@@ -150,7 +150,7 @@ func _process(delta: float) -> void:
 					if (not o.aware or o.asleep) and o.global_position.distance_to(s.global_position) < 9.0:
 						o.alert(player)
 		hud.set_stealth(true, 1.0 if alarmed else worst, least if alarmed else -1.0, total)
-		if alarmed and least <= 0.0 and not autoplay:
+		if alarmed and least <= 0.0 and not autoplay and not Game.args.has("noalarm"):
 			fail(text("alarm_title"), text("alarm_text"))
 	if _sack:
 		_fire_level = move_toward(_fire_level, _fire_target, delta * 0.02)
@@ -267,19 +267,20 @@ func run() -> void:
 	player.look_toward(world.marker("south_gate") + Vector3(0, 1.5, 0))
 	player.move_enabled = true
 	player.combat_enabled = true
-	var dio := spawn("diomedes", foot + Vector3(-1.8, 0.2, 3.2), PI, {"invulnerable": true, "engage_range": 0.0})
-	var men := spawn("menelaus", foot + Vector3(2.0, 0.2, 3.8), PI, {"invulnerable": true, "engage_range": 0.0})
+	var dio := spawn("diomedes", _g(foot.x - 1.8, foot.z + 3.4) + Vector3(0, 0.2, 0), PI, {"invulnerable": true, "engage_range": 0.0})
+	var men := spawn("menelaus", _g(foot.x + 2.0, foot.z + 4.0) + Vector3(0, 0.2, 0), PI, {"invulnerable": true, "engage_range": 0.0})
 	_stealth = true
 	mark("exit")
 	await hud.fade(0.0, 1.6 if not Game.args.has("stop") else 0.05)
 	await speak("plan")
 	dio.set_goal(world.marker("palace"), 3.0)
 	men.set_goal(world.marker("palace") + Vector3(3, 0, 0), 3.0)
-	objective("citadel", world.marker("south_gate"))
+	# The marker stands just beyond the gate, inside the zone that advances the script.
+	objective("citadel", world.marker("south_gate") + Vector3(0, 0, 5.0))
 	hud.toast(text("hint_stealth"), 9.0)
 	await speak("athena_1")
 
-	await reach(world.marker("south_gate") + Vector3(0, 0, 6.0), 7.0)
+	await reach(world.marker("south_gate") + Vector3(0, 0, 6.0), 6.0)
 	for s: Soldier in [dio, men]:
 		battle.soldiers.erase(s)
 		s.queue_free()
@@ -288,7 +289,7 @@ func run() -> void:
 	var inward: Vector3 = -(gate["normal"] as Vector3)
 	objective("town", gp + inward * 14.0)
 	await speak("south_gate")
-	await reach(gp + inward * 30.0, 16.0)
+	await reach(gp + inward * 22.0, 15.0)
 	objective("watch", gp + inward * 8.0)
 	mark("gate")
 	await speak("at_gate")

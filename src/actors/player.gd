@@ -62,6 +62,7 @@ var _dead: bool = false
 var _shake: float = 0.0
 var _long_spear: bool = false
 var _focus_wait: int = 0
+var _grace: float = 0.0
 
 
 ## Applies a hero role. Call before adding to the tree.
@@ -311,6 +312,10 @@ func receive_hit(attacker: Node3D, base_damage: float, height: float, dir: Vecto
 	if _dead or invulnerable:
 		return {}
 	var cfg: Dictionary = Data.tuning.get("combat", {})
+	# Two men striking in the same instant count as one blow.
+	if _grace > 0.0:
+		return {}
+	_grace = float(cfg.get("player_hit_grace", 0.7))
 	var to_att := attacker.global_position - global_position if attacker != null else -dir
 	var fwd := -global_transform.basis.z
 	var can_block := blocking and viewmodel._has_shield \
@@ -322,7 +327,7 @@ func receive_hit(attacker: Node3D, base_damage: float, height: float, dir: Vecto
 		# A blow that lands on an exhausted arm drives through.
 		if stamina <= 0.0:
 			leak = base_damage * 0.5
-		_apply_damage(leak * float(cfg.get("player_damage_taken_scale", 0.55)), true)
+		_apply_damage(leak * float(cfg.get("player_damage_taken_scale", 0.4)) * Game.damage_taken_scale(), true)
 		viewmodel.flinch()
 		_shake = 0.3
 		return {"blocked": true, "killed": _dead, "damage": leak}
@@ -330,7 +335,7 @@ func receive_hit(attacker: Node3D, base_damage: float, height: float, dir: Vecto
 	var outfit: Dictionary = Data.characters.get("outfits", {}).get(str(role.get("outfit", role_id)), {})
 	var armor_id := str((outfit.get("armor", ["none"]) as Array)[0])
 	var dmg := Combat.damage(base_damage, zone, Combat.armor_value(armor_id), Combat.is_behind(fwd, to_att), randf(), cfg)
-	dmg *= float(cfg.get("player_damage_taken_scale", 0.55))
+	dmg *= float(cfg.get("player_damage_taken_scale", 0.4)) * Game.damage_taken_scale()
 	_apply_damage(dmg, false)
 	viewmodel.flinch()
 	_shake = 0.5
@@ -492,6 +497,7 @@ func _physics_process(delta: float) -> void:
 			hold_progress = maxf(hold_progress - delta * 2.0, 0.0)
 
 	# Recovery.
+	_grace -= delta
 	_stamina_wait -= delta
 	if _stamina_wait <= 0.0 and not sprinting and not blocking:
 		stamina = minf(stamina + float(_cfg.get("stamina_regen", 24.0)) * delta, max_stamina)

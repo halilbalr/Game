@@ -89,9 +89,13 @@ god's hand the game gives to mist, thunder and chance.
 
 ## Options
 
-Mouse sensitivity, field of view, volume, graphics quality, blood on or off,
-inverted look, head bob, fullscreen. **Blood** removes the spray, the pools
-and the red at the screen edge.
+Mouse sensitivity, field of view, volume, difficulty, graphics quality, blood
+on or off, inverted look, head bob, fullscreen.
+
+- **Difficulty** changes how much a blow hurts you: *Bard's tale* (about half),
+  *Warrior* (the default), *Hero* (half as much again). Combat has only been
+  tested by scripts, not by a person, so expect to adjust this.
+- **Blood** removes the spray, the pools and the red at the screen edge.
 
 ## Known limits
 

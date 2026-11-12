@@ -10,6 +10,7 @@ func _init() -> void:
 	_slider("Mouse sensitivity", "mouse_sensitivity", 0.3, 2.5, 0.05)
 	_slider("Field of view", "fov", 60.0, 100.0, 1.0)
 	_slider("Volume", "master_volume", 0.0, 1.0, 0.05)
+	_choice("Difficulty", "difficulty", ["Bard's tale", "Warrior", "Hero"])
 	_choice("Graphics", "quality", ["Low", "Medium", "High"])
 	_toggle("Blood", "blood")
 	_toggle("Invert look", "invert_y")
