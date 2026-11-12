@@ -25,3 +25,37 @@ framework:
 # here. `/settings --local <key>=<value>` writes there; `/settings <key>=<value>`
 # edits this file. See `.claude/docs/config-resolution.md` for the full
 # precedence order.
+
+project:
+  name: "The Odyssey"
+  stage: "pre-production"
+
+modes:
+  rigor: minimal
+  automation: autonomous
+
+engine:
+  name: "Godot"
+  version: "4.6"
+  language: "GDScript"
+  rendering: "Forward+"
+  physics: "Jolt"
+
+specialists:
+  code: "godot-gdscript-specialist"
+  shader: "godot-shader-specialist"
+  ui: "godot-specialist"
+  additional: ["godot-gdextension-specialist"]
+
+naming:
+  classes: PascalCase
+  variables: snake_case
+  constants: SCREAMING_SNAKE
+  signals: past_tense
+  files: snake_case
+  scenes: snake_case
+
+commands:
+  test: "godot --headless --path . -s res://tests/run_tests.gd"
+  run: "godot --path . --windowed --resolution 1280x720"
+  smoke: "godot --headless --path . --quit-after 5"

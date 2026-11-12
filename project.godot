@@ -1,0 +1,60 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+config/name="The Odyssey"
+config/description="A first-person telling of the siege of Troy, after Homer. Fight as Odysseus from the belly of the wooden horse, or hold the Scaean Gate as Hector."
+config/version="0.1.0"
+run/main_scene="res://src/main.tscn"
+config/features=PackedStringArray("4.6", "Forward Plus")
+config/icon="res://icon.svg"
+boot_splash/bg_color=Color(0.03, 0.025, 0.02, 1)
+boot_splash/show_image=false
+
+[autoload]
+
+Data="*res://src/core/data.gd"
+Game="*res://src/core/game.gd"
+Sfx="*res://src/core/sfx.gd"
+
+[display]
+
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+window/size/mode=3
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[layer_names]
+
+3d_physics/layer_1="world"
+3d_physics/layer_2="player"
+3d_physics/layer_3="soldiers"
+3d_physics/layer_4="interact"
+3d_physics/layer_5="projectiles"
+3d_physics/layer_6="corpses"
+
+[physics]
+
+3d/physics_engine="Jolt Physics"
+common/physics_ticks_per_second=60
+common/max_physics_steps_per_frame=4
+
+[rendering]
+
+lights_and_shadows/directional_shadow/size=4096
+lights_and_shadows/directional_shadow/soft_shadow_filter_quality=3
+lights_and_shadows/positional_shadow/atlas_size=4096
+lights_and_shadows/positional_shadow/soft_shadow_filter_quality=2
+anti_aliasing/quality/msaa_3d=1
+anti_aliasing/quality/screen_space_aa=1
+textures/default_filters/anisotropic_filtering_level=3
+environment/defaults/default_clear_color=Color(0.02, 0.02, 0.025, 1)
