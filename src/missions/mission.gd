@@ -30,6 +30,8 @@ var _started_ms: int = 0
 func _ready() -> void:
 	autoplay = Game.args.has("autoplay")
 	data = Data.mission(id)
+	Sfx.music(&"")
+	Sfx.ambience(&"")
 	world = Game.acquire_world(preset)
 	add_child(world)
 	world.ensure_navigation()
@@ -93,6 +95,15 @@ func run() -> void:
 
 
 # --- helpers for scripts -----------------------------------------------------------
+
+## Names a point in the script. The harness can stop auto-play here with
+## `--stop=<label>` so a screenshot shows the mission as it stands.
+func mark(label: String) -> void:
+	if autoplay and str(Game.args.get("stop", "")) == label:
+		autoplay = false
+		Game.args["stopped"] = "1"
+		print("Mission %s: stopped at '%s'" % [id, label])
+
 
 ## Text from the mission data file.
 func text(key: String, fallback: String = "") -> String:

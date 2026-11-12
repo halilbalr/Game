@@ -24,6 +24,11 @@ func _ready() -> void:
 
 func _capture() -> void:
 	var frames := int(Game.args.get("frames", "30"))
+	# With --stop, wait for the mission script to reach that point first.
+	var guard := 0
+	while Game.args.has("stop") and not Game.args.has("stopped") and guard < 2000:
+		await get_tree().process_frame
+		guard += 1
 	var cams: PackedStringArray = PackedStringArray()
 	if Game.args.has("cams"):
 		cams = (Game.args["cams"] as String).split(";")
@@ -48,4 +53,7 @@ func _capture() -> void:
 		var path: String = (Game.args["shot"] as String).replace(".png", "_%d.png" % ci)
 		img.save_png(path)
 		print("shot saved: ", path)
-	get_tree().quit()
+	# Harness runs end here. A hard exit: a clean quit can hang on teardown
+	# under the software renderer.
+	await get_tree().process_frame
+	OS.kill(OS.get_process_id())

@@ -72,6 +72,7 @@ var _thigh_r: Node3D
 var _shin_r: Node3D
 var _shield: Node3D
 var _weapon: MeshInstance3D
+var _head_mesh: MeshInstance3D
 var _cur := Pose.new()
 var _phase: float = 0.0
 var _attack_kind: StringName = &""
@@ -350,7 +351,7 @@ static func _build_leg(look: Dictionary, upper: bool) -> ArrayMesh:
 
 
 static func _cached(look: Dictionary, part: String, builder: Callable) -> ArrayMesh:
-	var key := "%s:%d:%s" % [look["id"], look["variant"], part]
+	var key := "%s:%d:%s:%s" % [look["id"], look["variant"], part, look["helmet"]]
 	if not _mesh_cache.has(key):
 		_mesh_cache[key] = builder.call()
 	return _mesh_cache[key]
@@ -382,7 +383,8 @@ func setup(outfit_id: String, outfit: Dictionary, variant: int, weapon: String =
 	_spine = _joint(_body, Vector3(0, 0.02, 0))
 	_part(_spine, _cached(look, "torso", _build_torso.bind(look)), Vector3.ZERO)
 	_head = _joint(_spine, Vector3(0, 0.575, 0))
-	_part(_head, _cached(look, "head", _build_head.bind(look)), Vector3.ZERO).scale = Vector3.ONE * 1.1
+	_head_mesh = _part(_head, _cached(look, "head", _build_head.bind(look)), Vector3.ZERO)
+	_head_mesh.scale = Vector3.ONE * 1.1
 	var arm_u := _cached(look, "arm_u", _build_arm.bind(look, true))
 	var arm_f := _cached(look, "arm_f", _build_arm.bind(look, false))
 	_arm_l = _joint(_spine, Vector3(-0.205, 0.43, 0))
@@ -414,6 +416,12 @@ func setup(outfit_id: String, outfit: Dictionary, variant: int, weapon: String =
 	set_weapon(weapon)
 	_phase = variant * 1.37
 	_apply(_cur)
+
+
+## Bares the head (a helmet struck off or laid aside).
+func remove_helmet() -> void:
+	look["helmet"] = "none"
+	_head_mesh.mesh = _cached(look, "head", _build_head.bind(look))
 
 
 ## True when this figure carries a shield.

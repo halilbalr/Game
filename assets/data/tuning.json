@@ -27,12 +27,13 @@
     "leg_multiplier": 0.8,
     "back_multiplier": 1.35,
     "damage_spread": 0.12,
-    "max_attackers_on_player": 3,
+    "max_attackers_on_player": 2,
     "hit_stun": 0.38,
     "block_stun": 0.22,
-    "player_damage_taken_scale": 0.55,
+    "player_damage_taken_scale": 0.5,
     "ally_damage_scale": 0.6,
-    "corpse_limit": 70
+    "corpse_limit": 70,
+    "ai_vs_ai_damage_scale": 0.5
   },
   "stealth": {
     "view_range": 21.0,
@@ -51,8 +52,8 @@
     "walk_speed": 1.5,
     "run_speed": 4.4,
     "engage_range": 24.0,
-    "attack_cooldown_min": 0.9,
-    "attack_cooldown_max": 2.0,
+    "attack_cooldown_min": 1.2,
+    "attack_cooldown_max": 2.6,
     "separation": 0.95,
     "repath_seconds": 0.45
   }

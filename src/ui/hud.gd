@@ -318,6 +318,8 @@ func _draw_bars() -> void:
 	if target != Vector3.INF and player.camera != null and player.is_alive():
 		var cam := player.camera
 		var dist := cam.global_position.distance_to(target)
+		if dist < 0.6:
+			return
 		var behind := cam.is_position_behind(target)
 		var sp := cam.unproject_position(target)
 		var margin := 60.0

@@ -46,6 +46,8 @@ var engage_range: float = 24.0
 var damage_scale: float = 1.0
 var throws_left: int = 0
 var body_scale: float = 1.0
+## When true only the player's blows can finish this man (fated deaths).
+var player_kill_only: bool = false
 
 var _nav: NavigationAgent3D
 var _think_t: float = 0.0
@@ -198,6 +200,7 @@ func _think(dt: float) -> void:
 		if not aware:
 			return
 	if civilian:
+		state = State.MOVE if (has_goal or leader != null or not patrol.is_empty()) else State.IDLE
 		return
 	# Keep a live target; otherwise look for the nearest enemy.
 	var keep := _valid(target) and global_position.distance_to(target.global_position) < engage_range * 1.4
@@ -329,6 +332,9 @@ func _resolve_attack() -> void:
 	elif roll > 0.86:
 		height = 0.5
 	var base := float(weapon.get("damage", 30.0)) * (0.7 + 0.5 * skill) * damage_scale
+	if target is Soldier:
+		# Men of the line wear each other down slowly; the player decides the fight.
+		base *= float(Data.tune("combat.ai_vs_ai_damage_scale", 0.5))
 	var result: Dictionary = target.receive_hit(self, base, height, to.normalized(), weapon_id)
 	if result.get("blocked", false):
 		Sfx.play_at(&"block", target.global_position)
@@ -362,6 +368,8 @@ func receive_hit(attacker: Node3D, base_damage: float, height: float, dir: Vecto
 	var zone := Combat.hit_zone(height, body_scale, figure.crouching)
 	var dmg := Combat.damage(base_damage, zone, Combat.armor_value(str(figure.look.get("armor", "none"))), behind, randf(), cfg)
 	health -= dmg
+	if player_kill_only and not by_player:
+		health = maxf(health, 1.0)
 	Blood.spray(battle, global_position + Vector3(0, clampf(height, 0.3, 1.65), 0), -dir + Vector3(0, 0.5, 0),
 		1.4 if zone == &"head" else 1.0)
 	figure.flinch(1.0)
@@ -402,6 +410,13 @@ func _die(killer: Node3D, dir: Vector3, quiet: bool) -> void:
 		battle.drop_spear(pos + Vector3(randf_range(-0.8, 0.8), 0, randf_range(-0.8, 0.8)))
 	died.emit(self, killer)
 	set_physics_process(false)
+
+
+## Leaves the soldier reeling for [param seconds], unable to act.
+func stagger(seconds: float) -> void:
+	_stun = maxf(_stun, seconds)
+	_attack_pending = false
+	figure.flinch(1.5)
 
 
 ## Kills the soldier outright (used by missions for scripted deaths).

@@ -77,6 +77,16 @@ func _apply(k: float) -> void:
 	_leaves[1].rotation.y = deg_to_rad(104.0) * k
 
 
+## Sets the gate's state at once, without animation.
+func snap(open_now: bool, barred_now: bool) -> void:
+	is_open = open_now
+	barred = barred_now
+	_bar.visible = barred
+	_bar.position = Vector3(0.0, 1.35, -0.26)
+	_bar.rotation = Vector3.ZERO
+	_apply(1.0 if is_open else 0.0)
+
+
 ## World position of the middle of the bar (for interaction prompts).
 func bar_position() -> Vector3:
 	return _bar.global_position

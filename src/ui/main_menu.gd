@@ -17,6 +17,7 @@ func _ready() -> void:
 	_place_camera()
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	Sfx.music(&"lyre")
+	Sfx.ambience(&"")
 
 	var layer := CanvasLayer.new()
 	add_child(layer)

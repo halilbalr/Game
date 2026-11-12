@@ -40,6 +40,8 @@ var hold_progress: float = 0.0
 var kills: int = 0
 ## Harness only: holds the shield up without input.
 var debug_block: bool = false
+## Harness only: accepts injected input without a captured mouse.
+var bot_control: bool = false
 
 var _cfg: Dictionary = {}
 var _head: Node3D
@@ -388,7 +390,7 @@ func _physics_process(delta: float) -> void:
 		velocity.y -= GRAVITY * delta
 		move_and_slide()
 		return
-	var active := control_enabled and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+	var active := control_enabled and (Input.mouse_mode == Input.MOUSE_MODE_CAPTURED or bot_control)
 	var can_move := active and move_enabled
 
 	# Gamepad look.

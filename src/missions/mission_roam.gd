@@ -44,6 +44,8 @@ func prepare() -> void:
 
 func run() -> void:
 	hud.set_fade(1.0)
+	Sfx.ambience(&"day")
+	Sfx.music(&"lyre")
 	await wait(0.4)
 	hud.fade(0.0, 2.0)
 	await hud.title_card(text("title", "Ilios"), text("intro", ""), 5.0)

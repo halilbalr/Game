@@ -24,9 +24,10 @@ const PRESETS := {
 	},
 	# Moonlit night of the horse.
 	"night": {
-		"sun_dir": Vector3(0.42, 0.62, -0.50), "sun_color": Color(0.58, 0.70, 1.0), "sun_energy": 0.34,
+		"sun_dir": Vector3(0.42, 0.62, -0.50), "sun_color": Color(0.58, 0.70, 1.0), "sun_energy": 0.62,
+		"ambient_color": Color(0.10, 0.135, 0.21),
 		"zenith": Color(0.006, 0.010, 0.028), "horizon": Color(0.030, 0.045, 0.085), "ground": Color(0.012, 0.014, 0.02),
-		"ambient": 0.55, "stars": 1.4, "clouds": 0.22, "sun_glow": 0.25, "moon": true,
+		"ambient": 1.0, "stars": 1.4, "clouds": 0.22, "sun_glow": 0.25, "moon": true,
 		"fog_color": Color(0.05, 0.07, 0.12), "fog_density": 0.0016, "vol_density": 0.012,
 		"exposure": 1.25, "disk": 2.2, "sky_exposure": 1.0,
 	},
@@ -91,6 +92,12 @@ func apply(preset_name: String, quality: int = 1) -> void:
 	var night: bool = p["moon"]
 	sky_material.set_shader_parameter("cloud_color", Color(0.16, 0.19, 0.27) if night else Color(1.0, 0.97, 0.93))
 	sky_material.set_shader_parameter("cloud_shadow", Color(0.03, 0.04, 0.07) if night else Color(0.52, 0.57, 0.68))
+	if p.has("ambient_color"):
+		# Moonless shadow would be black; a flat cool fill keeps the night readable.
+		env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+		env.ambient_light_color = p["ambient_color"]
+	else:
+		env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
 	env.ambient_light_sky_contribution = 1.0
 	env.ambient_light_energy = p["ambient"]
 	env.tonemap_exposure = p["exposure"]

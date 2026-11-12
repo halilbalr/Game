@@ -1,0 +1,51 @@
+{
+  "loading": "The plain before the Scaean Gate...",
+  "text": {
+    "title": "THE SCAEAN GATE",
+    "intro": "The ninth year of the war. The Achaeans press hard against the city, and Diomedes rages on the plain like a river in flood. Hector, son of Priam, has come back from the fighting to bid the women pray, and to find his wife.",
+    "death_title": "HECTOR HAS FALLEN",
+    "death_text": "The Achaeans drag his armour from him before the gate. On the tower a woman has seen it.",
+    "end_title": "THE ARMOUR OF ACHILLES",
+    "end_text": "Hector stripped the armour of Achilles from the body of Patroclus and put it on. He would wear it to his death. By the ships, a man who had sworn not to fight heard the news and rose.\n\nAfter Iliad 6.237-529 and 16.684-867.",
+    "hint_block": "Hold the right mouse button to raise your shield. It stops what comes from the front.",
+    "hint_throw": "Press [G] to throw your spear. Spears on the field can be taken up again."
+  },
+  "objectives": {
+    "find": "Find Andromache at the Scaean Gate",
+    "helmet": "Take off your helmet",
+    "sortie": "Go out through the gate to the men at the oak",
+    "hold": "Hold the ground before the gate",
+    "hold_sub": "Drive back the Achaean attack",
+    "hold2": "They come again. Hold!",
+    "myrmidons": "Break the Myrmidons",
+    "myrmidons_sub": "The man in the armour of Achilles",
+    "patroclus": "Face Patroclus"
+  },
+  "lines": {
+    "andromache_1": ["Andromache", "Hector. Your own strength will be the death of you. Have you no pity for your little son, or for me, who will soon be your widow?"],
+    "andromache_2": ["Andromache", "Achilles killed my father, and my seven brothers in a single day. You are father and mother and brother to me now, and you are my husband."],
+    "andromache_3": ["Andromache", "Stay here on the tower. Set the army by the wild fig tree, where the wall is easiest to climb."],
+    "hector_1": ["Hector", "All this weighs on me too. But I could not face the men of Troy, nor the women with their trailing robes, if I shrank from the fighting like a coward."],
+    "hector_2": ["Hector", "I know it in my heart. The day will come when holy Ilios shall fall, and Priam, and the people of Priam of the good ash spear."],
+    "child": ["", "You reach for your son. The child cries out and hides his face against his nurse, afraid of the bronze and of the horsehair crest nodding above it."],
+    "laugh": ["", "You laugh, and Andromache laughs with you. You set the shining helmet on the ground and take the boy in your arms."],
+    "prayer": ["Hector", "Zeus, and all you gods: let this boy be as I am, first among the Trojans. And let men say of him one day, as he comes home from war, 'He is better by far than his father.'"],
+    "fate": ["Hector", "Do not grieve too much. No man will send me down to Hades before my time. And no one born has ever escaped his fate, coward or brave."],
+    "parting": ["", "She goes toward the house, turning often to look back, and weeping."],
+    "paris_1": ["Paris", "Brother. I have kept you waiting."],
+    "hector_3": ["Hector", "Come. We will make it good hereafter, if Zeus ever lets us drive the Achaeans from Troy."],
+    "rally": ["Hector", "Trojans, Lycians, Dardanians who fight hand to hand: be men, my friends! Remember your fury!"],
+    "wave_1": ["Trojan", "They are coming up from the river! Shields!"],
+    "wave_2": ["Trojan", "More of them, on the left! Hold the line by the oak!"],
+    "achilles_cry": ["", "A cry runs down the Achaean line: 'Achilles! Achilles has come out!' The armour is his. The man inside it is Patroclus."],
+    "patroclus_1": ["Patroclus", "Myrmidons! To the wall! Today we take the city of Priam!"],
+    "apollo_1": ["Apollo", "Give way, Patroclus. It is not fated that the city of the proud Trojans fall to your spear, nor to the spear of Achilles, who is a better man than you."],
+    "apollo_2": ["", "Three times he sets his foot on the angle of the wall. Three times something throws him back."],
+    "apollo_strike": ["", "A mist comes down across the fighting. Out of it something strikes Patroclus between the shoulders. His eyes swim. The helmet of Achilles rolls in the dust."],
+    "euphorbus": ["", "Euphorbus, son of Panthous, drives a spear into his back and runs. Patroclus staggers toward his own men."],
+    "hector_4": ["Hector", "Patroclus! You thought to sack our city and carry our women to your ships. Fool."],
+    "patroclus_2": ["Patroclus", "Boast while you can, Hector. Zeus and Apollo gave you this. They beat me, not you. I would have killed twenty such as you."],
+    "patroclus_3": ["Patroclus", "And you will not live long yourself. Death and strong fate are standing beside you already, at the hands of Achilles."],
+    "hector_5": ["Hector", "Why prophesy my death, Patroclus? Who knows but Achilles may be struck first, by my spear?"]
+  }
+}

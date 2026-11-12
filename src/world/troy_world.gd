@@ -15,6 +15,8 @@ var night: bool = false
 ## Torches and hearths, lit only at night.
 var fires: Array[Fire] = []
 var nav_region: NavigationRegion3D
+## Triangle count of the built city: changes whenever the geometry does.
+var _signature: int = 0
 
 
 func _init() -> void:
@@ -37,6 +39,7 @@ func build(preset_name: String, quality: int) -> void:
 	Props.build_awnings(builder.b, info)
 	Props.build_torch_posts(builder.b, info)
 	var tris := builder.b.triangle_count()
+	_signature = tris
 	builder.b.commit(self, Mats.all())
 	fires = Props.place(self, info, quality)
 	for f in fires:
@@ -76,7 +79,7 @@ func ensure_navigation() -> void:
 	if nav_region != null:
 		return
 	var t0 := Time.get_ticks_msec()
-	var cache := "user://troy_nav_v%d.res" % NAV_VERSION
+	var cache := "user://troy_nav_v%d_%d.res" % [NAV_VERSION, _signature]
 	var navmesh: NavigationMesh = null
 	if ResourceLoader.exists(cache):
 		navmesh = ResourceLoader.load(cache) as NavigationMesh
