@@ -215,8 +215,8 @@ static func build_torch_posts(b: GeoBuilder, info: Dictionary) -> void:
 		b.cylinder(&"bronze_dull", p + Vector3(0, 2.12, 0), 0.09, 0.15, 0.2, 8)
 
 
-## Places instanced props and, at night, the fires. Returns the list of fires.
-static func place(world: Node3D, info: Dictionary, night: bool, quality: int) -> Array[Fire]:
+## Places instanced props and the torch and hearth fires. Returns the fires.
+static func place(world: Node3D, info: Dictionary, quality: int) -> Array[Fire]:
 	var by_kind: Dictionary = {}
 	for t: Dictionary in info["trees"]:
 		var kind: String = t["kind"]
@@ -241,15 +241,14 @@ static func place(world: Node3D, info: Dictionary, night: bool, quality: int) ->
 	_multimesh(world, pithos_mesh(), jars, "Pithoi", 140.0)
 
 	var fires: Array[Fire] = []
-	if night:
-		for p: Vector3 in info["torches"]:
-			var f := Fire.new(0.16)
-			f.position = p
-			world.add_child(f)
-			fires.append(f)
-		for h: Dictionary in info["hearths"]:
-			var f := Fire.new(0.42, false, quality >= 2)
-			f.position = h["pos"]
-			world.add_child(f)
-			fires.append(f)
+	for p: Vector3 in info["torches"]:
+		var f := Fire.new(0.16)
+		f.position = p
+		world.add_child(f)
+		fires.append(f)
+	for h: Dictionary in info["hearths"]:
+		var f := Fire.new(0.42, false, quality >= 2)
+		f.position = h["pos"]
+		world.add_child(f)
+		fires.append(f)
 	return fires

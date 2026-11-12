@@ -1,1 +1,149 @@
-{}
+{
+  "outfits": {
+    "achaean": {
+      "skin": [[0.70, 0.50, 0.36], [0.64, 0.45, 0.32], [0.74, 0.55, 0.40]],
+      "hair": [[0.10, 0.07, 0.05], [0.18, 0.11, 0.06], [0.07, 0.05, 0.04]],
+      "tunic": [[0.80, 0.74, 0.60], [0.72, 0.62, 0.46], [0.84, 0.80, 0.70]],
+      "kilt": [[0.52, 0.16, 0.12], [0.60, 0.22, 0.12], [0.44, 0.14, 0.14]],
+      "armor": ["linen", "leather", "bronze"],
+      "helmet": ["boar_tusk", "bronze_crest", "boar_tusk", "leather"],
+      "crest": [[0.10, 0.08, 0.07], [0.55, 0.10, 0.08], [0.85, 0.82, 0.75]],
+      "greaves": [true, true, false],
+      "shield": ["round", "round", "tower"],
+      "shield_hide": [[0.42, 0.28, 0.18], [0.80, 0.74, 0.62], [0.16, 0.12, 0.10]],
+      "beard": [true, true, false],
+      "cloak": [null]
+    },
+    "myrmidon": {
+      "skin": [[0.68, 0.49, 0.36], [0.72, 0.53, 0.39]],
+      "hair": [[0.10, 0.07, 0.05]],
+      "tunic": [[0.16, 0.14, 0.14], [0.22, 0.18, 0.16]],
+      "kilt": [[0.12, 0.10, 0.10], [0.30, 0.08, 0.08]],
+      "armor": ["bronze", "leather"],
+      "helmet": ["bronze_crest"],
+      "crest": [[0.08, 0.07, 0.07]],
+      "greaves": [true],
+      "shield": ["round"],
+      "shield_hide": [[0.10, 0.09, 0.09], [0.24, 0.16, 0.12]],
+      "beard": [true, false],
+      "cloak": [null]
+    },
+    "trojan": {
+      "skin": [[0.66, 0.47, 0.34], [0.72, 0.52, 0.38], [0.60, 0.43, 0.31]],
+      "hair": [[0.07, 0.05, 0.04], [0.12, 0.08, 0.05]],
+      "tunic": [[0.84, 0.72, 0.42], [0.86, 0.82, 0.72], [0.62, 0.66, 0.70]],
+      "kilt": [[0.16, 0.26, 0.42], [0.70, 0.52, 0.16], [0.20, 0.32, 0.36]],
+      "armor": ["linen", "scale", "leather"],
+      "helmet": ["anatolian", "anatolian", "leather", "bronze_crest"],
+      "crest": [[0.86, 0.84, 0.78], [0.14, 0.24, 0.42], [0.70, 0.52, 0.16]],
+      "greaves": [false, false, true],
+      "shield": ["round", "crescent", "round"],
+      "shield_hide": [[0.74, 0.66, 0.50], [0.30, 0.20, 0.14], [0.86, 0.82, 0.74]],
+      "beard": [true, true, true, false],
+      "cloak": [null]
+    },
+    "trojan_watch": {
+      "skin": [[0.66, 0.47, 0.34], [0.72, 0.52, 0.38]],
+      "hair": [[0.07, 0.05, 0.04], [0.12, 0.08, 0.05]],
+      "tunic": [[0.84, 0.72, 0.42], [0.80, 0.76, 0.66]],
+      "kilt": [[0.16, 0.26, 0.42], [0.70, 0.52, 0.16]],
+      "armor": ["none", "leather"],
+      "helmet": ["none", "leather", "anatolian"],
+      "crest": [[0.86, 0.84, 0.78]],
+      "greaves": [false],
+      "shield": ["none", "round"],
+      "shield_hide": [[0.74, 0.66, 0.50]],
+      "beard": [true, false],
+      "cloak": [[0.34, 0.26, 0.20], null]
+    },
+    "odysseus": {
+      "skin": [[0.68, 0.48, 0.34]], "hair": [[0.30, 0.16, 0.08]], "tunic": [[0.80, 0.74, 0.62]],
+      "kilt": [[0.46, 0.14, 0.12]], "armor": ["leather"], "helmet": ["boar_tusk"], "crest": [[0.1, 0.08, 0.07]],
+      "greaves": [true], "shield": ["round"], "shield_hide": [[0.42, 0.28, 0.18]], "beard": [true],
+      "cloak": [[0.42, 0.10, 0.22]]
+    },
+    "menelaus": {
+      "skin": [[0.76, 0.56, 0.42]], "hair": [[0.62, 0.34, 0.14]], "tunic": [[0.84, 0.80, 0.70]],
+      "kilt": [[0.56, 0.14, 0.10]], "armor": ["bronze"], "helmet": ["bronze_crest"], "crest": [[0.62, 0.12, 0.08]],
+      "greaves": [true], "shield": ["round"], "shield_hide": [[0.80, 0.74, 0.62]], "beard": [true],
+      "cloak": [[0.56, 0.12, 0.10]]
+    },
+    "diomedes": {
+      "skin": [[0.70, 0.50, 0.36]], "hair": [[0.12, 0.08, 0.05]], "tunic": [[0.78, 0.72, 0.58]],
+      "kilt": [[0.50, 0.18, 0.12]], "armor": ["bronze"], "helmet": ["bronze_crest"], "crest": [[0.86, 0.84, 0.78]],
+      "greaves": [true], "shield": ["round"], "shield_hide": [[0.60, 0.42, 0.20]], "beard": [false],
+      "cloak": [null]
+    },
+    "patroclus": {
+      "skin": [[0.72, 0.52, 0.38]], "hair": [[0.24, 0.14, 0.08]], "tunic": [[0.20, 0.16, 0.16]],
+      "kilt": [[0.36, 0.08, 0.08]], "armor": ["bronze_gold"], "helmet": ["bronze_gold"], "crest": [[0.95, 0.76, 0.30]],
+      "greaves": [true], "shield": ["round_great"], "shield_hide": [[0.86, 0.62, 0.26]], "beard": [false],
+      "cloak": [null]
+    },
+    "hector": {
+      "skin": [[0.66, 0.47, 0.34]], "hair": [[0.07, 0.05, 0.04]], "tunic": [[0.86, 0.80, 0.66]],
+      "kilt": [[0.14, 0.22, 0.44]], "armor": ["bronze"], "helmet": ["bronze_crest_tall"], "crest": [[0.10, 0.08, 0.08]],
+      "greaves": [true], "shield": ["round_great"], "shield_hide": [[0.13, 0.11, 0.10]], "beard": [true],
+      "cloak": [[0.14, 0.22, 0.44]]
+    },
+    "deiphobus": {
+      "skin": [[0.68, 0.48, 0.35]], "hair": [[0.08, 0.06, 0.05]], "tunic": [[0.86, 0.76, 0.50]],
+      "kilt": [[0.50, 0.12, 0.30]], "armor": ["scale"], "helmet": ["anatolian"], "crest": [[0.60, 0.14, 0.34]],
+      "greaves": [true], "shield": ["round"], "shield_hide": [[0.86, 0.82, 0.74]], "beard": [true],
+      "cloak": [[0.50, 0.12, 0.30]]
+    },
+    "paris": {
+      "skin": [[0.72, 0.53, 0.40]], "hair": [[0.14, 0.09, 0.05]], "tunic": [[0.90, 0.86, 0.76]],
+      "kilt": [[0.70, 0.52, 0.16]], "armor": ["linen"], "helmet": ["none"], "crest": [[0.9, 0.9, 0.9]],
+      "greaves": [false], "shield": ["none"], "shield_hide": [[0.5, 0.4, 0.3]], "beard": [false],
+      "cloak": [[0.78, 0.60, 0.30]]
+    },
+    "andromache": {
+      "skin": [[0.76, 0.58, 0.46]], "hair": [[0.08, 0.05, 0.04]], "tunic": [[0.86, 0.82, 0.74]],
+      "kilt": [[0.20, 0.30, 0.46]], "armor": ["none"], "helmet": ["veil"], "crest": [[0.86, 0.80, 0.66]],
+      "greaves": [false], "shield": ["none"], "shield_hide": [[0.5, 0.4, 0.3]], "beard": [false],
+      "cloak": [null], "robe": true
+    },
+    "townswoman": {
+      "skin": [[0.74, 0.56, 0.44], [0.68, 0.50, 0.38]], "hair": [[0.08, 0.05, 0.04], [0.14, 0.09, 0.05]],
+      "tunic": [[0.82, 0.76, 0.64], [0.74, 0.60, 0.44]],
+      "kilt": [[0.58, 0.20, 0.16], [0.70, 0.56, 0.24], [0.24, 0.34, 0.44]], "armor": ["none"],
+      "helmet": ["veil", "none"], "crest": [[0.84, 0.78, 0.64], [0.6, 0.3, 0.2]],
+      "greaves": [false], "shield": ["none"], "shield_hide": [[0.5, 0.4, 0.3]], "beard": [false],
+      "cloak": [null], "robe": true
+    },
+    "townsman": {
+      "skin": [[0.68, 0.49, 0.36], [0.62, 0.44, 0.32]], "hair": [[0.08, 0.05, 0.04], [0.5, 0.48, 0.45]],
+      "tunic": [[0.82, 0.76, 0.64], [0.70, 0.58, 0.42], [0.60, 0.50, 0.40]],
+      "kilt": [[0.50, 0.40, 0.28], [0.62, 0.50, 0.30], [0.36, 0.30, 0.26]], "armor": ["none"],
+      "helmet": ["none"], "crest": [[0.5, 0.5, 0.5]],
+      "greaves": [false], "shield": ["none"], "shield_hide": [[0.5, 0.4, 0.3]], "beard": [true, true, false],
+      "cloak": [null, [0.40, 0.32, 0.24]]
+    },
+    "priam": {
+      "skin": [[0.72, 0.56, 0.46]], "hair": [[0.82, 0.80, 0.76]], "tunic": [[0.50, 0.12, 0.30]],
+      "kilt": [[0.50, 0.12, 0.30]], "armor": ["none"], "helmet": ["diadem"], "crest": [[1.0, 0.78, 0.32]],
+      "greaves": [false], "shield": ["none"], "shield_hide": [[0.5, 0.4, 0.3]], "beard": [true],
+      "cloak": [[0.86, 0.80, 0.66]], "robe": true
+    }
+  },
+  "roles": {
+    "odysseus": {"name": "Odysseus", "epithet": "son of Laertes", "side": "achaean", "outfit": "odysseus", "health": 100, "skill": 1.0, "weapons": ["sword", "dagger", "spear"], "scale": 1.0},
+    "hector": {"name": "Hector", "epithet": "of the shining helm", "side": "trojan", "outfit": "hector", "health": 120, "skill": 1.0, "weapons": ["spear", "sword"], "scale": 1.04},
+    "menelaus": {"name": "Menelaus", "epithet": "son of Atreus", "side": "achaean", "outfit": "menelaus", "health": 380, "skill": 0.85, "weapons": ["spear"], "scale": 1.03},
+    "diomedes": {"name": "Diomedes", "epithet": "son of Tydeus", "side": "achaean", "outfit": "diomedes", "health": 380, "skill": 0.9, "weapons": ["spear"], "scale": 1.03},
+    "patroclus": {"name": "Patroclus", "epithet": "in the armour of Achilles", "side": "achaean", "outfit": "patroclus", "health": 420, "skill": 0.95, "weapons": ["spear"], "scale": 1.05},
+    "deiphobus": {"name": "Deiphobus", "epithet": "son of Priam", "side": "trojan", "outfit": "deiphobus", "health": 300, "skill": 0.85, "weapons": ["spear"], "scale": 1.04},
+    "paris": {"name": "Paris", "epithet": "Alexandros", "side": "trojan", "outfit": "paris", "health": 200, "skill": 0.6, "weapons": ["spear"], "scale": 1.0},
+    "achaean_spearman": {"name": "Achaean spearman", "side": "achaean", "outfit": "achaean", "health": 62, "skill": 0.45, "weapons": ["spear"], "scale": 1.0},
+    "achaean_swordsman": {"name": "Achaean swordsman", "side": "achaean", "outfit": "achaean", "health": 56, "skill": 0.5, "weapons": ["sword"], "scale": 1.0},
+    "myrmidon": {"name": "Myrmidon", "side": "achaean", "outfit": "myrmidon", "health": 78, "skill": 0.62, "weapons": ["spear"], "scale": 1.02},
+    "trojan_spearman": {"name": "Trojan spearman", "side": "trojan", "outfit": "trojan", "health": 62, "skill": 0.45, "weapons": ["spear"], "scale": 1.0},
+    "trojan_swordsman": {"name": "Trojan swordsman", "side": "trojan", "outfit": "trojan", "health": 56, "skill": 0.5, "weapons": ["sword"], "scale": 1.0},
+    "trojan_sentry": {"name": "Trojan watchman", "side": "trojan", "outfit": "trojan_watch", "health": 48, "skill": 0.35, "weapons": ["spear"], "scale": 1.0},
+    "andromache": {"name": "Andromache", "epithet": "daughter of Eetion", "side": "trojan", "outfit": "andromache", "health": 50, "skill": 0.0, "weapons": [], "scale": 0.95, "civilian": true},
+    "townswoman": {"name": "Woman of Troy", "side": "trojan", "outfit": "townswoman", "health": 40, "skill": 0.0, "weapons": [], "scale": 0.94, "civilian": true},
+    "townsman": {"name": "Man of Troy", "side": "trojan", "outfit": "townsman", "health": 40, "skill": 0.0, "weapons": [], "scale": 1.0, "civilian": true},
+    "priam": {"name": "Priam", "epithet": "king of Troy", "side": "trojan", "outfit": "priam", "health": 40, "skill": 0.0, "weapons": [], "scale": 0.98, "civilian": true}
+  }
+}

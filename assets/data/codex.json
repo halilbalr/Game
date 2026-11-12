@@ -1,1 +1,116 @@
-{}
+{
+  "places": {
+    "south_gate": {
+      "name": "The South Gate (VI T)",
+      "radius": 16,
+      "text": "The principal gate of the Troy VI citadel, little more than three metres wide, from which a stone-paved street climbed to the summit. The wall beside it is laid in dressed limestone with a marked batter and a small vertical offset every ten metres or so, a habit of building found nowhere else."
+    },
+    "stelae": {
+      "name": "The Stelae before Tower VI i",
+      "radius": 9,
+      "text": "Carl Blegen found a row of standing stones set against the tower that flanks the South Gate. Stones like these mark gate shrines across Anatolia, where the god of the gate was honoured as people came and went. Homer has Apollo, protector of Troy, stand at its walls."
+    },
+    "east_gate": {
+      "name": "The East Gate (VI S)",
+      "radius": 15,
+      "text": "Here the wall coming from the north overlaps the wall from the south, and the way in runs between them for several metres before it turns. An attacker in that passage has defenders above him on both sides and cannot bring a ram to bear."
+    },
+    "west_gate": {
+      "name": "The Blocked West Gate (VI U)",
+      "radius": 13,
+      "text": "This gate was open through Troy VI and was walled up in Troy VIIa, the city of around 1200 BC. The citadel of that time was also crowded with small houses and storage jars sunk into their floors. A city that blocks a gate and hoards food expects to be besieged."
+    },
+    "ne_bastion": {
+      "name": "The North-East Bastion (VI g)",
+      "radius": 18,
+      "text": "The greatest tower of the citadel: eighteen metres across, its stone base still standing nine metres high. It was built to enclose a deep rock-cut cistern, so that the citadel could not be made to surrender by thirst."
+    },
+    "tower_vi_h": {
+      "name": "Tower VI h",
+      "radius": 13,
+      "text": "A projecting tower on the eastern wall. From its platform archers and spearmen could strike along the face of the wall at anyone working at its foot."
+    },
+    "palace": {
+      "name": "The House of Priam",
+      "radius": 20,
+      "text": "The summit of the mound was levelled by Greek and Roman builders, and nothing of its Bronze Age buildings survived. This hall follows Homer, who gives Priam a palace with fifty chambers of polished stone for his sons and twelve more for his daughters (Iliad 6.242-250), and the megaron plan of the excavated houses lower down."
+    },
+    "temple_athena": {
+      "name": "The Temple of Athena",
+      "radius": 18,
+      "text": "Homer sets a temple of Athena on the citadel, where the women of Troy laid their finest robe on the knees of the goddess and begged her to break the spear of Diomedes. \"But Pallas Athena denied their prayer\" (Iliad 6.297-311). It was to her that the wooden horse was offered."
+    },
+    "house_hector": {
+      "name": "The House of Hector",
+      "radius": 14,
+      "text": "Homer places the houses of Hector and of Paris beside Priam's on the height of the city (Iliad 6.313-317). When Hector came here from the battle to find his wife, the house was empty: Andromache had run to the wall."
+    },
+    "house_paris": {
+      "name": "The House of Alexandros",
+      "radius": 14,
+      "text": "Paris built it himself, says Homer, with the best craftsmen in Troy: \"a chamber, a hall and a court.\" Hector found him here polishing his armour and his bow while other men were dying for his quarrel."
+    },
+    "house_deiphobus": {
+      "name": "The House of Deiphobus",
+      "radius": 15,
+      "text": "After Paris fell, Helen was given to his brother Deiphobus. On the night of the horse Odysseus and Menelaus went straight to this house, and there, the bard Demodocus sang, Odysseus fought the hardest fight of his life and won it with Athena's help (Odyssey 8.517-520)."
+    },
+    "house_vi_m": {
+      "name": "House VI M",
+      "radius": 15,
+      "text": "The largest of the excavated terrace houses, an L-shaped building nearly thirty metres long, standing on a retaining wall as carefully built as the fortifications themselves. Houses of this kind, each on its own terrace, ringed the citadel below the palace."
+    },
+    "pillar_house": {
+      "name": "The Pillar House",
+      "radius": 15,
+      "text": "Named for the two stone pillars that carried its roof or an upper floor. At twenty-six metres by twelve it is one of the largest buildings of Troy VI, and stood just inside the South Gate."
+    },
+    "agora": {
+      "name": "The Square before the Citadel",
+      "radius": 20,
+      "text": "The lower town lay south and east of the citadel. Manfred Korfmann's excavations after 1988 showed it to be far larger than had been thought, covering perhaps twenty-five hectares and housing several thousand people. The town shown here is compressed for the sake of walking it."
+    },
+    "scaean_gate": {
+      "name": "The Scaean Gate",
+      "radius": 22,
+      "text": "The gate of the poem: Hector parts from Andromache here, the old men watch Helen pass, and Achilles will die before it. The name means \"western\" or \"on the left hand\". Its place on a lower-town wall facing the plain is a reconstruction. What has been excavated is the defensive ditch beyond, cut into the rock, with a gap for a gateway."
+    },
+    "great_tower": {
+      "name": "The Great Tower of Ilios",
+      "radius": 10,
+      "text": "\"She went to the great tower of Ilios, because she heard the Trojans were hard pressed\" (Iliad 6.386). From the tower by the Scaean Gate Priam and the elders watched the armies, and Helen named the Achaean captains for them one by one."
+    },
+    "dardanian_gate": {
+      "name": "The Dardanian Gate",
+      "radius": 18,
+      "text": "The gate on the landward side, toward Mount Ida and Dardania, the country of Aeneas. While Achilles kept from the fighting, Hera taunts the Achaeans, the Trojans had never dared come out beyond it (Iliad 5.789)."
+    },
+    "oak": {
+      "name": "The Oak of Zeus",
+      "radius": 16,
+      "text": "A great oak stood before the Scaean Gate, sacred to Zeus who holds the aegis. It is the landmark by which Homer measures how near the fighting has come to the city: when the Trojans are driven back to the oak, the gate is at their backs."
+    },
+    "fig_tree": {
+      "name": "The Wild Fig Tree",
+      "radius": 12,
+      "text": "\"Station the army by the fig tree,\" Andromache begs Hector, \"where the city is most easily scaled and the wall may be assaulted\" (Iliad 6.433-434). Three times, she says, the best of the Achaeans had already tried it there."
+    },
+    "springs": {
+      "name": "The Springs of Scamander",
+      "radius": 16,
+      "text": "Two springs rose here, Homer says, one warm and steaming, one cold as hail, beside wide stone troughs \"where the wives and fair daughters of the Trojans used to wash their bright clothes in the days of peace, before the Achaeans came\" (Iliad 22.147-156). Achilles chased Hector past them three times round the city."
+    },
+    "tomb_ilus": {
+      "name": "The Barrow of Ilus",
+      "radius": 28,
+      "text": "The burial mound of Ilus, who founded the city and gave it the name Ilios. It stood out in the middle of the plain, and the Trojans held their councils of war beside it, away from the noise of the camp."
+    }
+  },
+  "arms": {
+    "spear": "The ash spear with a socketed bronze head is the chief weapon of Homer's heroes, thrown or thrust. A bronze spike on the butt let it be planted in the ground, and finished a fallen man.",
+    "sword": "The bronze cut-and-thrust sword of the kind archaeologists call Naue II reached the Aegean around 1200 BC. Homer's heroes draw it when the spear is gone: \"the silver-studded sword\".",
+    "dagger": "A short bronze blade for close work. Odysseus and Diomedes carried such blades on their night raid into the Thracian camp.",
+    "boar_tusk": "A cap of leather with rows of split boar's tusks sewn on, forty or more boars to a helmet. Homer describes one exactly (Iliad 10.261-265), though by his own day none had been made for centuries. Meriones lent his to Odysseus.",
+    "shield": "Shields were of layered ox-hide, sometimes faced with bronze. The tall body shield of Ajax, \"like a tower\", is the older form. The round shield with a central boss replaced it."
+  }
+}

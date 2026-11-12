@@ -1,1 +1,59 @@
-{}
+{
+  "player": {
+    "walk_speed": 4.2,
+    "sprint_speed": 6.8,
+    "crouch_speed": 2.0,
+    "jump_velocity": 4.6,
+    "acceleration": 26.0,
+    "air_control": 0.3,
+    "eye_height": 1.62,
+    "crouch_eye_height": 1.02,
+    "max_health": 100.0,
+    "regen_delay": 6.0,
+    "regen_rate": 5.0,
+    "max_stamina": 100.0,
+    "stamina_regen": 24.0,
+    "stamina_regen_delay": 0.9,
+    "sprint_cost": 10.0,
+    "block_hold_cost": 2.0,
+    "block_hit_cost": 16.0,
+    "jump_cost": 8.0,
+    "block_arc_deg": 115.0,
+    "block_damage_leak": 0.08,
+    "spear_capacity": 2
+  },
+  "combat": {
+    "head_multiplier": 1.7,
+    "leg_multiplier": 0.8,
+    "back_multiplier": 1.35,
+    "damage_spread": 0.12,
+    "max_attackers_on_player": 3,
+    "hit_stun": 0.38,
+    "block_stun": 0.22,
+    "player_damage_taken_scale": 0.55,
+    "ally_damage_scale": 0.6,
+    "corpse_limit": 70
+  },
+  "stealth": {
+    "view_range": 21.0,
+    "view_range_crouched": 10.0,
+    "view_angle_deg": 100.0,
+    "close_range": 2.0,
+    "hear_run": 13.0,
+    "hear_walk": 6.0,
+    "hear_crouch": 1.5,
+    "detect_rate": 0.85,
+    "forget_rate": 0.3,
+    "alarm_seconds": 7.0,
+    "sleeper_scale": 0.3
+  },
+  "ai": {
+    "walk_speed": 1.5,
+    "run_speed": 4.4,
+    "engage_range": 24.0,
+    "attack_cooldown_min": 0.9,
+    "attack_cooldown_max": 2.0,
+    "separation": 0.95,
+    "repath_seconds": 0.45
+  }
+}
