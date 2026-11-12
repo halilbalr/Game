@@ -8,9 +8,16 @@ const CONTROLS_TEXT := "Move  W A S D        Look  Mouse\nStrike  Left mouse    
 const TOUCH_TEXT := "Move  left thumb, anywhere on the left\nPush the stick to its rim to run\nLook  drag on the right\nSTRIKE, SHIELD (hold), THROW, JUMP, CROUCH, ARMS\nUSE appears when there is something to use"
 
 
+const WEB_NOTE := "\nIn a browser: click the game to take control. Esc frees the pointer; P pauses."
+
+
 ## The controls summary for the device in hand.
 static func controls_text() -> String:
-	return TOUCH_TEXT if Game.mobile else CONTROLS_TEXT
+	if Game.mobile:
+		return TOUCH_TEXT
+	if Game.web:
+		return CONTROLS_TEXT.replace("Ctrl or C", "C").replace("Chronicle  Tab", "Chronicle  R") + WEB_NOTE
+	return CONTROLS_TEXT
 
 
 func _init() -> void:
@@ -23,7 +30,7 @@ func _init() -> void:
 	_toggle("Blood", "blood")
 	_toggle("Invert look", "invert_y")
 	_toggle("Head bob", "head_bob")
-	if not Game.mobile:
+	if not Game.mobile and not Game.web:
 		_toggle("Fullscreen", "fullscreen")
 
 

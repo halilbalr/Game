@@ -1,0 +1,304 @@
+<title>The Odyssey</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=GFS+Didot&family=Alegreya+Sans:wght@400;500;700&display=swap">
+<style>
+/* Layout: one screen. The game owns the whole frame; a title card with the
+   city behind it sits on top until play begins. One committed dark look,
+   taken from the game's own bronze-on-lamp-black interface. */
+:root {
+  color-scheme: dark;
+  --ground: #0b0a08;
+  --panel: #17120c;
+  --bronze: #9e6b38;
+  --gold: #dbad5c;
+  --parchment: #ede3cc;
+  --dim: #b9ad97;
+  --blood: #d2553f;
+  --display: "GFS Didot", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --body: "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+}
+html, body { height: 100%; }
+body {
+  background: var(--ground);
+  color: var(--parchment);
+  font-family: var(--body);
+  font-size: 17px;
+  line-height: 1.45;
+  overflow: hidden;
+}
+#stage { position: relative; height: 100%; background: var(--ground); }
+#canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+#canvas:focus { outline: none; }
+
+#card {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  display: flex;
+  align-items: center;
+  padding-block: 28px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background-color: var(--ground);
+  background-image:
+    linear-gradient(90deg, rgba(11, 10, 8, 0.96) 0%, rgba(11, 10, 8, 0.86) 42%, rgba(11, 10, 8, 0.35) 100%),
+    var(--hero);
+  background-size: cover;
+  background-position: center;
+}
+.inner {
+  width: 100%;
+  max-width: 1080px;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.greek {
+  font-family: var(--display);
+  color: var(--dim);
+  font-size: 1.02rem;
+  letter-spacing: 0.02em;
+  margin: 0;
+}
+h1 {
+  font-family: var(--display);
+  font-weight: 400;
+  color: var(--gold);
+  font-size: clamp(2.6rem, 9vw, 5.4rem);
+  line-height: 0.98;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin: 0;
+  text-wrap: balance;
+}
+.sub {
+  font-family: var(--display);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.98rem;
+  color: var(--parchment);
+  margin: 0;
+}
+.lede { max-width: 34em; margin: 0; color: var(--parchment); }
+.row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+button {
+  font-family: var(--display);
+  font-size: 1.05rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--parchment);
+  background: var(--panel);
+  border: 1px solid var(--bronze);
+  padding: 13px 26px;
+  cursor: pointer;
+}
+button.primary { background: var(--gold); border-color: var(--gold); color: var(--ground); }
+button:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); }
+button.primary:hover:not(:disabled) { color: var(--ground); background: var(--parchment); border-color: var(--parchment); }
+button:focus-visible { outline: 2px solid var(--parchment); outline-offset: 3px; }
+button:disabled { opacity: 0.55; cursor: default; }
+
+#status { min-height: 1.5em; margin: 0; color: var(--dim); font-size: 0.95rem; }
+#status.error { color: var(--blood); }
+#bar { height: 3px; max-width: 420px; background: rgba(158, 107, 56, 0.35); }
+#bar > i { display: block; height: 100%; width: 0; background: var(--gold); transition: width 0.25s linear; }
+@media (prefers-reduced-motion: reduce) { #bar > i { transition: none; } }
+
+.keys {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 4px 28px;
+  max-width: 760px;
+  margin: 0;
+  padding: 14px 0 0;
+  border-top: 1px solid rgba(158, 107, 56, 0.5);
+  font-size: 0.94rem;
+}
+.keys div { display: flex; justify-content: space-between; gap: 14px; min-width: 0; }
+.keys dt { color: var(--dim); }
+.keys dd { margin: 0; text-align: right; color: var(--parchment); }
+.note { margin: 0; max-width: 46em; color: var(--dim); font-size: 0.9rem; }
+.legal { max-width: 46em; color: var(--dim); font-size: 0.82rem; }
+.legal summary { cursor: pointer; width: fit-content; }
+.legal summary:focus-visible { outline: 2px solid var(--parchment); outline-offset: 3px; }
+.legal p { margin: 8px 0 0; }
+.legal a { color: var(--gold); }
+</style>
+
+<div id="stage">
+  <canvas id="canvas" tabindex="0">This browser cannot draw the game.</canvas>
+
+  <div id="card">
+    <div class="inner">
+      <p class="greek" lang="grc">Ἄνδρα μοι ἔννεπε, Μοῦσα, πολύτροπον</p>
+      <h1>The Odyssey</h1>
+      <p class="sub">The Fall of Troy</p>
+      <p class="lede">Climb out of the wooden horse as Odysseus and open the gates. Hold the Scaean Gate as Hector on the day Patroclus came. Or walk Bronze Age Troy by daylight.</p>
+
+      <div class="row">
+        <button id="play" class="primary" type="button">Play</button>
+        <button id="playfull" type="button" hidden>Play full screen</button>
+      </div>
+      <div id="bar" aria-hidden="true"><i id="fill"></i></div>
+      <p id="status" role="status">Fetching the engine…</p>
+
+      <dl class="keys" id="keys">
+        <div><dt>Move</dt><dd>W A S D</dd></div>
+        <div><dt>Look</dt><dd>Mouse (click the game first)</dd></div>
+        <div><dt>Strike</dt><dd>Left mouse</dd></div>
+        <div><dt>Raise shield</dt><dd>Hold right mouse</dd></div>
+        <div><dt>Throw spear</dt><dd>G</dd></div>
+        <div><dt>Change weapon</dt><dd>1 2 3 or Q</dd></div>
+        <div><dt>Use</dt><dd>E</dd></div>
+        <div><dt>Run, crouch, jump</dt><dd>Shift, C, Space</dd></div>
+        <div><dt>Pause</dt><dd>P</dd></div>
+        <div><dt>Free the pointer</dt><dd>Esc</dd></div>
+      </dl>
+      <p class="note" id="touchnote" hidden>On a touch screen: left thumb moves, drag on the right to look, and the buttons on the right strike, shield and throw.</p>
+      <p class="note">The first start takes up to half a minute while the city is built. Sound begins when you press Play. It runs best in a desktop browser on a computer with a graphics card.</p>
+      <details class="legal">
+        <summary>Engine licence</summary>
+        <p>This game runs on Godot Engine. Copyright (c) 2014-present Godot Engine contributors. Copyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.</p>
+        <p>Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions: The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.</p>
+        <p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
+        <p>Godot contains third-party components under their own licences, listed at <a href="https://godotengine.org/license" target="_blank" rel="noopener">godotengine.org/license</a>.</p>
+      </details>
+    </div>
+  </div>
+</div>
+
+<script>
+/*__GODOT_ENGINE__*/
+</script>
+<script>
+(function () {
+  "use strict";
+  var GODOT_CONFIG = /*__GODOT_CONFIG__*/;
+  var HERO = "/*__HERO__*/";
+  // The engine and the game data ship as base64 text (the engine gzipped
+  // first) so each stays inside the Artifact file limits. The engine asks for
+  // them by their usual names; fetch is answered from the unpacked copies.
+  var PARTS = {
+    "index.wasm": { src: "engine.wasm.gz.txt", gzip: true, type: "application/wasm", size: /*__WASM_TEXT_SIZE__*/ },
+    "index.pck": { src: "game.pck.txt", gzip: false, type: "application/octet-stream", size: /*__PCK_TEXT_SIZE__*/ }
+  };
+
+  var card = document.getElementById("card");
+  var canvas = document.getElementById("canvas");
+  var stage = document.getElementById("stage");
+  var statusEl = document.getElementById("status");
+  var fill = document.getElementById("fill");
+  var playBtn = document.getElementById("play");
+  var fullBtn = document.getElementById("playfull");
+  card.style.setProperty("--hero", "url(" + HERO + ")");
+
+  var touch = (navigator.maxTouchPoints || 0) > 0 && window.matchMedia("(pointer: coarse)").matches;
+  if (touch) {
+    document.getElementById("keys").hidden = true;
+    document.getElementById("touchnote").hidden = false;
+  } else if (document.fullscreenEnabled && stage.requestFullscreen) {
+    fullBtn.hidden = false;
+  }
+
+  function setStatus(text, fraction) {
+    statusEl.classList.remove("error");
+    statusEl.textContent = text;
+    if (typeof fraction === "number") {
+      fill.style.width = Math.round(Math.max(0, Math.min(1, fraction)) * 100) + "%";
+    }
+  }
+  function fail(err) {
+    console.error(err);
+    var msg = err && err.message ? err.message : String(err);
+    statusEl.classList.add("error");
+    statusEl.textContent = "The game could not start: " + msg;
+    playBtn.disabled = false;
+    fullBtn.disabled = false;
+    card.hidden = false;
+  }
+
+  var realFetch = window.fetch.bind(window);
+  var received = {};
+  function progress() {
+    var got = 0, total = 0;
+    for (var name in PARTS) { got += received[name] || 0; total += PARTS[name].size; }
+    if (!started) { setStatus("Fetching the engine… " + Math.round(got / 1048576) + " of " + Math.round(total / 1048576) + " MB", got / total * 0.9); }
+  }
+  async function readText(name) {
+    var res = await realFetch(PARTS[name].src);
+    if (!res.ok) { throw new Error("a game file is missing (" + PARTS[name].src + ")"); }
+    if (!res.body || !res.body.getReader) { return res.text(); }
+    var reader = res.body.getReader();
+    var decoder = new TextDecoder();
+    var chunks = [];
+    for (;;) {
+      var step = await reader.read();
+      if (step.done) { break; }
+      received[name] = (received[name] || 0) + step.value.length;
+      chunks.push(decoder.decode(step.value, { stream: true }));
+      progress();
+    }
+    chunks.push(decoder.decode());
+    return chunks.join("");
+  }
+  function decode(b64) {
+    var bin = atob(b64.trim());
+    var out = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) { out[i] = bin.charCodeAt(i); }
+    return out;
+  }
+  async function unpack(name) {
+    var bytes = decode(await readText(name));
+    if (PARTS[name].gzip) {
+      if (typeof DecompressionStream === "undefined") { throw new Error("this browser is too old to unpack it. Try a current Chrome, Edge, Firefox or Safari."); }
+      var stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+      bytes = new Uint8Array(await new Response(stream).arrayBuffer());
+    }
+    return bytes;
+  }
+  var unpacked = {};
+  function part(name) { return unpacked[name] || (unpacked[name] = unpack(name)); }
+  window.fetch = function (input, init) {
+    var url = typeof input === "string" ? input : (input && input.url) || "";
+    var name = url.split("?")[0].split("/").pop();
+    if (PARTS[name]) {
+      return part(name).then(function (bytes) {
+        return new Response(bytes, { status: 200, headers: { "Content-Type": PARTS[name].type, "Content-Length": String(bytes.length) } });
+      });
+    }
+    return realFetch(input, init);
+  };
+
+  var started = false;
+  var ready = Promise.all([part("index.wasm"), part("index.pck")]);
+  ready.then(function () { if (!started) { setStatus("Ready. Press Play.", 1); } }).catch(function (e) { if (!started) { fail(e); } });
+
+  async function play(fullscreen) {
+    if (started) { return; }
+    started = true;
+    playBtn.disabled = true;
+    fullBtn.disabled = true;
+    if (fullscreen) {
+      try { await stage.requestFullscreen(); } catch (e) { /* optional */ }
+    }
+    try {
+      setStatus("Unpacking the engine…");
+      await ready;
+      var missing = Engine.getMissingFeatures({ threads: false });
+      if (missing.length) { throw new Error("this browser lacks " + missing.join(", ") + "."); }
+      setStatus("Starting. The city takes a few seconds to build…", 1);
+      GODOT_CONFIG.canvas = canvas;
+      var engine = new Engine(GODOT_CONFIG);
+      await engine.startGame();
+      card.hidden = true;
+      canvas.focus();
+    } catch (e) {
+      started = false;
+      fail(e);
+    }
+  }
+  playBtn.addEventListener("click", function () { play(false); });
+  fullBtn.addEventListener("click", function () { play(true); });
+})();
+</script>

@@ -126,6 +126,17 @@ iOS (or with `--mobile` on a desktop) and switches on:
 - **Layout**: text at 1.3x, health and speech moved up out from under the
   thumbs, hints reworded for touch.
 
+## Web
+
+`Game.web` is true in a browser (or with `--web` on a desktop). The web build
+is single-threaded WebAssembly on the Compatibility (WebGL 2) renderer and
+shares the lighter graphics tier with mobile (`Game.lite`). Browser-specific
+behaviour: the pointer is taken on a click, with a free-cursor fallback when
+the page refuses; Ctrl is not a game key; the sound bank is built between
+frames because there are no worker threads; torches far from the eye are put
+out because that renderer draws only a few dozen lamps. `tools/web/` packs the
+export as a claude.ai Artifact.
+
 ## Sound
 
 Synthesised at start-up on a worker thread (`src/core/sfx.gd`): bronze as
@@ -141,6 +152,8 @@ day, the feast heard through the planks, battle and the sack.
 | Missions in mobile mode | `--mission=<id> --bot --god --mobile` | Pass |
 | Android package is complete | Debug APK built and signed; a mission finished from its contents on the Linux engine | Pass |
 | Anything on a real phone or tablet | — | Not verified |
+| Web build boots and takes input | Exported build and the packed Artifact page in headless Chromium | Pass |
+| The published Artifact inside claude.ai | — | Not verified |
 | Mission scripts reach their end | `--mission=<id> --autoplay` | Pass |
 | Player combat through real input | `--scene=arena --autoplay --bot` | Pass |
 | Whole missions with real walking, fighting and use | `--mission=<id> --bot --god` (`--noalarm` for the horse) | Pass: both reach their ending |

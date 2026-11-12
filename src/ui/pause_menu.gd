@@ -40,7 +40,8 @@ func _init() -> void:
 	_add_button("Main menu", func() -> void:
 		get_tree().paused = false
 		Game.start_menu())
-	_add_button("Quit", Game.quit)
+	if not Game.web:
+		_add_button("Quit", Game.quit)
 
 	var side := Ui.panel()
 	row.add_child(side)
@@ -83,5 +84,5 @@ func _resume() -> void:
 	_root.visible = false
 	get_tree().paused = false
 	Game.save_settings()
-	if not Game.mobile:
+	if not Game.mobile and not Game.free_look:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED

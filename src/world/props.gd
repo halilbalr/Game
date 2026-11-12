@@ -68,7 +68,7 @@ static func leaf_material() -> ShaderMaterial:
 	if _leaf_material == null:
 		var sh := Shader.new()
 		# Light through the leaf on desktops; the mobile renderer has no such term.
-		sh.code = LEAF_SHADER if Game.mobile else LEAF_SHADER.replace("//BACKLIGHT", "BACKLIGHT = vec3(0.35, 0.42, 0.15);")
+		sh.code = LEAF_SHADER if Game.lite else LEAF_SHADER.replace("//BACKLIGHT", "BACKLIGHT = vec3(0.35, 0.42, 0.15);")
 		var m := ShaderMaterial.new()
 		m.shader = sh
 		m.set_shader_parameter("leaf_tex", _leaf_texture())

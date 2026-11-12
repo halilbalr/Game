@@ -313,6 +313,9 @@ func _process(delta: float) -> void:
 				_prompt.text = ("Hold USE:  %s" if focus.hold_seconds > 0.0 else "USE:  %s") % focus.prompt
 			else:
 				_prompt.text = ("Hold [E]  %s" if focus.hold_seconds > 0.0 else "[E]  %s") % focus.prompt
+		elif Game.web and not Game.mobile and not Game.free_look and player.control_enabled \
+				and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED and not get_tree().paused:
+			_prompt.text = "Click to take control"
 		else:
 			_prompt.text = ""
 	_bars.queue_redraw()

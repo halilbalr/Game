@@ -77,6 +77,28 @@ To try the touch layout on a desktop, with the mouse standing in for a finger:
 godot --path . -- --mobile
 ```
 
+## In a browser
+
+The game also exports for the web (WebAssembly and WebGL 2) and has been
+published as a claude.ai Artifact. In a browser it uses the lighter graphics
+tier, and on a phone browser the touch controls.
+
+- Click the game to take control of the view. **Esc** frees the pointer,
+  **P** pauses.
+- Crouch is **C** only (Ctrl+W would close the tab) and the chronicle is **R**.
+- The first start takes up to half a minute.
+
+To rebuild the web version and pack it as an Artifact:
+
+```
+godot --headless --path . --export-release "Web" builds/web/index.html
+python3 tools/web/pack_artifact.py        # writes builds/artifact/
+```
+
+The engine is 38 MB of WebAssembly, more than an Artifact file may be, so the
+packer gzips it, writes it as base64 text and the page unpacks it in the
+browser.
+
 ## The three modes
 
 | Mode | You are | What happens |
@@ -152,6 +174,13 @@ on or off, inverted look, head bob, fullscreen.
   *Warrior* (the default), *Hero* (half as much again). Combat has only been
   tested by scripts, not by a person, so expect to adjust this.
 - **Blood** removes the spray, the pools and the red at the screen edge.
+
+## Licences
+
+The game's own code and data are in this repository. It runs on
+[Godot Engine](https://godotengine.org/license) (MIT licence), whose notice
+must accompany any build that is passed on: the Artifact page carries it under
+"Engine licence".
 
 ## Known limits
 

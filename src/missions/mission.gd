@@ -64,7 +64,8 @@ func _ready() -> void:
 		add_child(doors)
 		doors.setup(world.gate(gate_id), true, false)
 		gates[gate_id] = doors
-	if not Game.is_harness() and not Game.mobile:
+	if not Game.is_harness() and not Game.mobile and not Game.web:
+		# (A browser grants the pointer only on a click: see Player._unhandled_input.)
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	prepare()
 	_apply_debug_args()

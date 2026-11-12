@@ -52,7 +52,8 @@ func _ready() -> void:
 	_entry(col, "THE SCAEAN GATE", "Defender  ·  Hector  ·  the day Patroclus came to the wall", func() -> void: Game.start_mission("gate"))
 	_entry(col, "WALK THE CITY", "Troy by daylight, with a chronicle of what is known", func() -> void: Game.start_mission("roam"))
 	_entry(col, "OPTIONS", "", func() -> void: _options.visible = not _options.visible)
-	_entry(col, "QUIT", "", Game.quit)
+	if not Game.web:
+		_entry(col, "QUIT", "", Game.quit)
 	first.grab_focus()
 
 	var quote := Ui.label("\"Tell me, O Muse, of that ingenious hero who travelled far and wide\nafter he had sacked the famous town of Troy.\"\nHomer, Odyssey 1.1, tr. Samuel Butler", 20, Ui.DIM)

@@ -31,6 +31,8 @@ Sfx="*res://src/core/sfx.gd"
 window/size/viewport_width=1920
 window/size/viewport_height=1080
 window/size/mode=3
+window/size/mode.web=0
+window/dpi/allow_hidpi.web=false
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 window/handheld/orientation=4
@@ -58,6 +60,8 @@ common/max_physics_steps_per_frame=4
 [rendering]
 
 renderer/rendering_method.mobile="mobile"
+renderer/rendering_method.web="gl_compatibility"
+limits/opengl/max_renderable_lights=48
 textures/vram_compression/import_etc2_astc=true
 
 lights_and_shadows/directional_shadow/size=4096

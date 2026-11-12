@@ -41,6 +41,7 @@ var _preset: Dictionary = {}
 var _fire: float = 0.0
 var _mobile: bool = false
 var _sky_frozen: bool = false
+var _compat: bool = false
 
 
 func _init() -> void:
@@ -113,10 +114,15 @@ func apply(preset_name: String, quality: int = 1, mobile: bool = false) -> void:
 		env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
 	env.ambient_light_sky_contribution = 1.0
 	env.ambient_light_energy = p["ambient"]
-	env.tonemap_exposure = p["exposure"]
+	# The OpenGL renderer used in browsers shows the same scene brighter and
+	# hazier than the Vulkan ones: pull exposure and fog back to match.
+	_compat = RenderingServer.get_current_rendering_method() == "gl_compatibility"
+	# It also has no AgX curve; Filmic is the nearest it offers.
+	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC if _compat else Environment.TONE_MAPPER_AGX
+	env.tonemap_exposure = (p["exposure"] as float) * (0.8 if _compat else 1.0)
 	env.fog_enabled = true
 	env.fog_light_color = p["fog_color"]
-	env.fog_density = p["fog_density"]
+	env.fog_density = (p["fog_density"] as float) * (0.55 if _compat else 1.0)
 	env.fog_sun_scatter = 0.25
 	env.fog_aerial_perspective = 0.6
 	env.fog_sky_affect = 0.0
@@ -128,12 +134,12 @@ func apply(preset_name: String, quality: int = 1, mobile: bool = false) -> void:
 
 func _apply_quality(quality: int) -> void:
 	var p := _preset
-	env.ssao_enabled = quality >= 1
+	env.ssao_enabled = quality >= 1 and not _mobile
 	env.ssao_radius = 1.6
 	env.ssao_intensity = 2.2
 	env.ssao_power = 1.6
-	env.ssil_enabled = quality >= 2
-	env.sdfgi_enabled = quality >= 2
+	env.ssil_enabled = quality >= 2 and not _mobile
+	env.sdfgi_enabled = quality >= 2 and not _mobile
 	env.sdfgi_cascades = 4
 	env.sdfgi_max_distance = 320.0
 	env.sdfgi_use_occlusion = true
@@ -141,7 +147,7 @@ func _apply_quality(quality: int) -> void:
 	env.glow_intensity = 0.55
 	env.glow_bloom = 0.04
 	env.glow_hdr_threshold = 1.1
-	env.volumetric_fog_enabled = quality >= 1
+	env.volumetric_fog_enabled = quality >= 1 and not _mobile
 	env.volumetric_fog_density = p.get("vol_density", 0.005)
 	env.volumetric_fog_albedo = Color(0.9, 0.88, 0.84)
 	env.volumetric_fog_length = 140.0

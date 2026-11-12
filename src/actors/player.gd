@@ -63,6 +63,8 @@ var _shake: float = 0.0
 var _long_spear: bool = false
 var _focus_wait: int = 0
 var _grace: float = 0.0
+var _capture_check: float = 0.0
+var _look_guard: float = 0.0
 
 
 ## Applies a hero role. Call before adding to the tree.
@@ -196,9 +198,20 @@ func add_spear() -> bool:
 func _unhandled_input(event: InputEvent) -> void:
 	if _dead or not control_enabled:
 		return
-	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+	if Game.web and not Game.mobile and not Game.free_look and event is InputEventMouseButton \
+			and (event as InputEventMouseButton).pressed and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+		# A browser hands over the pointer only on a click. If it refuses,
+		# _physics_process falls back to turning with the free cursor.
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		_capture_check = 0.7
+		_look_guard = 0.3
+		return
+	if event is InputEventMouseMotion and (Input.mouse_mode == Input.MOUSE_MODE_CAPTURED or Game.free_look):
+		# Some browsers report one huge movement at the moment the pointer is captured.
+		if _look_guard > 0.0:
+			return
 		var sens := 0.0022 * float(Game.settings.get("mouse_sensitivity", 1.0))
-		var rel: Vector2 = (event as InputEventMouseMotion).relative
+		var rel: Vector2 = (event as InputEventMouseMotion).relative.limit_length(160.0)
 		_turn(-rel.x * sens, -rel.y * sens * (-1.0 if Game.settings.get("invert_y", false) else 1.0))
 	elif event.is_action_pressed(&"weapon_1"):
 		_select_slot(0)
@@ -407,7 +420,20 @@ func _physics_process(delta: float) -> void:
 		velocity.y -= GRAVITY * delta
 		move_and_slide()
 		return
-	var active := control_enabled and (Input.mouse_mode == Input.MOUSE_MODE_CAPTURED or bot_control or Game.mobile)
+	_look_guard -= delta
+	if _capture_check > 0.0:
+		_capture_check -= delta
+		if _capture_check <= 0.0 and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+			Game.free_look = true
+	var active := control_enabled and (Input.mouse_mode == Input.MOUSE_MODE_CAPTURED or bot_control or Game.mobile or Game.free_look)
+	if active and Game.free_look and not get_tree().paused:
+		# No captured pointer: the view also turns while the cursor rests near a side edge.
+		var vp := get_viewport()
+		var fx := vp.get_mouse_position().x / maxf(vp.get_visible_rect().size.x, 1.0)
+		if fx < 0.14:
+			_turn(2.2 * delta * (0.14 - fx) / 0.14, 0.0)
+		elif fx > 0.86:
+			_turn(-2.2 * delta * (fx - 0.86) / 0.14, 0.0)
 	var can_move := active and move_enabled
 
 	# Gamepad look.

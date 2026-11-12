@@ -383,7 +383,7 @@ static func _part(parent: Node3D, mesh: Mesh, pos: Vector3, shadow: bool = true)
 	mi.position = pos
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if shadow \
 		else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	if not shadow and Game.mobile:
+	if not shadow and Game.lite:
 		# Forearms and shins are not worth a draw call across the field.
 		mi.visibility_range_end = 60.0
 	parent.add_child(mi)
@@ -712,7 +712,7 @@ func _process(delta: float) -> void:
 	var cam := get_viewport().get_camera_3d()
 	if cam != null and not _dying:
 		var d2 := cam.global_position.distance_squared_to(global_position)
-		var far := 28.0 if Game.mobile else 70.0
+		var far := 28.0 if Game.lite else 70.0
 		if d2 > far * far and (_frame + _lod_slot) % 3 != 0:
 			return
 	var target := _stance_pose()

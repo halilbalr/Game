@@ -20,6 +20,13 @@ var settings: Dictionary = {
 ## True on phones and tablets (or with `--mobile` on a desktop, for testing):
 ## touch controls, lighter graphics, smaller crowds.
 var mobile: bool = false
+## True when running in a browser (or with `--web` on a desktop, for testing).
+var web: bool = false
+## True wherever the reduced graphics tier applies: phones, tablets, browsers.
+var lite: bool = false
+## Browser only: the page could not capture the pointer, so the view turns
+## with the free cursor and at the screen edges instead.
+var free_look: bool = false
 var main: Node
 var screen: Node
 var world: TroyWorld
@@ -35,14 +42,31 @@ func _ready() -> void:
 			args[a.substr(0, eq)] = a.substr(eq + 1)
 		else:
 			args[a] = "1"
+	web = OS.has_feature("web") or args.has("web")
 	mobile = OS.has_feature("mobile") or args.has("mobile")
+	if web and (OS.has_feature("web_android") or OS.has_feature("web_ios") \
+			or (OS.has_feature("web_macos") and DisplayServer.is_touchscreen_available())):
+		# A phone or tablet browser: an iPad reports itself as a Mac with a touch screen.
+		mobile = true
+	lite = mobile or web
 	_register_inputs()
+	if web:
+		_prepare_for_browser()
 	if mobile:
 		_prepare_for_touch()
 	_load_settings()
 	if args.has("quality"):
 		settings["quality"] = int(args["quality"])
 	apply_settings()
+
+
+func _prepare_for_browser() -> void:
+	# Ctrl+W closes a browser tab, so Ctrl must not be a game key: crouch is C.
+	for ev in InputMap.action_get_events(&"crouch"):
+		if ev is InputEventKey and (ev as InputEventKey).physical_keycode == KEY_CTRL:
+			InputMap.action_erase_event(&"crouch", ev)
+	# Tab can carry focus out of the page: R also opens the chronicle.
+	InputMap.action_add_event(&"chronicle", _key(KEY_R))
 
 
 func _prepare_for_touch() -> void:
@@ -69,7 +93,7 @@ func _notification(what: int) -> void:
 
 ## How many soldiers a mission should field, relative to the desktop count.
 func crowd_scale() -> float:
-	return 0.6 if mobile else 1.0
+	return 0.6 if lite else 1.0
 
 
 ## True when the game was started by the automated capture or test harness.
@@ -133,7 +157,8 @@ func _register_inputs() -> void:
 	_action(&"weapon_3", [_key(KEY_3)])
 	_action(&"weapon_next", [_mouse(MOUSE_BUTTON_WHEEL_DOWN), _key(KEY_Q), _pad(JOY_BUTTON_Y)])
 	_action(&"weapon_prev", [_mouse(MOUSE_BUTTON_WHEEL_UP)])
-	_action(&"pause", [_key(KEY_ESCAPE), _pad(JOY_BUTTON_START)])
+	# P as well as Esc: in a browser Esc belongs to the page (it frees the pointer).
+	_action(&"pause", [_key(KEY_ESCAPE), _key(KEY_P), _pad(JOY_BUTTON_START)])
 	_action(&"chronicle", [_key(KEY_TAB), _pad(JOY_BUTTON_BACK)])
 
 
@@ -158,24 +183,25 @@ func save_settings() -> void:
 ## Applies settings to the window, audio and renderer, and notifies listeners.
 func apply_settings() -> void:
 	AudioServer.set_bus_volume_db(0, linear_to_db(clampf(float(settings["master_volume"]), 0.0001, 1.0)))
-	if not is_harness() and not mobile:
+	if not is_harness() and not mobile and not web:
 		var mode := DisplayServer.WINDOW_MODE_FULLSCREEN if settings["fullscreen"] else DisplayServer.WINDOW_MODE_WINDOWED
 		if DisplayServer.window_get_mode() != mode:
 			DisplayServer.window_set_mode(mode)
 	var q := clampi(int(settings["quality"]), 0, 2)
 	var vp := get_viewport()
 	if vp != null:
-		if mobile:
-			# On a phone the option trades sharpness for frame rate.
+		if lite:
+			# On a phone or in a browser the option trades sharpness for frame rate.
 			vp.msaa_3d = Viewport.MSAA_DISABLED
 			vp.scaling_3d_scale = [0.6, 0.75, 0.9][q]
-			# Text sized for a desk is too small in the hand.
-			get_tree().root.content_scale_factor = 1.3
+			if mobile:
+				# Text sized for a desk is too small in the hand.
+				get_tree().root.content_scale_factor = 1.3
 		else:
 			vp.msaa_3d = Viewport.MSAA_DISABLED if q == 0 else Viewport.MSAA_2X
 			vp.scaling_3d_scale = 0.8 if q == 0 else 1.0
 	if world != null and world.atmosphere != null:
-		world.atmosphere.apply(world.preset, q, mobile)
+		world.atmosphere.apply(world.preset, q, lite)
 	settings_changed.emit()
 
 
@@ -257,7 +283,10 @@ func start_mission(id: String) -> void:
 	_hide_loading()
 
 
-## Leaves the game.
+## Leaves the game. A browser page cannot close itself, so there it returns to the menu.
 func quit() -> void:
 	save_settings()
-	get_tree().quit()
+	if web:
+		start_menu()
+	else:
+		get_tree().quit()

@@ -49,8 +49,13 @@ func _ready() -> void:
 	_rng.seed = 2401
 	if DisplayServer.get_name() == "headless":
 		return
-	_thread = Thread.new()
-	_thread.start(_build_bank)
+	if OS.has_feature("web") or OS.get_cmdline_user_args().has("--web"):
+		# A browser build has no worker threads: build the bank a sound at a
+		# time between frames instead.
+		_build_bank(true)
+	else:
+		_thread = Thread.new()
+		_thread.start(_build_bank)
 
 
 func _exit_tree() -> void:
@@ -265,7 +270,7 @@ func _lowpass(b: PackedFloat32Array, cutoff: float) -> void:
 		b[i] = y
 
 
-func _build_bank() -> void:
+func _build_bank(yielding: bool = false) -> void:
 	var t0 := Time.get_ticks_msec()
 	var bank: Dictionary = {}
 	var b: PackedFloat32Array
@@ -273,6 +278,8 @@ func _build_bank() -> void:
 	b = _buf(0.34)
 	_burst(b, 0.0, 1.0, 0.12, 0.05, 900.0, 3800.0)
 	bank[&"whoosh"] = _to_stream(b, false, 0.5)
+	if yielding:
+		await get_tree().process_frame
 
 	b = _buf(0.3)
 	_partial(b, 0.0, 95.0, 1.0, 0.05, -160.0)
@@ -280,6 +287,8 @@ func _build_bank() -> void:
 	_burst(b, 0.02, 0.4, 0.01, 0.05, 2600.0)
 	var hit := b
 	bank[&"hit"] = _to_stream(b)
+	if yielding:
+		await get_tree().process_frame
 
 	b = _buf(0.5)
 	_partial(b, 0.0, 150.0, 1.0, 0.05, -200.0)
@@ -287,55 +296,77 @@ func _build_bank() -> void:
 	_bronze(b, 0.0, 0.5, 0.09, 0.8)
 	var block := b
 	bank[&"block"] = _to_stream(b)
+	if yielding:
+		await get_tree().process_frame
 
 	b = _buf(0.9)
 	_bronze(b, 0.0, 1.0, 0.2)
 	var clang := b
 	bank[&"clang"] = _to_stream(b, false, 0.8)
+	if yielding:
+		await get_tree().process_frame
 
 	b = _buf(0.35)
 	_partial(b, 0.0, 72.0, 1.0, 0.07, -90.0)
 	_burst(b, 0.0, 0.5, 0.003, 0.05, 700.0)
 	bank[&"thud"] = _to_stream(b, false, 0.8)
+	if yielding:
+		await get_tree().process_frame
 
 	b = _buf(0.3)
 	_burst(b, 0.0, 0.8, 0.004, 0.035, 2600.0, 600.0)
 	_partial(b, 0.0, 80.0, 0.6, 0.05)
 	bank[&"stab"] = _to_stream(b, false, 0.55)
+	if yielding:
+		await get_tree().process_frame
 
 	b = _buf(0.3)
 	_voice(b, 0.0, 0.2, 150.0, 105.0, 620.0, 1150.0, 1.0, 0.3)
 	var grunt := b
 	bank[&"grunt"] = _to_stream(b, false, 0.6)
+	if yielding:
+		await get_tree().process_frame
 
 	b = _buf(0.45)
 	_voice(b, 0.0, 0.34, 170.0, 110.0, 700.0, 1250.0, 1.0, 0.35)
 	bank[&"hurt"] = _to_stream(b, false, 0.7)
+	if yielding:
+		await get_tree().process_frame
 
 	b = _buf(1.1)
 	_voice(b, 0.0, 0.9, 210.0, 85.0, 760.0, 1180.0, 1.0, 0.3)
 	var death := b
 	bank[&"death"] = _to_stream(b, false, 0.8)
+	if yielding:
+		await get_tree().process_frame
 
 	b = _buf(0.7)
 	_voice(b, 0.0, 0.5, 190.0, 250.0, 520.0, 1750.0, 1.0, 0.2)
 	var shout := b
 	bank[&"shout"] = _to_stream(b, false, 0.9)
+	if yielding:
+		await get_tree().process_frame
 
 	b = _buf(0.14)
 	_burst(b, 0.0, 1.0, 0.004, 0.02, 1100.0, 400.0)
 	_partial(b, 0.0, 60.0, 0.5, 0.03)
 	bank[&"step"] = _to_stream(b, false, 0.6)
+	if yielding:
+		await get_tree().process_frame
 
 	b = _buf(0.25)
 	_partial(b, 0.0, 420.0, 0.8, 0.03)
 	_burst(b, 0.0, 0.6, 0.001, 0.01, 5000.0)
 	bank[&"pickup"] = _to_stream(b, false, 0.5)
+	if yielding:
+		await get_tree().process_frame
 
 	b = _buf(2.2)
 	_pluck(b, 0.0, 329.6, 0.8)
 	_pluck(b, 0.22, 493.9, 0.7)
 	bank[&"objective"] = _to_stream(b, false, 0.55)
+	if yielding:
+		await get_tree().process_frame
 
 	# The horn of the watch: a reed-bright tone with a slow swell.
 	b = _buf(2.4)
@@ -349,6 +380,8 @@ func _build_bank() -> void:
 		b[i] = hy * minf(t * 3.0, 1.0) * minf((2.4 - t) * 2.0, 1.0)
 	var horn := b
 	bank[&"horn"] = _to_stream(b, false, 0.8)
+	if yielding:
+		await get_tree().process_frame
 
 	b = _buf(1.5)
 	for k in 2:
@@ -362,12 +395,16 @@ func _build_bank() -> void:
 			ay += 0.25 * (saw - ay)
 			b[start + i] = ay * minf(t * 12.0, 1.0) * minf((0.55 - t) * 8.0, 1.0)
 	bank[&"alarm"] = _to_stream(b, false, 0.7)
+	if yielding:
+		await get_tree().process_frame
 
 	b = _buf(1.6)
 	_burst(b, 0.0, 0.6, 0.5, 0.25, 500.0, 900.0)
 	_partial(b, 1.05, 110.0, 1.0, 0.08, -60.0)
 	_burst(b, 1.05, 0.7, 0.002, 0.05, 900.0)
 	bank[&"bar"] = _to_stream(b, false, 0.8)
+	if yielding:
+		await get_tree().process_frame
 
 	# Gate hinges: a slow stick-slip groan.
 	b = _buf(3.2)
@@ -382,32 +419,44 @@ func _build_bank() -> void:
 		b[i] = gy * minf(t * 2.0, 1.0) * minf((3.2 - t) * 1.5, 1.0) * (0.7 + 0.3 * sin(t * 9.0))
 	_burst(b, 2.9, 0.9, 0.002, 0.06, 700.0)
 	bank[&"gate"] = _to_stream(b, false, 0.8)
+	if yielding:
+		await get_tree().process_frame
 
 	b = _buf(1.3)
 	for k in 3:
 		_partial(b, k * 0.36, 185.0, 1.0, 0.035, -40.0)
 		_burst(b, k * 0.36, 0.5, 0.001, 0.012, 2400.0)
 	bank[&"knock"] = _to_stream(b, false, 0.8)
+	if yielding:
+		await get_tree().process_frame
 
 	b = _buf(1.2)
 	_burst(b, 0.0, 0.5, 0.3, 0.12, 700.0, 1400.0)
 	_partial(b, 0.75, 130.0, 1.0, 0.06, -50.0)
 	bank[&"hatch"] = _to_stream(b, false, 0.7)
+	if yielding:
+		await get_tree().process_frame
 
 	b = _buf(1.4)
 	_burst(b, 0.0, 1.0, 0.25, 0.3, 300.0, 1200.0)
 	bank[&"fire"] = _to_stream(b, false, 0.8)
+	if yielding:
+		await get_tree().process_frame
 
 	b = _buf(4.0)
 	_burst(b, 0.0, 1.0, 0.004, 0.05, 5000.0, 800.0)
 	_burst(b, 0.03, 1.0, 0.15, 0.9, 160.0, 70.0)
 	_burst(b, 0.6, 0.6, 0.3, 0.7, 120.0, 60.0)
 	bank[&"thunder"] = _to_stream(b)
+	if yielding:
+		await get_tree().process_frame
 
 	b = _buf(0.6)
 	_bronze(b, 0.0, 0.5, 0.12, 1.3)
 	_partial(b, 0.0, 120.0, 0.5, 0.04)
 	bank[&"helmet"] = _to_stream(b, false, 0.5)
+	if yielding:
+		await get_tree().process_frame
 
 	# --- ambience loops ---
 	# Night: crickets over a breath of wind.
@@ -426,6 +475,8 @@ func _build_bank() -> void:
 			var t := float(i) / RATE
 			b[start + i] += sin(TAU * f * t) * amp * maxf(0.0, sin(TAU * 21.0 * t)) * minf(t * 20.0, 1.0) * minf((0.5 - t) * 20.0, 1.0)
 	bank[&"night"] = _to_stream(b, true, 0.5)
+	if yielding:
+		await get_tree().process_frame
 
 	# Day: wind and cicadas.
 	b = _buf(9.0)
@@ -438,6 +489,8 @@ func _build_bank() -> void:
 		var cic := (_noise() - cy) * 0.02 * (0.5 + 0.5 * sin(TAU * 46.0 * t)) * (0.6 + 0.4 * sin(t * 0.9))
 		b[i] = wy * (1.0 + 0.7 * sin(t * 0.6)) + cic
 	bank[&"day"] = _to_stream(b, true, 0.45)
+	if yielding:
+		await get_tree().process_frame
 
 	# The feast heard through the planks: muffled voices, a drum, a lyre.
 	b = _buf(10.0)
@@ -451,6 +504,8 @@ func _build_bank() -> void:
 		_pluck(b, _rng.randf() * 7.0, [164.8, 196.0, 220.0, 246.9, 293.7][k % 5], 0.25)
 	_lowpass(b, 650.0)
 	bank[&"feast"] = _to_stream(b, true, 0.55)
+	if yielding:
+		await get_tree().process_frame
 
 	# Battle: bronze, shields, voices, over the roar of many men.
 	b = _buf(10.0)
@@ -473,8 +528,12 @@ func _build_bank() -> void:
 		_mix(b, grunt, _rng.randf() * 9.5, _rng.randf_range(0.05, 0.1))
 	var battle := b.duplicate()
 	bank[&"battle"] = _to_stream(b, true, 0.42)
+	if yielding:
+		await get_tree().process_frame
 	_lowpass(battle, 900.0)
 	bank[&"battle_far"] = _to_stream(battle, true, 0.3)
+	if yielding:
+		await get_tree().process_frame
 
 	# The sack: battle and fire.
 	b = _buf(10.0)
@@ -491,6 +550,8 @@ func _build_bank() -> void:
 	for k in 10:
 		_mix(b, clang, _rng.randf() * 9.0, _rng.randf_range(0.03, 0.06))
 	bank[&"sack"] = _to_stream(b, true, 0.5)
+	if yielding:
+		await get_tree().process_frame
 
 	# Lyre: a slow air in the Greek Dorian mode (E F G A B C D) over a drone.
 	b = _buf(26.0)
@@ -505,9 +566,14 @@ func _build_bank() -> void:
 		_pluck(b, k * 2.4 + 0.02, 82.41, 0.42, 0.9985)
 		_pluck(b, k * 2.4 + 1.21, 123.47, 0.3, 0.998)
 	bank[&"lyre"] = _to_stream(b, true, 0.6)
+	if yielding:
+		await get_tree().process_frame
 
 	print("Sfx: %d sounds synthesised in %d ms" % [bank.size(), Time.get_ticks_msec() - t0])
-	_finish.call_deferred(bank)
+	if yielding:
+		_finish(bank)
+	else:
+		_finish.call_deferred(bank)
 
 
 func _finish(bank: Dictionary) -> void:
