@@ -33,7 +33,7 @@ device it switches by itself to touch controls, larger text, slightly smaller
 battles and a lighter renderer. The browser version has been seen running on
 an iPhone; the app builds have not been run on a real device.
 
-**Android, the quick way.** A debug build, `the-odyssey.apk` (33 MB, 64-bit
+**Android, the quick way.** A debug build, `the-odyssey.apk` (36 MB, 64-bit
 ARM, Android 7 or later), was made alongside this project. Copy it to the
 phone, open it, and allow installing from that source when asked. It is not
 kept in the repository.
@@ -201,11 +201,20 @@ Kokoro text-to-speech model and are not recordings of actors. The Greek names
 were given their traditional English pronunciations by hand. They have not
 been checked by ear: this project was built on a machine with no speakers.
 
-Four pieces of music were written for the game and synthesised in code
+Five pieces of music were written for the game and synthesised in code
 (strings, horn, choir, a reed pipe, a lyre and skin drums): a march for the
 title screen, a drum-driven piece for the fighting, a sparse one for the
-night in the city, and a lament for partings and endings. Music drops under
-speech.
+night in the city, a lament for partings and endings, and a lyre air for
+walking the city. Music drops under speech.
+
+The sounds of fighting are built from their parts: the punch of a blow, the
+crack of a spear point or the bite of a sword, the wet tail of a wound, the
+ring of bronze when a helmet or a shield boss is struck, the drum-like boom of
+an ox-hide shield. Spear and sword sound different in the air and in the
+flesh. A man going down is heard knees first, then his body, then his gear.
+Every sound has several versions, so no two blows sound alike. The cries and
+the shouts of the watch are synthetic voices, driven hard. Everything is tuned
+to come through a phone's own speaker.
 
 Scenes can be skipped: **Enter**, the right stick, or the SKIP button on a
 touch screen. A skip jumps to the next moment you have to do something.
@@ -215,6 +224,7 @@ the Kokoro model files):
 
 ```
 python3 tools/audio/make_voices.py --model /path/to/kokoro
+python3 tools/audio/make_sfx.py --model /path/to/kokoro
 python3 tools/audio/make_music.py
 ```
 
@@ -245,8 +255,8 @@ model itself is not part of this repository.
 
 - People are built from simple shapes and animated in code. They read as
   figures, not as portraits.
-- Voices and music are synthetic and have not been heard by the person who
-  built them. Effects are synthesised when the game starts.
+- Voices, music and effects are synthetic and have not been heard by the
+  person who built them.
 - No saving inside a mission. Each takes ten to fifteen minutes.
 - Not yet in: chariots, archery, the other episodes of the war.
 
@@ -254,7 +264,7 @@ model itself is not part of this repository.
 
 ```
 godot --headless --path . --import                              # once after cloning
-godot --headless --path . -s res://tests/run_tests.gd           # 73 tests
+godot --headless --path . -s res://tests/run_tests.gd           # 76 tests
 godot --headless --path . --fixed-fps 60 -- --mission=horse --autoplay   # script plays itself; exit 0 on completion
 godot --headless --path . --fixed-fps 60 -- --mission=gate --autoplay
 godot --headless --path . --fixed-fps 60 -- --scene=arena --autoplay --bot   # scripted player through real input

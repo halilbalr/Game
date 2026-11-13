@@ -55,6 +55,9 @@ var _attack_hit_at: float = 0.0
 var _attack_end: float = 0.0
 var _attack_is_throw: bool = false
 var _attack_resolved: bool = false
+## When the weapon starts to move fast enough to be heard (into the attack).
+var _attack_swing_at: float = 0.0
+var _attack_swung: bool = false
 var _regen_wait: float = 0.0
 var _stamina_wait: float = 0.0
 var _step_t: float = 0.0
@@ -65,6 +68,8 @@ var _focus_wait: int = 0
 var _grace: float = 0.0
 var _capture_check: float = 0.0
 var _look_guard: float = 0.0
+## Where the body stood before the latest physics step (see _process).
+var _step_from := Vector3.ZERO
 
 
 ## Applies a hero role. Call before adding to the tree.
@@ -257,9 +262,11 @@ func _start_attack(throw: bool) -> void:
 	_attack_end = windup + strike + recover
 	_attack_is_throw = throw
 	_attack_resolved = false
+	# The swing is heard as the weapon comes through, just before it lands;
+	# a dagger makes no sound, and a thrown spear is heard as it flies.
+	_attack_swing_at = maxf(windup - 0.07, 0.0)
+	_attack_swung = throw or bool(w.get("silent", false))
 	viewmodel.attack(&"throw" if throw else StringName(str(w.get("kind", "thrust"))), windup, strike, recover)
-	if not bool(w.get("silent", false)):
-		Sfx.play(&"whoosh", -6.0)
 
 
 func _resolve_attack() -> void:
@@ -315,12 +322,8 @@ func _resolve_attack() -> void:
 	var result: Dictionary = best.receive_hit(self, float(w.get("damage", 30.0)), best_height, aim, id)
 	if result.is_empty():
 		return
-	if result.get("blocked", false):
-		Sfx.play_at(&"block", best.global_position)
-		_shake = 0.25
-	else:
-		Sfx.play_at(&"stab" if result.get("stealth", false) else &"hit", best.global_position)
-		_shake = 0.18
+	Sfx.strike(best.global_position, current_weapon(), result)
+	_shake = 0.25 if result.get("blocked", false) else 0.18
 	if result.get("killed", false):
 		kills += 1
 	struck.emit(best, result)
@@ -414,6 +417,7 @@ func _update_focus() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	_step_from = global_position
 	if _dead:
 		velocity.x = move_toward(velocity.x, 0.0, 20.0 * delta)
 		velocity.z = move_toward(velocity.z, 0.0, 20.0 * delta)
@@ -508,6 +512,9 @@ func _physics_process(delta: float) -> void:
 			_start_attack(true)
 	if _attack_t >= 0.0:
 		_attack_t += delta
+		if not _attack_swung and _attack_t >= _attack_swing_at:
+			_attack_swung = true
+			Sfx.play(Sfx.swing_sound(Data.weapons.get(current_weapon(), {})), -4.0)
 		if not _attack_resolved and _attack_t >= _attack_hit_at:
 			_attack_resolved = true
 			_resolve_attack()
@@ -547,9 +554,21 @@ func _process(delta: float) -> void:
 	var t := Time.get_ticks_msec() * 0.001
 	camera.rotation.z = sin(t * 47.0) * 0.012 * _shake
 	camera.rotation.x = sin(t * 61.0) * 0.01 * _shake
+	var bob := 0.0
 	if Game.settings.get("head_bob", true) and is_on_floor() and not _dead:
 		var s := clampf(move_speed() / 6.0, 0.0, 1.0)
-		camera.position.y = sin(t * (6.0 + move_speed())) * 0.018 * s
+		bob = sin(t * (6.0 + move_speed())) * 0.018 * s
+	# The body moves in fixed physics steps (60 a second) but a phone or a
+	# browser draws at its own, uneven rate: two steps fall in one frame and
+	# none in the next, and walking stutters against the smoothly turning
+	# view. Draw the eye where the body is between its last two steps.
+	var step := _step_from - global_position
+	if step.length_squared() > 2.25:
+		# Placed by the script, not walked there: no sweep across the gap.
+		step = Vector3.ZERO
+		_step_from = global_position
+	var lag := step * (1.0 - Engine.get_physics_interpolation_fraction())
+	camera.position = _head.global_basis.inverse() * lag + Vector3(0.0, bob, 0.0)
 
 
 func _can_stand() -> bool:

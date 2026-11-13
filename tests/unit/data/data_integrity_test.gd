@@ -86,3 +86,49 @@ func test_chronicle_places_have_a_name_and_text() -> void:
 	check(places.size() >= 15)
 	for key: String in places:
 		check(str(places[key]["name"]) != "" and str(places[key]["text"]).length() > 40, key)
+
+
+func test_every_effect_the_scripts_play_has_its_files() -> void:
+	# Arrange: the effects index, and every sound id named in the scripts.
+	var index: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://assets/audio/sfx/index.json"))
+	check(index is Dictionary, "assets/audio/sfx/index.json parses")
+	if not index is Dictionary:
+		return
+	var named := {}
+	var call := RegEx.create_from_string("Sfx\\.play(?:_at)?\\(&\"([a-z_]+)\"")
+	for path: String in _scripts("res://src"):
+		for m: RegExMatch in call.search_all(FileAccess.get_file_as_string(path)):
+			named[m.get_string(1)] = path
+	# Those Sfx chooses itself, by weapon and by what a blow met.
+	for id: String in ["whoosh_thrust", "whoosh_slash", "block", "stab", "hit_cut", "hit_pierce", "hit_head"]:
+		named[id] = "src/core/sfx.gd"
+	# Assert: each is listed, and every listed variant is on disk.
+	check(named.size() > 15, "found the sound calls (%d)" % named.size())
+	for id: String in named:
+		check(index.has(id), "%s (played in %s) is not in the effects index" % [id, named[id]])
+	for id: String in index:
+		for i in int(index[id]):
+			var file := "res://assets/audio/sfx/%s_%d.ogg" % [id, i + 1]
+			check(ResourceLoader.exists(file), file)
+
+
+func test_every_loop_a_screen_asks_for_exists() -> void:
+	var call := RegEx.create_from_string("Sfx\\.(music|ambience)\\(&\"([a-z_]+)\"")
+	var found := 0
+	for path: String in _scripts("res://src"):
+		for m: RegExMatch in call.search_all(FileAccess.get_file_as_string(path)):
+			var dir := "music" if m.get_string(1) == "music" else "ambience"
+			check(ResourceLoader.exists("res://assets/audio/%s/%s.ogg" % [dir, m.get_string(2)]),
+				"%s asks for %s '%s'" % [path, dir, m.get_string(2)])
+			found += 1
+	check(found > 8, "found the music and ambience calls (%d)" % found)
+
+
+func _scripts(dir: String) -> Array[String]:
+	var out: Array[String] = []
+	for f: String in DirAccess.get_files_at(dir):
+		if f.ends_with(".gd"):
+			out.append(dir.path_join(f))
+	for d: String in DirAccess.get_directories_at(dir):
+		out.append_array(_scripts(dir.path_join(d)))
+	return out

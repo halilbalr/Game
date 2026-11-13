@@ -30,8 +30,10 @@ var touch: TouchControls
 ## True while a title card fills the screen: the HUD and the touch controls
 ## stand down.
 var cinematic: bool = false
-## Music this mission will ask for, loaded behind the loading screen.
+## Music and ambience this mission will ask for, loaded behind the loading
+## screen (see [method Sfx.preload_loops]).
 var music: Array[StringName] = []
+var ambience: Array[StringName] = []
 var _scene: bool = false
 var _skipping: bool = false
 var _pause: PauseMenu
@@ -44,7 +46,7 @@ func _ready() -> void:
 	data = Data.mission(id)
 	Sfx.music(&"")
 	Sfx.ambience(&"")
-	Sfx.preload_music(music)
+	Sfx.preload_loops(music, ambience)
 	world = Game.acquire_world(preset)
 	add_child(world)
 	world.ensure_navigation()

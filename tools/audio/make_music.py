@@ -3,7 +3,7 @@
 
     python3 tools/audio/make_music.py [track ...]
 
-Writes assets/audio/music/{theme,battle,night,lament}.ogg. Every note is
+Writes assets/audio/music/{theme,battle,night,lament,lyre}.ogg. Every note is
 synthesised here with numpy: string and choir pads, horn, a reed pipe
 (aulos), a plucked lyre and skin drums, in a hall made by convolution. No
 samples or recordings are used. Each track loops without a seam: whatever
@@ -422,7 +422,39 @@ def lament() -> np.ndarray:
     return mix.render(3.4, -19.0, 0.4)
 
 
-TRACKS = {"theme": theme, "battle": battle, "night": night, "lament": lament}
+def lyre_air() -> np.ndarray:
+    """Walk the City: a lyre air by daylight over a quiet drone, in the Greek
+    Dorian (E F G A B C D)."""
+    beat = 60.0 / 66.0
+    bars = 16
+    mix = Mix(bars * 4 * beat)
+    span = 16 * beat
+    for i in range(4):
+        mix.add(pad(hz("E2"), span, 380.0, 3.0), i * span, 0.22)
+        mix.add(pad(hz("B2"), span, 450.0, 3.0), i * span, 0.1, 0.3)
+    phrases = [
+        [("B4", 1), ("A4", 0.5), ("G4", 0.5), ("A4", 1), ("E4", 1)],
+        [("G4", 1), ("A4", 0.5), ("B4", 0.5), ("C5", 1.5), ("B4", 0.5)],
+        [("A4", 1), ("G4", 1), ("F4", 1), ("E4", 1)],
+        [("E4", 1), ("G4", 1), ("A4", 2)],
+        [("B4", 0.5), ("C5", 0.5), ("D5", 1), ("C5", 1), ("B4", 1)],
+        [("A4", 1), ("B4", 0.5), ("A4", 0.5), ("G4", 2)],
+        [("F4", 1), ("G4", 1), ("A4", 0.5), ("G4", 0.5), ("F4", 1)],
+        [("E4", 3), ("-", 1)],
+    ]
+    at = 0.0
+    for rep in range(2):
+        for i, phrase in enumerate(phrases):
+            melody(mix, lambda f, d: lyre(f, 2.4), phrase, at, beat, 0.24, 1.0, -0.25 if i % 2 else 0.2, 0.6)
+            at += 4 * beat
+    for k in range(bars * 2):
+        mix.add(lyre(hz("E3"), 2.6), k * 2 * beat, 0.1, 0.35, 0.5)
+        mix.add(lyre(hz("B3"), 2.2), k * 2 * beat + beat, 0.07, -0.35, 0.5)
+    melody(mix, aulos, [("E5", 3), ("D5", 1), ("C5", 2), ("B4", 2)], 32 * beat, beat, 0.07, 1.0, 0.1, 0.9)
+    return mix.render(3.0, -21.0, 0.6)
+
+
+TRACKS = {"theme": theme, "battle": battle, "night": night, "lament": lament, "lyre": lyre_air}
 
 
 def write_ogg(path: Path, x: np.ndarray) -> None:

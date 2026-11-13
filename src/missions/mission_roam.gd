@@ -9,6 +9,8 @@ func _init() -> void:
 	id = "roam"
 	hero = "hector"
 	preset = "day"
+	music = [&"lyre"]
+	ambience = [&"day"]
 
 
 func prepare() -> void:

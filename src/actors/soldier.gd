@@ -56,6 +56,8 @@ var _stun: float = 0.0
 var _block_show: float = 0.0
 var _attack_pending: bool = false
 var _attack_timer: float = 0.0
+## Time left on [member _attack_timer] when the swing becomes audible.
+var _swing_at: float = -1.0
 var _attack_is_throw: bool = false
 var _repath: float = 0.0
 var _nav_dest: Vector3 = Vector3.INF
@@ -264,7 +266,7 @@ func alert(source: Node3D) -> void:
 		return
 	target = source
 	_stun = 0.5
-	Sfx.play_at(&"shout", global_position)
+	Sfx.play_at(&"shout", global_position + Vector3(0, 1.5, 0))
 	alerted.emit(self)
 
 
@@ -294,10 +296,10 @@ func _begin_attack() -> void:
 	_attack_pending = true
 	_attack_is_throw = false
 	_attack_timer = windup + strike * 0.6
+	_swing_at = strike * 0.6 + 0.07
 	var lo := float(Data.tune("ai.attack_cooldown_min", 0.9))
 	var hi := float(Data.tune("ai.attack_cooldown_max", 2.0))
 	_cooldown = windup + strike + recover + randf_range(lo, hi) * (1.3 - skill * 0.7)
-	Sfx.play_at(&"whoosh", global_position, -8.0)
 
 
 func _resolve_attack() -> void:
@@ -336,11 +338,9 @@ func _resolve_attack() -> void:
 		# Men of the line wear each other down slowly; the player decides the fight.
 		base *= float(Data.tune("combat.ai_vs_ai_damage_scale", 0.5))
 	var result: Dictionary = target.receive_hit(self, base, height, to.normalized(), weapon_id)
+	Sfx.strike(target.global_position + Vector3(0, 1.2, 0), weapon_id, result)
 	if result.get("blocked", false):
-		Sfx.play_at(&"block", target.global_position)
 		_stun = 0.25
-	elif not result.is_empty():
-		Sfx.play_at(&"hit", target.global_position)
 
 
 ## Takes a blow. Returns {"blocked", "killed", "damage", "zone", "stealth"}.
@@ -383,7 +383,7 @@ func receive_hit(attacker: Node3D, base_damage: float, height: float, dir: Vecto
 	if health <= 0.0:
 		_die(attacker, dir, false)
 		return {"blocked": false, "killed": true, "damage": dmg, "zone": zone}
-	Sfx.play_at(&"grunt", global_position, -4.0)
+	Sfx.play_at(&"grunt", global_position + Vector3(0, 1.4, 0), -4.0)
 	return {"blocked": false, "killed": false, "damage": dmg, "zone": zone}
 
 
@@ -397,12 +397,12 @@ func _die(killer: Node3D, dir: Vector3, quiet: bool) -> void:
 	var fall_forward := _forward().dot(dir) > 0.0
 	figure.die(fall_forward)
 	if not quiet:
-		Sfx.play_at(&"death", global_position)
-	else:
-		Sfx.play_at(&"thud", global_position, -6.0)
+		Sfx.play_at(&"death", global_position + Vector3(0, 1.4, 0))
 	var pos := global_position
 	var tree := get_tree()
 	if tree != null:
+		# He reaches the ground about 0.8 s into the fall (Humanoid.die).
+		tree.create_timer(0.8).timeout.connect(func() -> void: Sfx.play_at(&"fall", pos, -4.0 if quiet else 0.0))
 		tree.create_timer(0.9).timeout.connect(func() -> void:
 			if is_instance_valid(battle):
 				Blood.pool(battle, pos))
@@ -545,6 +545,9 @@ func _physics_process(delta: float) -> void:
 		_stuck_t = 0.0
 	if _attack_pending:
 		_attack_timer -= delta
+		if _swing_at >= 0.0 and _attack_timer <= _swing_at and not _attack_is_throw:
+			_swing_at = -1.0
+			Sfx.play_at(Sfx.swing_sound(weapon), global_position + Vector3(0, 1.3, 0), -6.0)
 		if _attack_timer <= 0.0:
 			_attack_pending = false
 			_resolve_attack()

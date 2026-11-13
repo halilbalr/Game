@@ -269,7 +269,7 @@ func _process(delta: float) -> void:
 	# this: watch the frame rate and trade 3D sharpness for it when needed.
 	if not lite or is_harness() or args.has("noadapt") or get_tree().paused or delta > 0.25:
 		return
-	if (_loading != null and _loading.visible) or Sfx.is_building():
+	if _loading != null and _loading.visible:
 		_settle = 3.0
 	if _settle > 0.0:
 		_settle -= delta

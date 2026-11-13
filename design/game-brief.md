@@ -158,14 +158,25 @@ running on (`--mobile`, `--phone`).
 
 Three sources, all synthetic, none recorded:
 
-- **Effects and ambience** are synthesised at start-up (`src/core/sfx.gd`):
-  bronze as inharmonic partials, grunts as a pulse train through two formant
-  filters, looping ambience for night, day, the feast heard through the
-  planks, battle and the sack.
-- **Music** is composed and rendered by `tools/audio/make_music.py` into four
+- **Effects and ambience** are rendered by `tools/audio/make_sfx.py` at
+  44.1 kHz: `assets/audio/sfx/<id>_<n>.ogg` with several variants of each
+  (counts in `assets/audio/sfx/index.json`) and 24-second seamless loops in
+  `assets/audio/ambience/`. A blow is layered from its parts: a punch, the
+  crack of the point or the bite of the blade, the wet tail, a bronze ring
+  when it meets a helmet or a shield boss. The ox-hide shield booms like a
+  drum, a man falls knees first, then his body, then his gear. Swings are
+  heard as the weapon comes through, not at the wind-up. Cries, grunts and
+  the watch's shouts are spoken by the Kokoro model and driven into
+  distortion; the feast is Kokoro voices talking over each other behind
+  timber. Impacts are tuned for phone speakers: their weight sits in
+  overtones above 150 Hz rather than in a fundamental a phone cannot play.
+  `Sfx.strike` picks the sound of a blow from what it met (shield, stealth,
+  cut, thrust, head); each play takes a variant at random, never the last one,
+  with a small change of pitch and level.
+- **Music** is composed and rendered by `tools/audio/make_music.py` into five
   looping tracks (`assets/audio/music/`): `theme` (title screen), `battle`,
-  `night` (the horse, the sleeping city) and `lament` (Andromache, endings,
-  defeat). D minor leaning on the lowered second, the nearest modern scale to
+  `night` (the horse, the sleeping city), `lament` (Andromache, endings,
+  defeat) and `lyre` (Walk the City). D minor leaning on the lowered second, the nearest modern scale to
   the Greek Dorian. Mixed for phone speakers: little below 150 Hz.
 - **Voices** are rendered by `tools/audio/make_voices.py` with the Kokoro
   text-to-speech model, one file per line of the mission data
@@ -176,6 +187,22 @@ Three sources, all synthetic, none recorded:
 
 `Sfx.speak` plays a line and returns its length, which sets how long the
 subtitle stays. Music and ambience duck 8 dB under speech.
+
+Nothing is synthesised while the game runs. (Until the phone fixes, effects
+were built at start-up; in a browser that took about 25 seconds of the main
+thread, in slices that made the first half-minute of play stutter.)
+
+## Touch look and smooth movement
+
+A drag's movement is measured by `TouchControls` from each finger's last
+position, never from the engine's `relative`: in a browser Godot measures that
+from whichever finger came first in the previous touch event, so with a thumb
+on the stick and another looking it was off by the distance between the
+thumbs, and the view jumped round by up to a few hundred degrees.
+
+The body moves in fixed physics steps (60 a second) while a phone draws at its
+own uneven rate. `Player._process` draws the eye between the body's last two
+steps, so walking does not stutter against the smoothly turning view.
 
 ## Scenes and skipping
 
@@ -189,7 +216,7 @@ thing to do. Title cards are narrated and are scenes too.
 
 | Check | How | State |
 |---|---|---|
-| Rules and formulas, touch controls, phone button layout | 73 tests, `tests/run_tests.gd` | Pass |
+| Rules and formulas, touch controls (two-thumb look included), phone button layout, every sound the scripts ask for exists | 76 tests, `tests/run_tests.gd` | Pass |
 | Missions in mobile and phone mode | `--mission=<id> --bot --god --mobile --phone` | Pass |
 | Android package is complete | Debug APK built and signed; a mission finished from its contents on the Linux engine | Pass |
 | The app builds on a real phone or tablet | — | Not verified |

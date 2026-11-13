@@ -16,6 +16,7 @@ func _ready() -> void:
 	_cam.make_current()
 	_place_camera()
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	Sfx.preload_loops([&"theme"], [])
 	Sfx.music(&"theme")
 	Sfx.ambience(&"")
 

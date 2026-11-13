@@ -25,6 +25,7 @@ func _init() -> void:
 	hero = "odysseus"
 	preset = "night"
 	music = [&"night", &"battle", &"lament"]
+	ambience = [&"feast", &"night", &"sack"]
 
 
 func _watch(pos: Vector3, yaw: float, opts: Dictionary = {}) -> Soldier:

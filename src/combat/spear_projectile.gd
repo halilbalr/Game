@@ -57,7 +57,7 @@ func _physics_process(delta: float) -> void:
 	var hit := space.intersect_ray(query)
 	if best != null and (hit.is_empty() or from.distance_to(hit["position"]) > from.distance_to(to) * best_t):
 		var result: Dictionary = best.receive_hit(thrower, damage, best_height, velocity.normalized(), "spear")
-		Sfx.play_at(&"block" if result.get("blocked", false) else &"hit", best.global_position)
+		Sfx.strike(best.global_position + Vector3(0, best_height, 0), "spear", result)
 		if result.get("blocked", false) or randf() < 0.6:
 			battle.drop_spear(best.global_position + Vector3(randf_range(-0.6, 0.6), 0, randf_range(-0.6, 0.6)))
 		queue_free()
@@ -66,7 +66,7 @@ func _physics_process(delta: float) -> void:
 		global_position = (hit["position"] as Vector3) - velocity.normalized() * 0.25
 		_aim()
 		_stuck = true
-		Sfx.play_at(&"thud", global_position)
+		Sfx.play_at(&"spear_stick", global_position)
 		battle.make_spear_pickup(self)
 		return
 	global_position = to

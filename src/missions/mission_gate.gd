@@ -20,6 +20,7 @@ func _init() -> void:
 	hero = "hector"
 	preset = "evening"
 	music = [&"lament", &"battle"]
+	ambience = [&"battle_far", &"battle"]
 
 
 func _g(p: Vector3, lift: float = 0.15) -> Vector3:

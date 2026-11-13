@@ -205,3 +205,32 @@ func test_phone_buttons_fit_a_phone_held_sideways_without_touching() -> void:
 		check(not skip.grow(r).has_point(c), "%s sits on Skip" % ids[i])
 		for j in range(i + 1, ids.size()):
 			check(c.distance_to(circles[ids[j]][0]) > r + (circles[ids[j]][1] as float), "%s overlaps %s" % [ids[i], ids[j]])
+
+
+func test_look_drag_with_two_thumbs_down_turns_by_the_distance_moved() -> void:
+	# Arrange: one thumb on the stick, one looking. In a browser the engine
+	# measures a drag from whichever finger came first in the previous touch
+	# event, so with two thumbs down the relative it reports can be hundreds
+	# of pixels off. The position it reports is always right.
+	var st := _stage()
+	await frames(SETTLE)
+	_touch(0, STICK_START, true)
+	_touch(1, LOOK_START, true)
+	await frames(2)
+	var yaw_before := st.player.rotation.y
+	var moved_to := LOOK_START + Vector2(10, 0)
+	# Act: the looking thumb moves 10 units right; the event claims it came
+	# from where the stick thumb is.
+	var ev := InputEventScreenDrag.new()
+	ev.index = 1
+	ev.position = _to_window(moved_to)
+	ev.relative = _to_window(moved_to) - _to_window(STICK_START)
+	Input.parse_input_event(ev)
+	await frames(2)
+	# Assert
+	var expected := -10.0 * TouchControls.LOOK_SPEED * float(Game.settings.get("mouse_sensitivity", 1.0))
+	var turned := st.player.rotation.y - yaw_before
+	check(absf(turned - expected) < 0.002, "turned %.4f rad, expected %.4f" % [turned, expected])
+	_touch(1, moved_to, false)
+	_touch(0, STICK_START, false)
+	await _clear(st)

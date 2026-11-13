@@ -152,7 +152,7 @@ func throw_spear(thrower: Node3D, side: StringName, from: Vector3, velocity: Vec
 	p.battle = self
 	add_child(p)
 	p.global_position = from
-	Sfx.play_at(&"whoosh", from)
+	Sfx.play_at(&"whoosh_throw", from)
 
 
 ## Leaves a spear lying on the ground for the player to take.

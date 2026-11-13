@@ -39,6 +39,12 @@ var _stick_id: int = -1
 var _stick_origin := Vector2.ZERO
 var _stick_vec := Vector2.ZERO
 var _look_ids: Dictionary = {}
+## Finger index -> where that finger was last seen. A drag's movement is
+## worked out from this, never from the event's own relative: in a browser
+## Godot measures that from whichever finger came first in the previous
+## touch event, so with a thumb on the stick and one looking it can be off by
+## the distance between the thumbs, and the view jumps.
+var _last_pos: Dictionary = {}
 var _button_ids: Dictionary = {}
 var _crouched: bool = false
 var _inset: float = 0.0
@@ -195,6 +201,7 @@ func _release_all() -> void:
 	_stick_vec = Vector2.ZERO
 	_look_ids.clear()
 	_button_ids.clear()
+	_last_pos.clear()
 
 
 func _apply_stick() -> void:
@@ -224,6 +231,10 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
 		var touch := event as InputEventScreenTouch
 		if touch.pressed:
+			_last_pos[touch.index] = touch.position
+		else:
+			_last_pos.erase(touch.index)
+		if touch.pressed:
 			var id := _hit_button(touch.position)
 			if id != "":
 				_press_button(id, touch.index)
@@ -246,13 +257,17 @@ func _input(event: InputEvent) -> void:
 			_look_ids.erase(touch.index)
 	else:
 		var drag := event as InputEventScreenDrag
+		var moved: Vector2 = drag.position - (_last_pos.get(drag.index, drag.position) as Vector2)
+		_last_pos[drag.index] = drag.position
+		if Game.args.has("verbose"):
+			print("touch drag %d moved %s engine relative %s" % [drag.index, str(moved.round()), str(drag.relative.round())])
 		if drag.index == _stick_id:
 			_stick_vec = ((drag.position - _stick_origin) / STICK_RADIUS).limit_length(1.0)
 			_apply_stick()
 		elif _look_ids.has(drag.index) and player.control_enabled:
 			var sens := LOOK_SPEED * float(Game.settings.get("mouse_sensitivity", 1.0))
 			var invert := -1.0 if Game.settings.get("invert_y", false) else 1.0
-			player.add_look(-drag.relative.x * sens, -drag.relative.y * sens * invert)
+			player.add_look(-moved.x * sens, -moved.y * sens * invert)
 
 
 func _process(_delta: float) -> void:
