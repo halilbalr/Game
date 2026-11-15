@@ -15,7 +15,7 @@ var args: Dictionary = {}
 var settings: Dictionary = {
 	"mouse_sensitivity": 1.0, "fov": 75.0, "blood": true, "quality": 1,
 	"master_volume": 0.8, "fullscreen": true, "invert_y": false, "head_bob": true,
-	"difficulty": 1,
+	"difficulty": 1, "aim_assist": true,
 }
 ## Bumped when a default changes meaning, so an old saved value is not kept.
 const SETTINGS_VERSION := 2

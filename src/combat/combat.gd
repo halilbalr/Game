@@ -96,6 +96,41 @@ static func detection_gain(distance: float, angle_deg: float, crouched: bool, mo
 	return gain
 
 
+## Aim assist: which of [param targets] (points to aim at) the view should
+## favour. Picks the one nearest the line of sight [param fwd] from
+## [param eye], within [param max_range] metres and [param cone_deg] of it,
+## nearer men counting for a little more. The cone is measured side to side
+## only: a man at arm's length stands well below the eye line, and that
+## should not put him outside it. Returns -1 when none qualifies.
+static func assist_pick(eye: Vector3, fwd: Vector3, targets: Array[Vector3], max_range: float, cone_deg: float) -> int:
+	var best := -1
+	var best_score := INF
+	var half := deg_to_rad(cone_deg) * 0.5
+	var flat_fwd := Vector3(fwd.x, 0.0, fwd.z)
+	for i in targets.size():
+		var to := targets[i] - eye
+		var dist := to.length()
+		if dist > max_range or dist < 0.2:
+			continue
+		var ang := flat_fwd.angle_to(Vector3(to.x, 0.0, to.z))
+		if ang > half:
+			continue
+		var score := ang + dist / max_range * 0.15
+		if score < best_score:
+			best_score = score
+			best = i
+	return best
+
+
+## Aim assist: the (yaw, pitch) turn in radians, toward a target seen at
+## angles [param err] off the line of sight, for one step of
+## [param delta] seconds pulling at [param rate] (share of the error per
+## second), never faster than [param max_turn] rad/s and never past it.
+static func assist_turn(err: Vector2, rate: float, max_turn: float, delta: float) -> Vector2:
+	var step := err * clampf(rate * delta, 0.0, 1.0)
+	return step.limit_length(max_turn * delta)
+
+
 ## A blow is heavy when Strike was held for [code]heavy_hold[/code] seconds
 ## or more before it was let go: slower, harder, and it breaks a guard.
 static func is_heavy(held_seconds: float, cfg: Dictionary) -> bool:

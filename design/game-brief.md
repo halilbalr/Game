@@ -91,6 +91,16 @@ bronze cuirass, linen corslet, bronze greaves for the "well-greaved Achaeans".
   often the more skilled they are. Hits to the head do more; armour reduces
   body hits. The rules are pure functions in `src/combat/combat.gd`
   (`is_heavy`, `combo_step`, `blow`, `guard`), unit-tested.
+- **Aim assist** (option, on by default; numbers in `aim_assist` of
+  `tuning.json`): within 7 m and a 26-degree cone, measured side to side,
+  the view eases toward the enemy nearest the crosshair, at full rate while
+  the player moves or looks and at 30% when still (touch 2.4, gamepad 2.0,
+  mouse 0.9 of the error per second, at most 1.1 rad/s). Look slows to 65%
+  (touch, gamepad) or 85% (mouse) while the crosshair is on a man. A blow
+  turns up to 12 degrees onto a man within reach, spread over the wind-up. A
+  thrown spear bends up to 3.5 degrees toward a man near the crosshair,
+  leading him if he runs. Picking and easing are `Combat.assist_pick` and
+  `Combat.assist_turn`; the scripted test player does without it.
 - **Throwing**: a held spear can be thrown; spears lying on the field can be
   picked up.
 - **Stealth** (Wooden Horse): sentries see in a cone and hear running feet.
@@ -255,7 +265,7 @@ thing to do. Title cards are narrated and are scenes too.
 
 | Check | How | State |
 |---|---|---|
-| Rules and formulas (combat moves included), touch controls (two-thumb look, tap and hold Strike), phone button layout, every sound the scripts ask for exists | 83 tests, `tests/run_tests.gd` | Pass |
+| Rules and formulas (combat moves included), touch controls (two-thumb look, tap and hold Strike), phone button layout, every sound the scripts ask for exists, aim assist | 88 tests, `tests/run_tests.gd` | Pass |
 | Missions in mobile and phone mode | `--mission=<id> --bot --god --mobile --phone` | Pass |
 | Android package is complete | Debug APK built and signed; a mission finished from its contents on the Linux engine | Pass |
 | The app builds on a real phone or tablet | — | Not verified |

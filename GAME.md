@@ -170,6 +170,12 @@ has been heard.
 - **Strike with the shield up** to shove a man back and leave him reeling.
 - **Jump while stepping sideways or back** to dodge: a blow passes through you.
 - Blows land with weight: men are knocked back, and a heavy blow is felt.
+- **Aim assist** (on by default; Options to switch it off) helps a little in
+  a fight: the view eases toward the enemy nearest your crosshair while you
+  move or look, turning slows slightly while the crosshair is on a man, a
+  blow turns you the last few degrees onto him, and a thrown spear bends a
+  few degrees toward a target near the crosshair. It is stronger on a touch
+  screen or gamepad than with a mouse.
 - Blows to the head do more. Bronze turns part of a blow to the body.
 - Health comes back slowly when you are out of the fight.
 
@@ -246,6 +252,7 @@ python3 tools/audio/make_music.py
 Mouse sensitivity, field of view, volume, difficulty, graphics quality, blood
 on or off, inverted look, head bob, fullscreen.
 
+- **Aim assist** is described under *How fighting works*.
 - **Difficulty** changes how much a blow hurts you: *Bard's tale* (about half),
   *Warrior* (the default), *Hero* (half as much again). Combat has only been
   tested by scripts, not by a person, so expect to adjust this.
@@ -278,7 +285,7 @@ model itself is not part of this repository.
 
 ```
 godot --headless --path . --import                              # once after cloning
-godot --headless --path . -s res://tests/run_tests.gd           # 83 tests
+godot --headless --path . -s res://tests/run_tests.gd           # 88 tests
 godot --headless --path . --fixed-fps 60 -- --mission=horse --autoplay   # script plays itself; exit 0 on completion
 godot --headless --path . --fixed-fps 60 -- --mission=gate --autoplay
 godot --headless --path . --fixed-fps 60 -- --scene=arena --autoplay --bot   # scripted player through real input

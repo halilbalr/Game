@@ -72,6 +72,11 @@ var _block_age: float = 0.0
 var _bash_wait: float = 0.0
 var _dodge_left: float = 0.0
 var _dodge_grace: float = 0.0
+## Yaw still to turn toward the man a blow was aimed at (strike lock).
+var _magnet_yaw: float = 0.0
+## Whether the player is turning the view by hand this tick (the assist
+## pulls hardest then, so the camera does not wander on its own).
+var _looking: bool = false
 var _regen_wait: float = 0.0
 var _stamina_wait: float = 0.0
 var _step_t: float = 0.0
@@ -169,7 +174,110 @@ func look_toward(point: Vector3) -> void:
 ## Turns the view by the given angles in radians (touch look).
 func add_look(yaw: float, pitch: float) -> void:
 	if not _dead and control_enabled:
-		_turn(yaw, pitch)
+		var k := _friction(Data.tune("aim_assist.friction_touch", 0.65))
+		_turn(yaw * k, pitch * k)
+		_looking = true
+
+
+## True when the aim assist may act: the option is on, the player is in a
+## fight under his own control (not the test harness's bot).
+func _assist_on() -> bool:
+	return bool(Game.settings.get("aim_assist", true)) and combat_enabled and control_enabled and not bot_control \
+		and not _dead and battle != null
+
+
+## Where the assist looks at a man: his chest.
+func _assist_point(e: Node3D) -> Vector3:
+	return e.global_position + Vector3(0, float(Data.tune("aim_assist.chest_height", 1.25)), 0)
+
+
+## The enemy the assist favours within [param range] and [param cone]
+## degrees of the crosshair, or null.
+func _assist_target(max_range: float, cone: float) -> Node3D:
+	var foes: Array = battle.enemies_of(side)
+	var points: Array[Vector3] = []
+	var men: Array[Node3D] = []
+	for e: Node3D in foes:
+		if e.has_method("is_alive") and not e.is_alive():
+			continue
+		men.append(e)
+		points.append(_assist_point(e))
+	var i := Combat.assist_pick(camera.global_position, -camera.global_transform.basis.z, points, max_range, cone)
+	return men[i] if i >= 0 else null
+
+
+## Yaw and pitch (radians) from the line of sight to [param point].
+func _aim_error(point: Vector3) -> Vector2:
+	var to := point - camera.global_position
+	var fwd := -global_transform.basis.z
+	var flat := Vector3(to.x, 0.0, to.z)
+	var yaw_err := fwd.signed_angle_to(flat, Vector3.UP) if flat.length_squared() > 1e-4 else 0.0
+	var pitch_to := atan2(to.y, flat.length())
+	return Vector2(yaw_err, pitch_to - _pitch)
+
+
+## Look slows a little while the crosshair rests on an enemy, so it stays there.
+func _friction(scale: float) -> float:
+	if not _assist_on():
+		return 1.0
+	var t := _assist_target(float(Data.tune("aim_assist.range", 7.0)), float(Data.tune("aim_assist.friction_deg", 7.0)) * 2.0)
+	return scale if t != null else 1.0
+
+
+## Eases the view toward the enemy nearest the crosshair: firmly while the
+## player is turning or walking, barely when he is still.
+func _aim_assist(delta: float, pad_look: bool) -> void:
+	var looking := _looking
+	_looking = false
+	if _magnet_yaw != 0.0:
+		var step := clampf(_magnet_yaw, -6.0 * delta, 6.0 * delta)
+		_turn(step, 0.0)
+		_magnet_yaw -= step
+		if absf(_magnet_yaw) < 0.002:
+			_magnet_yaw = 0.0
+	if not _assist_on():
+		return
+	var t := _assist_target(float(Data.tune("aim_assist.range", 7.0)), float(Data.tune("aim_assist.cone_deg", 26.0)))
+	if t == null:
+		return
+	var rate := float(Data.tune("aim_assist.pull_mouse", 0.9))
+	if Game.mobile:
+		rate = float(Data.tune("aim_assist.pull_touch", 2.4))
+	elif pad_look:
+		rate = float(Data.tune("aim_assist.pull_pad", 2.0))
+	var moving := looking or Vector2(velocity.x, velocity.z).length() > 0.5
+	if not moving:
+		rate *= float(Data.tune("aim_assist.pull_idle", 0.3))
+	var err := _aim_error(_assist_point(t))
+	var turn := Combat.assist_turn(Vector2(err.x, err.y * 0.5), rate, float(Data.tune("aim_assist.max_turn", 1.1)), delta)
+	_turn(turn.x, turn.y)
+
+
+## A blow turns the last few degrees onto the man in front, if one stands
+## within reach. Spread over the wind-up, so it reads as the body turning.
+func _strike_lock(reach: float) -> void:
+	if not _assist_on():
+		return
+	var t := _assist_target(reach + float(Data.tune("aim_assist.strike_reach_extra", 1.2)),
+		float(Data.tune("aim_assist.strike_cone_deg", 30.0)))
+	if t == null:
+		return
+	var limit := deg_to_rad(float(Data.tune("aim_assist.strike_turn_deg", 12.0)))
+	_magnet_yaw = clampf(_aim_error(_assist_point(t)).x, -limit, limit)
+
+
+## A thrown spear bends a few degrees toward a man near the crosshair.
+func _throw_assist(origin: Vector3, aim: Vector3) -> Vector3:
+	if not _assist_on():
+		return aim
+	var t := _assist_target(float(Data.tune("aim_assist.throw_range", 28.0)), float(Data.tune("aim_assist.throw_cone_deg", 7.0)))
+	if t == null:
+		return aim
+	# Lead a running man a little, and keep the arc the throw already has.
+	var at := _assist_point(t)
+	if "velocity" in t:
+		at += (t.velocity as Vector3) * (origin.distance_to(at) / 25.0)
+	return (at - origin).normalized()
 
 
 ## Sets the up/down angle of the view in radians.
@@ -231,7 +339,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			return
 		var sens := 0.0022 * float(Game.settings.get("mouse_sensitivity", 1.0))
 		var rel: Vector2 = (event as InputEventMouseMotion).relative.limit_length(160.0)
+		sens *= _friction(Data.tune("aim_assist.friction_mouse", 0.85))
 		_turn(-rel.x * sens, -rel.y * sens * (-1.0 if Game.settings.get("invert_y", false) else 1.0))
+		_looking = true
 	elif event.is_action_pressed(&"weapon_1"):
 		_select_slot(0)
 	elif event.is_action_pressed(&"weapon_2"):
@@ -279,6 +389,8 @@ func _start_attack(throw: bool, heavy: bool = false) -> void:
 	var strike := float(w.get("strike", 0.12))
 	var recover := float(w.get("recover", 0.4))
 	_attack_t = 0.0
+	if not throw:
+		_strike_lock(float(w.get("reach", 1.8)))
 	_attack_hit_at = windup + strike * 0.55
 	_attack_end = windup + strike + recover
 	_attack_is_throw = throw
@@ -298,6 +410,7 @@ func _resolve_attack() -> void:
 	if _attack_is_throw:
 		viewmodel.release_weapon()
 		var speed := float(w.get("throw_speed", 25.0))
+		aim = _throw_assist(origin, aim)
 		battle.throw_spear(self, side, origin + aim * 0.6 + camera.global_transform.basis.x * 0.2,
 			aim * speed + Vector3(0, 1.4, 0) + velocity * 0.5, float(w.get("throw_damage", 80.0)))
 		spears -= 1
@@ -537,7 +650,10 @@ func _physics_process(delta: float) -> void:
 	if active:
 		var look := Input.get_vector(&"look_left", &"look_right", &"look_up", &"look_down")
 		if look.length() > 0.05:
-			_turn(-look.x * 2.6 * delta, -look.y * 1.8 * delta)
+			var k := _friction(Data.tune("aim_assist.friction_touch", 0.65))
+			_turn(-look.x * 2.6 * delta * k, -look.y * 1.8 * delta * k)
+			_looking = true
+		_aim_assist(delta, look.length() > 0.05)
 
 	# Crouch.
 	var want_crouch := can_move and Input.is_action_pressed(&"crouch")

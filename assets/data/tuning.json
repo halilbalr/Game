@@ -93,5 +93,23 @@
     "attack_cooldown_max": 2.6,
     "separation": 0.95,
     "repath_seconds": 0.45
+  },
+  "aim_assist": {
+    "range": 7.0,
+    "cone_deg": 26.0,
+    "chest_height": 1.25,
+    "pull_touch": 2.4,
+    "pull_pad": 2.0,
+    "pull_mouse": 0.9,
+    "pull_idle": 0.3,
+    "max_turn": 1.1,
+    "friction_deg": 7.0,
+    "friction_touch": 0.65,
+    "friction_mouse": 0.85,
+    "strike_reach_extra": 1.2,
+    "strike_cone_deg": 30.0,
+    "strike_turn_deg": 12.0,
+    "throw_range": 28.0,
+    "throw_cone_deg": 7.0
   }
 }

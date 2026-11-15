@@ -30,6 +30,7 @@ func _init() -> void:
 	_toggle("Blood", "blood")
 	_toggle("Invert look", "invert_y")
 	_toggle("Head bob", "head_bob")
+	_toggle("Aim assist", "aim_assist")
 	if not Game.mobile and not Game.web:
 		_toggle("Fullscreen", "fullscreen")
 

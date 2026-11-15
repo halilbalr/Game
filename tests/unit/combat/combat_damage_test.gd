@@ -72,6 +72,31 @@ func test_is_behind_only_for_attackers_at_the_back() -> void:
 	check(not Combat.is_behind(forward, Vector3(2, 0, 0)), "the flank is not the back")
 
 
+func test_assist_picks_the_man_nearest_the_crosshair_within_range_and_cone() -> void:
+	var eye := Vector3.ZERO
+	var fwd := Vector3(0, 0, -1)
+	var men: Array[Vector3] = [Vector3(1.5, 0, -4), Vector3(0.2, 0, -5), Vector3(0, 0, 4), Vector3(0, 0, -20)]
+	check(Combat.assist_pick(eye, fwd, men, 7.0, 26.0) == 1, "the man straight ahead, not the one off to the side")
+	var off: Array[Vector3] = [Vector3(3, 0, -3)]
+	check(Combat.assist_pick(eye, fwd, off, 7.0, 26.0) == -1, "45 degrees off is outside a 26 degree cone")
+	var far: Array[Vector3] = [Vector3(0, 0, -9)]
+	check(Combat.assist_pick(eye, fwd, far, 7.0, 26.0) == -1, "beyond range")
+	var behind: Array[Vector3] = [Vector3(0, 0, 3)]
+	check(Combat.assist_pick(eye, fwd, behind, 7.0, 26.0) == -1, "never someone behind")
+	var low: Array[Vector3] = [Vector3(0.2, -0.45, -1.4)]
+	check(Combat.assist_pick(eye, fwd, low, 7.0, 26.0) == 0, "a man close by and below the eye line still counts")
+
+
+func test_assist_turn_moves_toward_the_target_capped_and_never_past_it() -> void:
+	var t := Combat.assist_turn(Vector2(0.2, -0.1), 2.0, 1.0, 1.0 / 60.0)
+	check(t.x > 0.0 and t.y < 0.0, "toward the error")
+	check(is_equal_approx(t.x, 0.2 * 2.0 / 60.0), "a share of the error each step")
+	var capped := Combat.assist_turn(Vector2(0.5, 0.0), 30.0, 1.0, 1.0 / 60.0)
+	check(capped.length() <= 1.0 / 60.0 + 1e-6, "no faster than max_turn")
+	var whole := Combat.assist_turn(Vector2(0.01, 0.0), 1000.0, 100.0, 1.0)
+	check(is_equal_approx(whole.x, 0.01), "never overshoots")
+
+
 const MOVES := {"heavy_hold": 0.32, "heavy_damage": 1.7, "heavy_windup": 1.45, "heavy_stamina": 1.8,
 	"combo_damage": [1.0, 1.12, 1.4], "combo_windup": [1.0, 0.85, 0.78], "parry_window": 0.24, "riposte_damage": 1.5}
 

@@ -251,3 +251,63 @@ func test_look_drag_with_two_thumbs_down_turns_by_the_distance_moved() -> void:
 	_touch(1, moved_to, false)
 	_touch(0, STICK_START, false)
 	await _clear(st)
+
+
+## Puts an Achaean (Hector's enemy) at [param at], holding his ground.
+func _foe(st: Stage, at: Vector3) -> Node3D:
+	var foe := st.player.battle.spawn("achaean_spearman", at, 0.0, {"hold": true, "engage_range": 0.0, "aware": false})
+	await frames(2)
+	return foe
+
+
+func _walk_and_measure_turn(st: Stage) -> float:
+	var yaw_before := st.player.rotation.y
+	Input.action_press(&"move_forward")
+	await frames(30)
+	Input.action_release(&"move_forward")
+	return st.player.rotation.y - yaw_before
+
+
+func test_aim_assist_turns_the_view_toward_a_man_near_the_crosshair() -> void:
+	# Arrange: a man ten degrees right of the line of sight, five metres off.
+	var st := _stage()
+	await frames(SETTLE)
+	Game.settings["aim_assist"] = true
+	await _foe(st, Vector3(0.85, 0.1, -4.9))
+	# Act: walk toward him for half a second.
+	var turned := await _walk_and_measure_turn(st)
+	# Assert: the view turned right (yaw decreases), by a little.
+	check(turned < -0.01, "turned %.3f rad toward him" % turned)
+	check(turned > -0.2, "a nudge, not a snap (%.3f rad)" % turned)
+	await _clear(st)
+
+
+func test_aim_assist_off_leaves_the_view_alone() -> void:
+	var st := _stage()
+	await frames(SETTLE)
+	Game.settings["aim_assist"] = false
+	await _foe(st, Vector3(0.85, 0.1, -4.9))
+	var turned := await _walk_and_measure_turn(st)
+	check(absf(turned) < 0.001, "no turn with the assist off (%.4f rad)" % turned)
+	Game.settings["aim_assist"] = true
+	await _clear(st)
+
+
+func test_a_blow_turns_the_last_few_degrees_onto_the_man_in_reach() -> void:
+	# Arrange: a man about 11 degrees right, inside a spear's reach.
+	var st := _stage()
+	await frames(SETTLE)
+	Game.settings["aim_assist"] = true
+	var foe := await _foe(st, Vector3(0.4, 0.1, -2.1))
+	var off_before := absf(st.player._aim_error(st.player._assist_point(foe)).x)
+	# Act: a quick blow, standing still.
+	var pos := st.touch._button_centre("strike")
+	_touch(2, pos, true)
+	await frames(2)
+	_touch(2, pos, false)
+	await frames(20)
+	# Assert: the crosshair has come round onto him.
+	var off_after := absf(st.player._aim_error(st.player._assist_point(foe)).x)
+	check(off_before > 0.12, "started %.3f rad off" % off_before)
+	check(off_after < 0.05, "ended %.3f rad off" % off_after)
+	await _clear(st)
