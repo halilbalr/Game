@@ -8,13 +8,14 @@ Reads builds/web/ and writes builds/artifact/:
 
     the-odyssey.html                the page (Godot's loader script inlined)
     engine.wasm.gz.txt              the engine, gzipped then base64
-    game.pck.txt                    the game data, base64
+    game.pck.1.txt, game.pck.2.txt  the game data, base64, in parts
     index.audio.worklet.js          Godot's audio worklets, as exported
     index.audio.position.worklet.js
 
 The engine is 38 MB of WebAssembly; an Artifact takes binary files up to 15 MB
 and text files up to 16 MB, so it travels as base64 text of its gzip (about
-12.5 MB) and the page unpacks it in the browser.
+12.5 MB) and the page unpacks it in the browser. The game data is cut into
+parts under the limit, which the page joins back together.
 """
 
 import base64
@@ -29,6 +30,9 @@ WEB = ROOT / "builds" / "web"
 OUT = ROOT / "builds" / "artifact"
 SHELL = Path(__file__).with_name("artifact_shell.html")
 TEXT_LIMIT = 16 * 1024 * 1024
+# Each part of the game data: under the limit, and a whole number of base64
+# quads so that the parts join into valid base64 again.
+PART_SIZE = 15 * 1024 * 1024
 POINTER = (
     "computePosition:function(evt,rect){const canvas=GodotConfig.canvas;"
     "const rw=canvas.width/rect.width;const rh=canvas.height/rect.height;"
@@ -57,7 +61,13 @@ def main() -> None:
 
     pck = (WEB / "index.pck").read_bytes()
     pck_text = base64.b64encode(pck)
-    (OUT / "game.pck.txt").write_bytes(pck_text)
+    for old in OUT.glob("game.pck*.txt"):
+        old.unlink()
+    pck_parts = []
+    for i, start in enumerate(range(0, len(pck_text), PART_SIZE)):
+        name = f"game.pck.{i + 1}.txt"
+        (OUT / name).write_bytes(pck_text[start:start + PART_SIZE])
+        pck_parts.append(name)
 
     for name in ("index.audio.worklet.js", "index.audio.position.worklet.js"):
         shutil.copyfile(WEB / name, OUT / name)
@@ -97,6 +107,7 @@ def main() -> None:
     page = page.replace("/*__HERO__*/", hero_uri)
     page = page.replace("/*__WASM_TEXT_SIZE__*/", str(len(wasm_text)))
     page = page.replace("/*__PCK_TEXT_SIZE__*/", str(len(pck_text)))
+    page = page.replace("/*__PCK_PARTS__*/", json.dumps(pck_parts))
     (OUT / "the-odyssey.html").write_text(page, encoding="utf-8")
 
     for path in sorted(OUT.iterdir()):

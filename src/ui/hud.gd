@@ -9,6 +9,8 @@ var battle: Battlefield
 var mission: Mission
 var _skip: Label
 var _card_tween: Tween
+var _meter: float = -1.0
+var _meter_label: String = ""
 var _root: Control
 var _bars: Control
 var _objective: Label
@@ -260,6 +262,12 @@ func set_stealth(visible_now: bool, detection: float = 0.0, alarm_left: float = 
 	_alarm_total = alarm_total
 
 
+## Shows a named bar at the top of the screen, 0 to 1 ([param value] < 0 hides it).
+func set_meter(label: String, value: float) -> void:
+	_meter_label = label
+	_meter = value
+
+
 ## Names a great enemy at the top of the screen (null to clear).
 func set_boss(s: Soldier) -> void:
 	_boss = s
@@ -406,7 +414,8 @@ func _draw_bars() -> void:
 	if target != Vector3.INF and player.camera != null and player.is_alive():
 		var cam := player.camera
 		var dist := cam.global_position.distance_to(target)
-		if dist < 0.6:
+		# Too close, or level with the lens (it cannot be projected there).
+		if dist < 0.6 or absf((cam.global_transform.affine_inverse() * target).z) < 0.01:
 			return
 		var behind := cam.is_position_behind(target)
 		var sp := cam.unproject_position(target)
@@ -445,6 +454,15 @@ func _draw_bars() -> void:
 			var bw := 220.0
 			_bars.draw_rect(Rect2(c.x - bw * 0.5, c.y + 52, bw, 6), Color(0, 0, 0, 0.6))
 			_bars.draw_rect(Rect2(c.x - bw * 0.5, c.y + 52, bw * clampf(_alarm / _alarm_total, 0.0, 1.0), 6), Ui.BLOOD.lightened(0.2))
+	# A named meter (the pull of the Sirens' song).
+	if _meter >= 0.0 and player.is_alive():
+		var bw := 420.0
+		var bx := vp.x * 0.5 - bw * 0.5
+		var by := 54.0
+		_bars.draw_string(Ui.display(), Vector2(bx, by - 8), _meter_label, HORIZONTAL_ALIGNMENT_CENTER, bw, 20, Ui.GOLD)
+		_bars.draw_rect(Rect2(bx - 2, by, bw + 4, 12), Color(0, 0, 0, 0.6))
+		_bars.draw_rect(Rect2(bx, by + 2, bw * clampf(_meter, 0.0, 1.0), 8), Color(0.75, 0.6, 0.85).lerp(Ui.BLOOD.lightened(0.2), _meter))
+		_bars.draw_rect(Rect2(bx - 2, by, bw + 4, 12), Ui.BRONZE, false, 1.5)
 	# A great enemy's name and strength.
 	if _boss != null and is_instance_valid(_boss) and _boss.is_alive():
 		var bw := 520.0

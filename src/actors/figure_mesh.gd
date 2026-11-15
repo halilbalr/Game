@@ -40,6 +40,7 @@ static func face(look: Dictionary) -> Dictionary:
 		"chin": (0.7 if female else 1.0) * (0.85 + 0.35 * Sculpt.noise(v, 5.0)),
 		"lips": 1.3 if female else 0.9,
 		"female": female,
+		"cyclops": bool(look.get("cyclops", false)),
 	}
 
 
@@ -59,7 +60,11 @@ static func head_point(d: Vector3, f: Dictionary) -> Vector3:
 	s += 0.07 * float(f["jaw"]) * (Sculpt.bump(d, _dir(0.74, -0.56, -0.3), 0.3) + Sculpt.bump(d, _dir(-0.74, -0.56, -0.3), 0.3))
 	s += 0.06 * Sculpt.bump(d, _dir(0.0, 0.25, 0.97), 0.6)
 	s += 0.05 * float(f["brow"]) * (Sculpt.bump(d, _dir(0.27, 0.27, -0.92), 0.2) + Sculpt.bump(d, _dir(-0.27, 0.27, -0.92), 0.2))
-	s -= 0.085 * (Sculpt.bump(d, _dir(0.35, 0.13, -0.93), 0.15) + Sculpt.bump(d, _dir(-0.35, 0.13, -0.93), 0.15))
+	if f.get("cyclops", false):
+		# One great eye in the middle of the brow (Odyssey 9).
+		s -= 0.13 * Sculpt.bump(d, _dir(0.0, 0.2, -0.98), 0.2)
+	else:
+		s -= 0.085 * (Sculpt.bump(d, _dir(0.35, 0.13, -0.93), 0.15) + Sculpt.bump(d, _dir(-0.35, 0.13, -0.93), 0.15))
 	s += 0.045 * float(f["cheek"]) * (Sculpt.bump(d, _dir(0.62, -0.08, -0.78), 0.24) + Sculpt.bump(d, _dir(-0.62, -0.08, -0.78), 0.24))
 	# A slight swell where the nose and mouth sit; they are sculpted apart
 	# (see _nose and _lips), finer than this surface could hold them.
@@ -189,17 +194,28 @@ static func _lips(gb: GeoBuilder, skin: Color, f: Dictionary) -> void:
 static func _eye(gb: GeoBuilder, look: Dictionary, f: Dictionary, sx: float) -> void:
 	var skin: Color = look["skin"]
 	var hair: Color = look["hair"]
-	var socket := head_point(_dir(sx * 0.35, 0.13, -0.93), f)
+	var cyclops := sx == 0.0
+	var socket := head_point(_dir(0.0, 0.2, -0.98) if cyclops else _dir(sx * 0.35, 0.13, -0.93), f)
 	var eye := socket + Vector3(-sx * 0.001, -0.001, 0.0075)
+	var big := 1.9 if cyclops else 1.0
+	if look.get("blind", false):
+		big = 0.0
 	var iris := Color(0.16, 0.10, 0.06) if int(look.get("face", 0)) != 3 else Color(0.24, 0.26, 0.2)
 	var ball := func(u: float, v: float) -> Vector3:
 		var th := PI * v
-		return eye + Vector3(sin(th) * cos(u * TAU), sin(th) * sin(u * TAU), -cos(th)) * 0.0125
+		return eye + Vector3(sin(th) * cos(u * TAU), sin(th) * sin(u * TAU), -cos(th)) * 0.0125 * big
 	var ball_col := func(_u: float, v: float) -> Color:
 		if v < 0.1:
 			return Color(0.02, 0.02, 0.02)
 		return iris if v < 0.24 else Color(0.9, 0.87, 0.82)
-	Sculpt.grid(gb, &"eye", 10, 8, ball, ball_col, true, null)
+	if big > 0.0:
+		Sculpt.grid(gb, &"eye", 10, 8, ball, ball_col, true, null)
+	else:
+		# Put out: a raw, dark wound.
+		var wound := func(u: float, v: float) -> Vector3:
+			var th := PI * v
+			return eye + Vector3(sin(th) * cos(u * TAU), sin(th) * sin(u * TAU), -cos(th) * 0.4) * 0.02
+		Sculpt.grid(gb, &"skin", 8, 6, wound, Color(0.35, 0.05, 0.04), true, null)
 	var lid := func(u: float, v: float) -> Vector3:
 		var a := lerpf(0.15, PI - 0.15, u)
 		var e := lerpf(0.3, 1.32, v)
@@ -212,9 +228,11 @@ static func _eye(gb: GeoBuilder, look: Dictionary, f: Dictionary, sx: float) -> 
 	Sculpt.grid(gb, &"skin", 6, 2, lower, skin.darkened(0.05), false, HEAD_C)
 	var brow := func(u: float, v: float) -> Vector3:
 		var y := 0.245 + 0.03 * sin(PI * u) - 0.02 * u + (v - 0.5) * 0.045
-		var d := _dir(sx * lerpf(0.13, 0.5, u), y, -0.93)
+		var d := _dir((lerpf(-0.36, 0.36, u) if cyclops else sx * lerpf(0.13, 0.5, u)), y + (0.06 if cyclops else 0.0), -0.93)
 		return head_point(d, f) + d * (0.0015 + 0.0025 * sin(PI * v))
 	Sculpt.grid(gb, &"hair", 5, 2, brow, hair.darkened(0.25), false, HEAD_C)
+	if cyclops:
+		return
 	var at := head_point(_dir(sx * 0.99, 0.02, 0.12), f) + Vector3(sx * 0.004, 0.0, 0.0)
 	var ear := func(u: float, v: float) -> Vector3:
 		var th := PI * v
@@ -243,8 +261,11 @@ static func head(look: Dictionary, mats: Dictionary) -> ArrayMesh:
 	var face_col := func(u: float, v: float) -> Color:
 		return _skin_tone(head_dir(u, v), skin, f)
 	Sculpt.grid(gb, &"skin", Sculpt._n(34), Sculpt._n(28), face_pos, face_col, true, null)
-	for sx: float in [-1.0, 1.0]:
-		_eye(gb, look, f, sx)
+	if f.get("cyclops", false):
+		_eye(gb, look, f, 0.0)
+	else:
+		for sx: float in [-1.0, 1.0]:
+			_eye(gb, look, f, sx)
 	_nose(gb, skin, f)
 	_lips(gb, skin, f)
 

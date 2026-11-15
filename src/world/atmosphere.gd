@@ -43,6 +43,8 @@ var _mobile: bool = false
 var _sky_frozen: bool = false
 var _compat: bool = false
 var _tier: Dictionary = {}
+## Height of the ground fog's floor: the plain of Troy, or the sea.
+var fog_floor: float = TroyLayout.PLAIN_Y
 
 
 func _init() -> void:
@@ -130,7 +132,7 @@ func apply(preset_name: String, quality: int = 1, mobile: bool = false, tier: Di
 	env.fog_sun_scatter = 0.25
 	env.fog_aerial_perspective = 0.6
 	env.fog_sky_affect = 0.0
-	env.fog_height = TroyLayout.PLAIN_Y
+	env.fog_height = fog_floor
 	env.fog_height_density = 0.02
 	_apply_quality(quality)
 	set_fire(_fire)

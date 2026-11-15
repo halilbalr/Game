@@ -53,13 +53,37 @@ func _ready() -> void:
 	gap.custom_minimum_size = Vector2(0, (4 if Game.phone else 14) if Game.mobile else 34)
 	col.add_child(gap)
 
-	var first := _entry(col, "THE WOODEN HORSE", "Attacker  ·  Odysseus  ·  the last night of Troy", func() -> void: Game.start_mission("horse"))
-	_entry(col, "THE SCAEAN GATE", "Defender  ·  Hector  ·  the day Patroclus came to the wall", func() -> void: Game.start_mission("gate"))
-	_entry(col, "WALK THE CITY", "Troy by daylight, with a chronicle of what is known", func() -> void: Game.start_mission("roam"))
+	# Two pages: the war at Troy, and the voyage home after it.
+	var troy := VBoxContainer.new()
+	var voyage := VBoxContainer.new()
+	for page: VBoxContainer in [troy, voyage]:
+		page.add_theme_constant_override("separation", col.get_theme_constant("separation"))
+		col.add_child(page)
+	var first := _entry(troy, "THE WOODEN HORSE", "Attacker  ·  Odysseus  ·  the last night of Troy", func() -> void: Game.start_mission("horse"))
+	_entry(troy, "THE SCAEAN GATE", "Defender  ·  Hector  ·  the day Patroclus came to the wall", func() -> void: Game.start_mission("gate"))
+	_entry(troy, "WALK THE CITY", "Troy by daylight, with a chronicle of what is known", func() -> void: Game.start_mission("roam"))
+	var sail := _entry(troy, "THE VOYAGE HOME", "Odysseus at sea  ·  the Cyclops, the Sirens, Scylla and Charybdis", Callable())
+	var cyclops := _entry(voyage, "THE CYCLOPS", "Odyssey 9  ·  the cave of Polyphemus, and the name Nobody", func() -> void: Game.start_mission("cyclops"))
+	_entry(voyage, "THE SIRENS", "Odyssey 12  ·  the song, and the strait of Scylla and Charybdis", func() -> void: Game.start_mission("sirens"))
+	var back := _entry(voyage, "BACK", "", Callable())
+	voyage.visible = false
+	sail.pressed.connect(func() -> void:
+		troy.visible = false
+		voyage.visible = true
+		sub.text = "THE VOYAGE HOME"
+		cyclops.grab_focus())
+	back.pressed.connect(func() -> void:
+		voyage.visible = false
+		troy.visible = true
+		sub.text = "THE FALL OF TROY"
+		sail.grab_focus())
 	_entry(col, "OPTIONS", "", func() -> void: _options.visible = not _options.visible)
 	if not Game.web:
 		_entry(col, "QUIT", "", Game.quit)
 	first.grab_focus()
+	if Game.args.get("menu", "") == "voyage":
+		# Harness: open on the second page, for screenshots.
+		sail.pressed.emit()
 
 	var quote := Ui.label("\"Tell me, O Muse, of that ingenious hero who travelled far and wide\nafter he had sacked the famous town of Troy.\"\nHomer, Odyssey 1.1, tr. Samuel Butler", 20, Ui.DIM)
 	if Game.mobile:
@@ -115,7 +139,8 @@ func _ready() -> void:
 
 func _entry(parent: Control, text: String, note: String, action: Callable) -> Button:
 	var b := Ui.button(text, 30)
-	b.pressed.connect(action)
+	if action.is_valid():
+		b.pressed.connect(action)
 	parent.add_child(b)
 	if note != "":
 		var n := Ui.label("      " + note, 18, Ui.DIM, false)

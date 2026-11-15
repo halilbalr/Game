@@ -16,6 +16,13 @@ const METAL := {
 	&"bronze_scale": [Color(0.7, 0.48, 0.25), 0.15],
 }
 
+## When true, surfaces face toward their reference point instead of away
+## from it: the inside of a hollow (a cave, a hull seen from its deck).
+static var inward: bool = false
+
+## When true, surfaces are made solid to walk on and into (cave walls).
+static var collide: bool = false
+
 ## 0.5 to 1: scales how finely surfaces are divided (phones use fewer).
 static var detail: float = 1.0
 
@@ -106,7 +113,7 @@ static func grid(gb: GeoBuilder, mat: StringName, nu: int, nv: int, pos: Callabl
 	var facing := 0.0
 	for k in p.size():
 		facing += n[k].dot(p[k] - middle)
-	if facing < 0.0:
+	if (facing < 0.0) != inward:
 		for k in n.size():
 			n[k] = -n[k]
 	for j in nv:
@@ -125,9 +132,9 @@ static func _tri(gb: GeoBuilder, mat: StringName, p: PackedVector3Array, n: Pack
 	if g.length_squared() < 1e-16:
 		return
 	if g.dot(n[a] + n[b] + n[d]) > 0.0:
-		gb.tri_smooth(mat, p[a], p[b], p[d], n[a], n[b], n[d], c[a], c[b], c[d])
+		gb.tri_smooth(mat, p[a], p[b], p[d], n[a], n[b], n[d], c[a], c[b], c[d], collide)
 	else:
-		gb.tri_smooth(mat, p[a], p[d], p[b], n[a], n[d], n[b], c[a], c[d], c[b])
+		gb.tri_smooth(mat, p[a], p[d], p[b], n[a], n[d], n[b], c[a], c[d], c[b], collide)
 
 
 ## Catmull-Rom through [param pts] at t in 0..1.

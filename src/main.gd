@@ -1,7 +1,8 @@
 extends Node
 ## Entry scene. Opens the menu, or jumps straight to a mission or a debug
 ## stage when asked on the command line:
-##   -- --mission=horse|gate|roam   start a mission directly
+##   -- --mission=horse|gate|roam|cyclops|sirens   start a mission directly
+##   -- --menu=voyage               open the menu on its Voyage Home page
 ##   -- --scene=figures             line-up of outfits
 ##   -- --shot=/abs/file.png        save screenshots and quit (with --cams, --frames)
 ##   -- --autoplay                  let the mission script play itself (logic test)

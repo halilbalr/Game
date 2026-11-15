@@ -13,6 +13,8 @@ signal _never
 signal _wake
 
 var id: String = ""
+## False for the voyage: the mission builds its own world in [method build_stage].
+var troy: bool = true
 var hero: String = "odysseus"
 var preset: String = "day"
 var data: Dictionary = {}
@@ -50,9 +52,12 @@ func _ready() -> void:
 	Sfx.ambience(&"")
 	Sfx.preload_loops(music, ambience)
 	Humanoid.warm(outfits)
-	world = Game.acquire_world(preset)
-	add_child(world)
-	world.ensure_navigation()
+	if troy:
+		world = Game.acquire_world(preset)
+		add_child(world)
+		world.ensure_navigation()
+	else:
+		build_stage()
 	battle = Battlefield.new()
 	add_child(battle)
 	battle.nav_ready = true
@@ -75,7 +80,7 @@ func _ready() -> void:
 	_pause.mission = self
 	add_child(_pause)
 	player.died.connect(_on_player_died)
-	for gate_id: String in world.info["gates"]:
+	for gate_id: String in (world.info["gates"] if troy else []):
 		var doors := GateDoors.new()
 		add_child(doors)
 		doors.setup(world.gate(gate_id), true, false)
@@ -116,6 +121,16 @@ func _apply_debug_args() -> void:
 func _begin() -> void:
 	await get_tree().process_frame
 	await run()
+
+
+## Override (voyage missions): build the world the mission plays in.
+func build_stage() -> void:
+	pass
+
+
+## Ground height at (x, z) where the mission is set.
+func ground_y(x: float, z: float) -> float:
+	return TroyLayout.height(x, z)
 
 
 ## Override: place actors and props before the first frame.
@@ -347,15 +362,17 @@ func spawn(role_id: String, pos: Vector3, yaw: float = 0.0, opts: Dictionary = {
 
 
 ## Spawns [param count] soldiers scattered round a point. Roles are picked in turn.
-func spawn_group(roles: Array, count: int, centre: Vector3, spread: float, yaw: float, opts: Dictionary = {}) -> Array[Soldier]:
+func spawn_group(roles: Array, count: int, centre: Vector3, spread: float, yaw: float, opts: Dictionary = {},
+		exact: bool = false) -> Array[Soldier]:
 	var out: Array[Soldier] = []
-	if count > 3:
+	# Phones thin a crowd, but not a number the story names ([param exact]).
+	if count > 3 and not exact:
 		count = maxi(3, roundi(count * Game.crowd_scale()))
 	for i in count:
 		var a := TAU * i / maxf(count, 1.0) + randf() * 0.8
 		var r := spread * sqrt((i + 1.0) / count)
 		var p := centre + Vector3(cos(a) * r, 0.0, sin(a) * r)
-		p.y = TroyLayout.height(p.x, p.z) + 0.1 if absf(TroyLayout.height(p.x, p.z) - centre.y) < 3.0 else centre.y
+		p.y = ground_y(p.x, p.z) + 0.1 if absf(ground_y(p.x, p.z) - centre.y) < 3.0 else centre.y
 		var s := spawn(str(roles[i % roles.size()]), p, yaw + randf_range(-0.3, 0.3), opts)
 		if s != null:
 			out.append(s)

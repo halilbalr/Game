@@ -4,7 +4,8 @@ A first-person telling of the siege of Troy, after Homer. Play an Achaean
 attacker or a Trojan defender in a Late Bronze Age city rebuilt from the
 excavations at Hisarlik.
 
-This is a vertical slice: the whole city, two story missions and a free walk.
+This is a vertical slice: the whole city, two story missions and a free walk,
+and two episodes of Odysseus' voyage home at sea.
 Everything in it (buildings, people, weapons, textures, sound) is generated in
 code. There is no imported art.
 
@@ -122,13 +123,23 @@ it maps touches correctly when the page has turned the game sideways, and it
 lets the game release a spoken line from the browser's audio memory once it
 has been heard.
 
-## The three modes
+## The modes
 
 | Mode | You are | What happens |
 |---|---|---|
 | **The Wooden Horse** | Odysseus, attacker | Keep the men silent inside the horse while Helen calls to them by their wives' names. Climb down at night. Go through the sleeping city without rousing the watch. Kill the guard at the Scaean Gate, lift the bar, and let the army in. Then fight with Menelaus to the house of Deiphobus. |
 | **The Scaean Gate** | Hector, defender | Find Andromache and your son at the gate. Lead the sortie to the oak. Hold the ground against two Achaean attacks. Then the Myrmidons come, led by a man in the armour of Achilles. |
 | **Walk the City** | Hector, at peace | Walk Troy by daylight. Near a place of note, press **Tab** to read what is known about it. |
+
+Under **The Voyage Home** on the title screen:
+
+| Mode | You are | What happens |
+|---|---|---|
+| **The Cyclops** | Odysseus, at sea | Row to the land of the Cyclopes and climb to the cave with twelve men. Polyphemus comes home and shuts the door with a stone. Cut a stake from his club, harden it in the fire, give him wine and your name, Nobody. Blind him as he sleeps, get out clinging under a ram, and row away while he hurls rocks at the sound of your voice. |
+| **The Sirens** | Odysseus, at sea | Soften wax for the crew's ears and be bound to the mast. The song pulls your eyes to the meadow: look away. Then take the steering oar through the strait, close under Scylla's cliff and clear of Charybdis. |
+
+At sea, move forward to row harder and left and right to turn the steering
+oar. On a touch screen the stick steers.
 
 ## Controls
 
@@ -199,14 +210,16 @@ were.
 
 ## Text and sources
 
-The missions follow *Iliad* 6.237-529 and 16.684-867, *Odyssey* 4.271-289 and
-8.492-520, and the summaries of the *Little Iliad* and *Sack of Ilium*.
+The missions follow *Iliad* 6.237-529 and 16.684-867, *Odyssey* 4.271-289,
+8.492-520, 9.105-566 and 12.37-259, and the summaries of the *Little Iliad* and
+*Sack of Ilium*.
 Dialogue was written for the game and keeps close to Homer. The one direct
 quotation, on the title screen, is from Samuel Butler's translation of 1900,
 which is in the public domain.
 
 The gods do not appear. Athena and Apollo are heard, and what Homer gives to a
-god's hand the game gives to mist, thunder and chance.
+god's hand the game gives to mist, thunder and chance. The Sirens are heard and
+never seen. Scylla is shown only as far as Homer shows her.
 
 ## Voices and music
 
@@ -220,11 +233,12 @@ Kokoro text-to-speech model and are not recordings of actors. The Greek names
 were given their traditional English pronunciations by hand. They have not
 been checked by ear: this project was built on a machine with no speakers.
 
-Five pieces of music were written for the game and synthesised in code
+Seven pieces of music were written for the game and synthesised in code
 (strings, horn, choir, a reed pipe, a lyre and skin drums): a march for the
 title screen, a drum-driven piece for the fighting, a sparse one for the
-night in the city, a lament for partings and endings, and a lyre air for
-walking the city. Music drops under speech.
+night in the city, a lament for partings and endings, a lyre air for
+walking the city, a rowing song in six for the open sea, and the Sirens' song
+(two voices winding round each other over a lyre). Music drops under speech.
 
 The sounds of fighting are built from their parts: the punch of a blow, the
 crack of a spear point or the bite of a sword, the wet tail of a wound, the
@@ -279,15 +293,18 @@ model itself is not part of this repository.
 - Voices, music and effects are synthetic and have not been heard by the
   person who built them.
 - No saving inside a mission. Each takes ten to fifteen minutes.
-- Not yet in: chariots, archery, the other episodes of the war.
+- Not yet in: chariots, archery, the other episodes of the war and of the
+  voyage (the Lotus-eaters, Aeolus, Circe, the Underworld, the cattle of the Sun).
 
 ## For developers
 
 ```
 godot --headless --path . --import                              # once after cloning
-godot --headless --path . -s res://tests/run_tests.gd           # 88 tests
+godot --headless --path . -s res://tests/run_tests.gd           # 94 tests
 godot --headless --path . --fixed-fps 60 -- --mission=horse --autoplay   # script plays itself; exit 0 on completion
 godot --headless --path . --fixed-fps 60 -- --mission=gate --autoplay
+godot --headless --path . --fixed-fps 60 -- --mission=cyclops --bot --god      # the voyage: the bot rows, climbs and uses
+godot --headless --path . --fixed-fps 60 -- --mission=sirens --bot --god
 godot --headless --path . --fixed-fps 60 -- --scene=arena --autoplay --bot   # scripted player through real input
 godot --headless --path . --fixed-fps 60 -- --tour --autoplay   # menu, city, menu, mission
 godot --headless --path . --fixed-fps 60 -- --mission=gate --bot --god              # whole mission, real walking and fighting

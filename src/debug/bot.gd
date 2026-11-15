@@ -40,6 +40,9 @@ func _physics_process(_delta: float) -> void:
 		Input.action_press(&"interact")
 	else:
 		Input.action_release(&"interact")
+	if p.riding:
+		_sail(p)
+		return
 	var here := p.global_position
 	var enemy := mission.battle.nearest_enemy(here, p.side, 40.0)
 	var goal := mission.hud.marker_position()
@@ -71,6 +74,10 @@ func _physics_process(_delta: float) -> void:
 		p.look_toward(enemy.global_position + Vector3(0, 1.2, 0))
 	elif p.focus != null:
 		p.look_toward(p.focus.focus_point())
+	elif not fight and dist < 3.0:
+		# Close by: look at the thing to use (at one's feet, or held up to
+		# a giant), else at the marker itself.
+		p.look_toward(_usable_near(p, dest + Vector3(0, 0.3, 0)))
 	else:
 		p.look_toward(Vector3(next.x, p.eye_position().y, next.z))
 	var reach := float(Data.weapons.get(p.current_weapon(), {}).get("reach", 1.8))
@@ -100,3 +107,41 @@ func _physics_process(_delta: float) -> void:
 		_repath = 0
 	else:
 		Input.action_release(&"move_left")
+
+
+## The aim point of the nearest usable thing within reach, else [param fallback].
+func _usable_near(p: Player, fallback: Vector3) -> Vector3:
+	var best := fallback
+	var best_d := INF
+	for node in get_tree().get_nodes_in_group(&"interactables"):
+		var it := node as Interactable
+		if it == null or not it.enabled:
+			continue
+		var d := it.focus_point().distance_to(p.camera.global_position)
+		if d < it.radius and d < best_d:
+			best_d = d
+			best = it.focus_point()
+	return best
+
+
+## Aboard: steer for the objective marker if the ship is ours to steer,
+## otherwise look at it (so that something on deck can be used).
+func _sail(p: Player) -> void:
+	for action: StringName in [&"move_forward", &"move_left", &"move_right", &"sprint"]:
+		Input.action_release(action)
+	var goal := mission.hud.marker_position()
+	var ship: Ship = mission.get("ship")
+	if goal == Vector3.INF or ship == null:
+		return
+	if not ship.controlled:
+		p.look_toward(goal + Vector3(0, 0.2, 0))
+		return
+	var to := goal - ship.global_position
+	to.y = 0.0
+	var turn := ship.forward().signed_angle_to(to, Vector3.UP)
+	Input.action_press(&"move_forward")
+	Input.action_press(&"sprint")
+	if turn > 0.06:
+		Input.action_press(&"move_left", clampf(turn * 2.0, 0.3, 1.0))
+	elif turn < -0.06:
+		Input.action_press(&"move_right", clampf(-turn * 2.0, 0.3, 1.0))

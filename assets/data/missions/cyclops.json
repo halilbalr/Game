@@ -1,0 +1,167 @@
+{
+  "loading": "The land of the Cyclopes...",
+  "text": {
+    "title": "THE CYCLOPS",
+    "intro": "Troy is ash behind them. Storms have driven Odysseus and his twelve ships far from their course, to the land of the Cyclopes, a lawless people who neither plough nor sow. While the fleet lies at the goat island across the bay, Odysseus takes his own ship to see what men live on the shore, where smoke rises from a cave above the sea.",
+    "death_title": "ODYSSEUS HAS FALLEN",
+    "death_text": "Far from Ithaca, in the land of the Cyclopes, the man of many turns came to the end of his turning.",
+    "wreck_title": "THE SHIP IS BROKEN",
+    "wreck_text": "The rock came down on the ship and broke her in two. The Cyclops heard men crying in the water, and he came down to the shore to find them.",
+    "end_title": "THE CURSE OF POSEIDON",
+    "end_text": "So we came back to the goat island, glad to have escaped death, though we had lost dear comrades, and we shared out the Cyclops's sheep. But the Earth-shaker had heard his son's prayer. Ten years would pass before Odysseus saw Ithaca, alone, in another man's ship.\n\nAfter Odyssey 9.105-566.",
+    "hint_sail": "W and S row harder or back water; A and D steer. Shift to pull with all your strength.",
+    "hint_sail_touch": "Push the stick forward to row, back to back water, sideways to steer.",
+    "hint_dodge": "Watch for the shadow on the water where the rock will fall, and steer clear of it."
+  },
+  "objectives": {
+    "land": "Row to the beach below the cave",
+    "cave": "Climb to the cave with twelve men",
+    "explore": "Go into the cave",
+    "stake": "Cut a stake from the Cyclops's club",
+    "stake_sub": "The great trunk of green olive by the fold",
+    "fire": "Harden its point in the fire",
+    "wine": "Give the Cyclops the wine",
+    "wine_sub": "Three bowls of it, unmixed",
+    "eye": "Drive the stake into his eye",
+    "ram": "Cling under the belly of a ram",
+    "ram_sub": "He feels the backs of the sheep as they pass, not their bellies",
+    "ship": "Run down to the ship",
+    "row": "Row out of the bay",
+    "open": "Row for the goat island",
+    "open_sub": "Keep clear of the rocks he throws"
+  },
+  "lines": {
+    "arrive": [
+      "Odysseus",
+      "Twelve of you with me. Bring the skin of dark wine that Maron gave me, the priest of Apollo at Ismarus. We may meet a savage who knows nothing of justice or law."
+    ],
+    "cave_in": [
+      "",
+      "He was out with his flocks. Inside, the folds were crowded with lambs and kids, the racks were heavy with cheeses, and the pails were brimming with whey."
+    ],
+    "companion_1": [
+      "Companion",
+      "Let us take the cheeses and drive the lambs down to the ship, and be off over the salt water!"
+    ],
+    "odysseus_wait": [
+      "Odysseus",
+      "No. I will see him first, and see what gift he gives to strangers."
+    ],
+    "return": [
+      "",
+      "He came at evening with a load of dry wood for his supper, and flung it down with such a crash that we fled into the corners of the cave. Then he set a stone across the door that twenty-two wagons could not have shifted."
+    ],
+    "poly_1": [
+      "Polyphemus",
+      "Strangers, who are you? Where do you sail from? Are you traders, or do you wander the sea as pirates do, risking your lives to bring ruin on other men?"
+    ],
+    "odysseus_1": [
+      "Odysseus",
+      "We are Achaeans, driven from our course on the way home from Troy. We come to your knees as suppliants. Respect the gods, sir. Zeus is the avenger of strangers."
+    ],
+    "poly_2": [
+      "Polyphemus",
+      "You are a fool, stranger. We Cyclopes care nothing for Zeus or any of the gods, for we are far stronger than they."
+    ],
+    "eats": [
+      "",
+      "He sprang up, seized two of my men, dashed them on the ground like puppies, and made his supper of them. We wept and lifted our hands to Zeus."
+    ],
+    "plan": [
+      "Odysseus",
+      "I could drive my sword into his liver while he sleeps. But then who would move the stone from the door? We would die here, every one of us. There must be another way."
+    ],
+    "morning": [
+      "",
+      "At dawn he milked his ewes and made his breakfast of two more of my men. Then he drove the flock out and set the stone back behind him, as easily as a man sets the lid on a quiver."
+    ],
+    "club": [
+      "Odysseus",
+      "His club. Green olive, as long and thick as the mast of a twenty-oared ship. Cut me a fathom from it, and sharpen the end."
+    ],
+    "hardened": [
+      "",
+      "We turned the point in the fire until it was hard, and hid the stake under the dung that lay thick on the floor of the cave."
+    ],
+    "evening": [
+      "",
+      "At evening he came back with his flocks, and this time he drove them all inside. Again he seized two of my men for his supper."
+    ],
+    "wine_1": [
+      "Odysseus",
+      "Here, Cyclops. Drink this wine, now that you have eaten man's flesh, and see what drink our ship carried."
+    ],
+    "poly_wine": [
+      "Polyphemus",
+      "Give me more, and tell me your name, so that I may give you a gift you will be glad of. This is ambrosia and nectar."
+    ],
+    "wine_2": [
+      "Odysseus",
+      "Another bowl, then."
+    ],
+    "name": [
+      "Odysseus",
+      "You ask my name, Cyclops. My name is Nobody. My father and mother and all my friends call me Nobody."
+    ],
+    "poly_gift": [
+      "Polyphemus",
+      "Then I will eat Nobody last of all, after his friends. That shall be my gift to you."
+    ],
+    "sleep": [
+      "",
+      "He fell on his back with his thick neck drooping, and sleep that conquers all things took him."
+    ],
+    "blinded": [
+      "",
+      "We drove the burning point into his eye, and I leaned on it and turned it, as a man bores a ship's timber with a drill. The eye hissed round it as an axe hisses when a smith plunges it into cold water."
+    ],
+    "others": [
+      "Cyclops",
+      "What ails you, Polyphemus, that you cry out in the night and wake us? Is someone driving off your flocks, or killing you by force or by fraud?"
+    ],
+    "poly_nobody": [
+      "Polyphemus",
+      "Friends! Nobody is killing me! Nobody, by fraud, not by force!"
+    ],
+    "others_2": [
+      "Cyclops",
+      "If nobody is harming you, then you are sick, and sickness comes from Zeus. Pray to your father, the lord Poseidon."
+    ],
+    "laugh": [
+      "",
+      "And I laughed in my heart that my name and my cunning had fooled them all."
+    ],
+    "dawn": [
+      "",
+      "At dawn he rolled the stone from the door and sat in the doorway with his arms spread wide, to catch any man who tried to pass out among the sheep."
+    ],
+    "ram_line": [
+      "Polyphemus",
+      "My good ram, why are you last out of the cave today? You were always first to the meadow. Are you grieving for your master's eye? If only you could speak, and tell me where Nobody is hiding."
+    ],
+    "run": [
+      "Odysseus",
+      "To the ship! Drive the sheep aboard. Do not weep now, row!"
+    ],
+    "taunt": [
+      "Odysseus",
+      "Cyclops! So you could not eat the men of a weak coward in your hollow cave. Your own wickedness has found you out!"
+    ],
+    "crew_1": [
+      "Companion",
+      "Madman! Why provoke the savage? He nearly drove us back on shore. One more word and he will smash our heads and our timbers with one rock!"
+    ],
+    "boast": [
+      "Odysseus",
+      "Cyclops, if any man asks you who put out your eye, tell him it was Odysseus, sacker of cities, son of Laertes, whose home is in Ithaca!"
+    ],
+    "prayer": [
+      "Polyphemus",
+      "Hear me, Poseidon, dark-haired shaker of the earth. If I am truly your son, grant that Odysseus, son of Laertes, never reaches his home. Or if he must, let him come late and in misery, with all his men lost, in another man's ship, and find trouble in his house."
+    ],
+    "missed": [
+      "",
+      "The rock fell just short, and the sea rose under it and the backwash drove the ship toward the land."
+    ]
+  }
+}

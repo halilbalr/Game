@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Renders every spoken line of the missions to OGG files.
 
-    python3 tools/audio/make_voices.py [--model DIR] [--only horse/helen_1]
+    python3 tools/audio/make_voices.py [--model DIR] [--only horse/helen_1 | --mission cyclops]
 
 Reads assets/data/missions/*.json and writes
 assets/audio/voice/<mission>/<key>.ogg for each entry of "lines", and
@@ -50,6 +50,11 @@ CAST = {
     "Trojan": ("am_liam", 1.08, 0.98, "field"),
     "Patroclus": ("am_adam", 0.98, 0.98, "dry"),
     "Apollo": ("am_onyx", 0.84, 0.88, "god"),
+    "Companion": ("am_liam", 1.02, 0.98, "dry"),
+    "Polyphemus": ("am_onyx", 0.86, 0.74, "giant"),
+    "Cyclops": ("am_fenrir", 0.9, 0.78, "field"),
+    # Two voices in one: the Sirens sing together ("our two voices").
+    "Sirens": ("bf_alice+af_nicole", 0.82, 1.0, "sirens"),
 }
 
 # Narrated entries of "text" (the source note after a blank line is not read).
@@ -140,6 +145,13 @@ def effect(x: np.ndarray, kind: str, seed: int) -> np.ndarray:
         # Heard through the planks of the horse.
         b, a = signal.butter(3, 1500.0 / (RATE / 2), "low")
         return reverb(signal.lfilter(b, a, x) * 1.5, 0.7, 0.22, 2500.0, seed)
+    if kind == "giant":
+        # A huge chest in a stone cave: low, boomy, and long in the rock.
+        b, a = signal.butter(2, 3200.0 / (RATE / 2), "low")
+        return reverb(signal.lfilter(b, a, x) * 1.3, 1.8, 0.34, 2200.0, seed)
+    if kind == "sirens":
+        # Over the water from the meadow: a wide, bright, lingering sound.
+        return reverb(x, 3.4, 0.5, 7000.0, seed)
     if kind == "field":
         # A shout across open ground.
         b, a = signal.butter(2, 250.0 / (RATE / 2), "high")
@@ -162,9 +174,16 @@ def render(kokoro, speaker: str, text: str, seed: int) -> np.ndarray:
         if not re.search(r"\w", sentence):
             continue
         ph = phonemes(kokoro, sentence)
-        samples, rate = kokoro.create(ph, voice=voice, speed=speed / pitch, is_phonemes=True)
-        assert rate == RATE
-        x = trim(np.asarray(samples, dtype=np.float64))
+        takes = []
+        for k, one in enumerate(voice.split("+")):
+            samples, rate = kokoro.create(ph, voice=one, speed=speed / pitch * (1.0 + 0.015 * k), is_phonemes=True)
+            assert rate == RATE
+            takes.append(trim(np.asarray(samples, dtype=np.float64)))
+        x = np.zeros(max(t.size for t in takes) + int(0.018 * RATE) * (len(takes) - 1))
+        for k, t in enumerate(takes):
+            # A few milliseconds apart, as two singers never quite are together.
+            start = int(0.018 * RATE) * k
+            x[start:start + t.size] += t / len(takes) ** 0.5
         if pitch != 1.0:
             x = signal.resample(x, int(round(x.size / pitch)))
         parts.append(x)
@@ -191,6 +210,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", default="/opt/kokoro")
     ap.add_argument("--only", default="", help="mission/key to render alone")
+    ap.add_argument("--mission", default="", help="render one mission's lines only")
     opts = ap.parse_args()
     from kokoro_onnx import Kokoro
     model = Path(opts.model)
@@ -210,6 +230,8 @@ def main() -> None:
     total = 0.0
     for i, (mission, key, speaker, text) in enumerate(jobs):
         if opts.only and opts.only != f"{mission}/{key}":
+            continue
+        if opts.mission and opts.mission != mission:
             continue
         if speaker not in CAST:
             print(f"no voice cast for '{speaker}', using the narrator", file=sys.stderr)

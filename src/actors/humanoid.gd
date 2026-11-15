@@ -95,6 +95,8 @@ var _head_mesh: MeshInstance3D
 var _cur := Pose.new()
 var _scratch := Pose.new()
 var _phase: float = 0.0
+## Rowing: the angle of the stroke, set by the ship (stance &"row").
+var row_phase: float = 0.0
 var _attack_kind: StringName = &""
 var _attack_t: float = -1.0
 var _attack_times := Vector3(0.3, 0.12, 0.5)
@@ -144,6 +146,8 @@ static func resolve_look(outfit_id: String, outfit: Dictionary, variant: int) ->
 		"long_hair": bool(outfit.get("long_hair", true)),
 		# Four faces to an outfit (see FigureMesh.face).
 		"face": variant % 4,
+		"cyclops": bool(outfit.get("cyclops", false)),
+		"blind": false,
 	}
 
 
@@ -152,7 +156,7 @@ static func resolve_look(outfit_id: String, outfit: Dictionary, variant: int) ->
 ## What each part's shape and paint depend on: two figures whose looks agree
 ## on these share that part's mesh, so a rank of men costs a few builds.
 const PART_INPUTS := {
-	"head": ["id", "face", "skin", "hair", "crest", "helmet", "beard", "female", "long_hair"],
+	"head": ["id", "face", "skin", "hair", "crest", "helmet", "beard", "female", "long_hair", "blind"],
 	"torso": ["tunic", "skin", "kilt", "armor", "cloak", "female"],
 	"pelvis": ["kilt", "robe", "armor"],
 	"arm_u": ["skin", "robe", "kilt", "tunic"],
@@ -253,6 +257,12 @@ func setup(outfit_id: String, outfit: Dictionary, variant: int, weapon: String =
 	_apply(_cur)
 
 
+## Puts out the Cyclops's eye.
+func blind() -> void:
+	look["blind"] = true
+	_head_mesh.mesh = _cached(look, "head", FigureMesh.head.bind(look, Mats.all()))
+
+
 ## Bares the head (a helmet struck off or laid aside).
 func remove_helmet() -> void:
 	look["helmet"] = "none"
@@ -348,6 +358,20 @@ func _stance_pose() -> Pose:
 			p.arm_r = Vector3(0.7, 0.0, -0.1)
 			p.fore_r = 1.3
 			p.weapon_pitch = 0.3
+		&"row":
+			# Seated at an oar: the stroke swings the body and arms (row_phase).
+			var k := sin(row_phase)
+			p.body_y = -0.5
+			p.thigh_l = Vector3(1.25, 0.0, -0.1)
+			p.thigh_r = Vector3(1.25, 0.0, 0.1)
+			p.shin_l = -0.9
+			p.shin_r = -0.9
+			p.spine = Vector3(0.35 * k, 0.0, 0.0)
+			p.head = Vector3(-0.15 * k, 0.0, 0.0)
+			p.arm_l = Vector3(1.0 + 0.45 * k, 0.0, -0.1)
+			p.arm_r = Vector3(1.0 + 0.45 * k, 0.0, 0.1)
+			p.fore_l = 0.5 - 0.4 * k
+			p.fore_r = 0.5 - 0.4 * k
 		&"hold_child":
 			p.arm_l = Vector3(0.75, 0.0, 0.2)
 			p.fore_l = 1.5

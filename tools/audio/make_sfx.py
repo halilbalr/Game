@@ -557,6 +557,33 @@ def helmet() -> np.ndarray:
     return finish(room(x, 0.3, 0.08), -4.0)
 
 
+def splash() -> np.ndarray:
+    """A boulder the size of a hill going into the sea: the slap, the
+    plume of spray falling back, the swell rolling away."""
+    n = n_(3.2)
+    t = t_(n)
+    x = np.zeros(n)
+    place(x, thump(0.7, 90.0, 35.0, 0.05, 0.25), 0.0, 1.2)
+    place(x, hp(noise(n_(0.12)), 600.0) * env(n_(0.12), 0.002, 0.04), 0.0, 0.7)
+    spray = bp(noise(n), 900.0, 7000.0) * np.clip(t / 0.25, 0, 1) * np.exp(-np.maximum(t - 0.35, 0) / 0.6)
+    place(x, spray, 0.08, 0.6)
+    place(x, crackle(2.4, 160.0, 1500.0, 8000.0, env(n_(2.4), 0.3, 0.8)), 0.4, 1.2)
+    place(x, lp(noise(n), 220.0, 3) * np.exp(-t / 1.2), 0.0, 1.6)
+    return finish(room(x, 1.2, 0.2, 3000.0), -2.0)
+
+
+def roar(i: int) -> np.ndarray:
+    """Polyphemus bellowing: a man's cry dropped an octave and more, as from
+    a chest the size of a cart, ringing in the rock."""
+    voice, ph = [("am_onyx", "ˈɑːːːɡhh…"), ("am_fenrir", "ˈɔːːːhh…"), ("bm_george", "ˈaɪːːːː…")][i % 3]
+    x = speak(voice, phonemes=ph, speed=0.7)
+    x = bend(x, rng.uniform(0.6, 0.66), rng.uniform(0.44, 0.5))
+    x *= np.linspace(1.0, 0.45, x.size) ** 0.6
+    x = strain(x, 3.4, 1.2)
+    x = lp(x, 2600.0) + lp(x, 180.0, 2) * 1.5
+    return finish(room(x, 2.2, 0.35, 1800.0), -1.0)
+
+
 # --- voices ------------------------------------------------------------------------
 
 def kokoro():
@@ -869,6 +896,94 @@ def amb_sack(seconds: float = 24.0, cries: list = None, battle: np.ndarray = Non
     return out + battle * 0.45
 
 
+def waves(total: int, depth: float, period: float) -> np.ndarray:
+    """Open water: a broad wash rising and falling with the swell, and the
+    hiss of each crest as it breaks."""
+    t = t_(total)
+    sides = []
+    for c in range(2):
+        rise = 0.55 + 0.45 * np.sin(TAU * t / period + c * 1.3) * (0.8 + 0.2 * np.sin(TAU * t / (period * 2.7)))
+        body = lp(noise(total), 420.0, 2) * rise * depth
+        hiss = bp(noise(total), 1800.0, 7000.0) * np.clip(rise - 0.6, 0.0, 1.0) ** 2 * 1.6
+        sides.append(body + hiss)
+    return np.stack(sides, axis=1)
+
+
+def amb_sea(seconds: float = 24.0) -> np.ndarray:
+    """At sea in a black ship: the swell along the hull, water slapping the
+    planks, the creak of the oars in their leather loops, wind in the stays."""
+    length = n_(seconds)
+    fade = n_(3.0)
+    total = length + fade
+    bed = waves(total, 1.0, 6.0) * 0.6 + wind(total, 700.0, 0.7) * 0.25
+    bed = loopify(bed, length, fade)
+    bed = np.concatenate([bed, np.zeros((n_(2.0), 2))])
+    # Oars: a stroke every few seconds, the creak and the dip together.
+    stroke = 60.0 / 22.0
+    k = 0
+    while k * stroke < seconds:
+        at = k * stroke
+        for side in (-0.7, 0.7):
+            scatter(bed, length, creak(0.35, 260.0, 190.0, 0.4) * 0.5, at + rng.uniform(0, 0.05), 0.18, side)
+            scatter(bed, length, bp(noise(n_(0.3)), 500.0, 3000.0) * env(n_(0.3), 0.02, 0.1), at + 0.25, 0.12, side)
+        k += 1
+    for _ in range(14):
+        slap = lp(noise(n_(0.25)), 1500.0) * env(n_(0.25), 0.003, 0.06)
+        scatter(bed, length, slap, rng.uniform(0, seconds), rng.uniform(0.15, 0.3), rng.uniform(-0.5, 0.5))
+    for _ in range(5):
+        at = rng.uniform(0, seconds)
+        m = n_(0.5)
+        tt = t_(m)
+        gull = np.sin(TAU * np.cumsum(1500.0 + 700.0 * np.sin(np.pi * tt / 0.5)) / SR) * np.sin(np.pi * tt / 0.5) ** 2
+        scatter(bed, length, bp(gull, 900.0, 5000.0), at, 0.02, rng.uniform(-0.9, 0.9))
+    return hall(wrap_fold(bed, length), 1.0, 0.1, 4000.0)
+
+
+def amb_cave(seconds: float = 24.0) -> np.ndarray:
+    """Inside the giant's cave: the fire, the flocks shifting in their folds,
+    water dripping, and the sea far below beyond the stone."""
+    length = n_(seconds)
+    fade = n_(3.0)
+    total = length + fade
+    bed = np.stack([crackle(total / SR, 30.0, 1200.0, 7000.0) for _ in range(2)], axis=1) * 0.8
+    bed += np.stack([lp(noise(total), 300.0) for _ in range(2)], axis=1) * 0.2
+    bed += lp(waves(total, 1.0, 7.0), 250.0, 3) * 0.25
+    bed = loopify(bed, length, fade)
+    bed = np.concatenate([bed, np.zeros((n_(3.0), 2))])
+    for _ in range(18):
+        m = n_(0.08)
+        tt = t_(m)
+        drip = np.sin(TAU * np.cumsum(np.linspace(1400.0, 2400.0, m)) / SR) * np.exp(-tt / 0.015)
+        scatter(bed, length, drip, rng.uniform(0, seconds), rng.uniform(0.04, 0.1), rng.uniform(-0.9, 0.9))
+    for _ in range(9):
+        # A ewe calling for her lamb, muffled by wool and stone.
+        m = n_(0.7)
+        tt = t_(m)
+        f = rng.uniform(300.0, 420.0) * (1.0 + 0.03 * np.sin(TAU * 7.0 * tt))
+        bleat = signal.sawtooth(TAU * np.cumsum(f) / SR) * np.sin(np.pi * tt / 0.7) ** 1.5
+        bleat *= 0.6 + 0.4 * np.sin(TAU * 11.0 * tt)
+        scatter(bed, length, lp(peak_eq(bleat, 900.0, 2.0, 2.0), 2200.0), rng.uniform(0, seconds), 0.05,
+                rng.uniform(-0.8, 0.8))
+    return hall(wrap_fold(bed, length), 2.6, 0.45, 2200.0)
+
+
+def amb_strait(seconds: float = 24.0) -> np.ndarray:
+    """The strait: Charybdis sucking down the sea with a roar, the surf on
+    Scylla's cliff, spray and wind."""
+    length = n_(seconds)
+    fade = n_(3.0)
+    total = length + fade
+    t = t_(total)
+    churn = np.stack([lp(noise(total), 160.0, 3) * (1.0 + 0.5 * np.sin(TAU * t / 8.0 + c)) for c in range(2)], axis=1)
+    bed = churn * 1.4 + waves(total, 1.2, 4.0) * 0.8 + wind(total, 1200.0, 1.0) * 0.35
+    bed = loopify(bed, length, fade)
+    bed = np.concatenate([bed, np.zeros((n_(3.0), 2))])
+    for _ in range(10):
+        crash = lp(noise(n_(1.6)), 2500.0) * env(n_(1.6), 0.08, 0.5)
+        scatter(bed, length, crash, rng.uniform(0, seconds), rng.uniform(0.2, 0.4), rng.uniform(-1.0, 1.0))
+    return hall(wrap_fold(bed, length), 2.0, 0.3, 3000.0)
+
+
 def far(x: np.ndarray) -> np.ndarray:
     """The same fighting heard from inside the walls."""
     return hall(looped(lambda b: lp(b, 900.0, 3), x), 2.6, 0.5, 1500.0)
@@ -903,10 +1018,11 @@ EFFECTS = {
     "grunt": (grunt, 8), "hurt": (hurt, 5), "death": (death, 8), "shout": (shout, 6),
     "pickup": (pickup, 1), "objective": (objective, 1), "horn": (horn, 1), "alarm": (alarm, 1), "bar": (bar, 1),
     "gate": (gate, 1), "knock": (knock, 1), "hatch": (hatch, 1), "fire": (fire_burst, 2), "thunder": (thunder, 2),
-    "helmet": (helmet, 1),
+    "helmet": (helmet, 1), "splash": (splash, 3), "roar": (roar, 3),
 }
-VOICED = {"grunt", "hurt", "death", "shout", "effort"}
-AMBIENCE = ["night", "day", "feast", "battle", "battle_far", "sack"]
+VOICED = {"grunt", "hurt", "death", "shout", "effort", "roar"}
+AMBIENCE = ["night", "day", "feast", "battle", "battle_far", "sack", "sea", "cave", "strait"]
+SEEDED = {"sea", "cave", "strait"}
 
 
 def main() -> None:
@@ -946,11 +1062,16 @@ def main() -> None:
             "night": lambda: amb_night(), "day": lambda: amb_day(), "feast": lambda: amb_feast(),
             "battle": lambda: battle, "battle_far": lambda: far(battle),
             "sack": lambda: amb_sack(cries=cries, battle=battle),
+            "sea": lambda: amb_sea(), "cave": lambda: amb_cave(), "strait": lambda: amb_strait(),
         }
-        levels = {"night": -24.0, "day": -25.0, "feast": -21.0, "battle": -18.0, "battle_far": -22.0, "sack": -18.0}
+        levels = {"night": -24.0, "day": -25.0, "feast": -21.0, "battle": -18.0, "battle_far": -22.0, "sack": -18.0,
+                  "sea": -22.0, "cave": -25.0, "strait": -18.0}
         for name in AMBIENCE:
             if name not in wanted:
                 continue
+            if name in SEEDED:
+                # Its own seed: rendering it alone gives the same loop as rendering all.
+                rng = np.random.default_rng(hash_name(name))
             x = amb_level(made[name](), levels[name])
             write_ogg(AMB_OUT / f"{name}.ogg", x, 2)
             print(f"{name:<14} {x.shape[0] / SR:.1f} s loop  {(AMB_OUT / (name + '.ogg')).stat().st_size // 1024} KB")

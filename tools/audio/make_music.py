@@ -3,7 +3,7 @@
 
     python3 tools/audio/make_music.py [track ...]
 
-Writes assets/audio/music/{theme,battle,night,lament,lyre}.ogg. Every note is
+Writes assets/audio/music/{theme,battle,night,lament,lyre,sea,sirens}.ogg. Every note is
 synthesised here with numpy: string and choir pads, horn, a reed pipe
 (aulos), a plucked lyre and skin drums, in a hall made by convolution. No
 samples or recordings are used. Each track loops without a seam: whatever
@@ -454,7 +454,90 @@ def lyre_air() -> np.ndarray:
     return mix.render(3.0, -21.0, 0.6)
 
 
-TRACKS = {"theme": theme, "battle": battle, "night": night, "lament": lament, "lyre": lyre_air}
+def sea() -> np.ndarray:
+    """At sea: a rocking six-beat swell for the oars, the stroke on the drum,
+    a pipe tune over strings and men's voices."""
+    beat = 60.0 / 150.0
+    chords = [DM, C, BB, C, DM, F, GM, A]
+    span = 12 * beat
+    mix = Mix(len(chords) * span)
+    for i, (bass, notes) in enumerate(chords):
+        at = i * span
+        full = i >= 4
+        mix.add(pad(hz(bass), span, 500.0, 1.2), at, 0.3)
+        mix.add(pad(hz(bass) * 2.0, span, 760.0, 1.2), at, 0.2)
+        for j, name in enumerate(notes):
+            mix.add(pad(hz(name), span, 1900.0 if full else 1300.0, 1.0), at, 0.085, (j - 1.5) * 0.35)
+        if full:
+            mix.add(choir(hz(notes[0]), span, "oh"), at, 0.22, -0.35, 0.6)
+            mix.add(choir(hz(notes[2]), span, "oh"), at, 0.16, 0.35, 0.6)
+        # The lyre rolls in sixes, like water along the hull.
+        roll = [notes[0], notes[1], notes[2], notes[3], notes[2], notes[1]]
+        for k in range(12):
+            mix.add(lyre(hz(roll[k % 6]) * 2.0, 2.0), at + k * beat, 0.09 if k % 6 else 0.13,
+                    0.4 if (k // 6) % 2 else -0.4, 0.5)
+        # The stroke: the drum gives the rowers their time, twice a chord.
+        for half in (0, 6):
+            mix.add(boom(), at + half * beat, 0.7, 0.0, 0.45)
+            mix.add(tom(0.85), at + (half + 3) * beat, 0.24, 0.3, 0.45)
+            if full:
+                mix.add(rattle(0.8), at + (half + 4.5) * beat, 0.05, -0.5, 0.3)
+    tune = [
+        ("A4", 3), ("D5", 2), ("C5", 1), ("A4", 4), ("G4", 2),
+        ("E4", 3), ("G4", 2), ("A4", 1), ("G4", 4), ("-", 2),
+        ("F4", 3), ("G4", 2), ("A4", 1), ("Bb4", 3), ("A4", 2), ("G4", 1),
+        ("E4", 3), ("C4", 2), ("E4", 1), ("G4", 6),
+        ("A4", 3), ("D5", 2), ("E5", 1), ("F5", 3), ("E5", 2), ("D5", 1),
+        ("C5", 3), ("A4", 2), ("C5", 1), ("F4", 6),
+        ("G4", 3), ("Bb4", 2), ("D5", 1), ("D5", 3), ("C5", 2), ("Bb4", 1),
+        ("A4", 3), ("C#5", 2), ("E5", 1), ("A4", 6),
+    ]
+    melody(mix, aulos, tune, 0.0, beat, 0.2, 1.0, 0.1, 0.65, 0.95)
+    melody(mix, horn, tune[20:], 4 * span, beat, 0.12, 0.5, -0.2, 0.5, 0.95)
+    mix.add(swell(3 * beat), 4 * span - 3 * beat, 0.08, 0.0, 0.6)
+    return mix.render(3.0, -19.0, 1.1)
+
+
+def sirens() -> np.ndarray:
+    """The Sirens' song: two high voices winding round each other over a
+    shimmering drone and a lyre, sweet and never resolving."""
+    beat = 60.0 / 60.0
+    bars = 12
+    mix = Mix(bars * 4 * beat)
+    span = 16 * beat
+    for i in range(3):
+        at = i * span
+        mix.add(pad(hz("F2"), span, 500.0, 4.0), at, 0.24)
+        mix.add(pad(hz("C3"), span, 900.0, 4.0), at, 0.12, -0.4)
+        mix.add(pad(hz("A3"), span, 2600.0, 4.0), at, 0.06, 0.4)
+        mix.add(pad(hz("E4"), span, 3200.0, 5.0), at, 0.035, -0.2)
+    # A lyre picking a ninth chord over and over: lovely, and going nowhere.
+    arp = ["F3", "C4", "G4", "A4", "E5", "A4", "G4", "C4"]
+    for k in range(bars * 8):
+        mix.add(lyre(hz(arp[k % 8]) * 1.0, 2.6), k * beat / 2, 0.11 if k % 8 == 0 else 0.07,
+                -0.45 if k % 2 else 0.45, 0.7)
+    voice = lambda f, d: choir(f, d, "ah")
+    high = [
+        ("C5", 3), ("D5", 1), ("E5", 4), ("G5", 2), ("F5", 1), ("E5", 1), ("D5", 4),
+        ("E5", 2), ("C5", 2), ("A4", 4), ("B4", 2), ("C5", 2), ("D5", 4),
+        ("G5", 3), ("F5", 1), ("E5", 2), ("D5", 2), ("C5", 2), ("D5", 2), ("E5", 4),
+    ]
+    low = [
+        ("A4", 3), ("B4", 1), ("C5", 4), ("E5", 2), ("D5", 1), ("C5", 1), ("B4", 4),
+        ("C5", 2), ("A4", 2), ("F4", 4), ("G4", 2), ("A4", 2), ("B4", 4),
+        ("E5", 3), ("D5", 1), ("C5", 2), ("B4", 2), ("A4", 2), ("B4", 2), ("C5", 4),
+    ]
+    melody(mix, voice, high, 2.0, beat, 0.2, 1.0, -0.35, 0.9, 1.0)
+    # The second voice a breath behind the first, as if answering.
+    melody(mix, voice, low, 2.35, beat, 0.17, 1.0, 0.35, 0.9, 1.0)
+    melody(mix, aulos, high[:7], 2.0 + 24.0, beat, 0.05, 2.0, 0.0, 0.95)
+    return mix.render(4.4, -20.0, 1.0)
+
+
+TRACKS = {"theme": theme, "battle": battle, "night": night, "lament": lament, "lyre": lyre_air,
+          "sea": sea, "sirens": sirens}
+# Tracks seeded by their own name, so rendering one alone gives the same file.
+SEEDED = {"sea": 2201, "sirens": 2202}
 
 
 def write_ogg(path: Path, x: np.ndarray) -> None:
@@ -468,7 +551,10 @@ def write_ogg(path: Path, x: np.ndarray) -> None:
 
 
 def main() -> None:
+    global rng
     for name in sys.argv[1:] or list(TRACKS):
+        if name in SEEDED:
+            rng = np.random.default_rng(SEEDED[name])
         x = TRACKS[name]()
         write_ogg(OUT / f"{name}.ogg", x)
         rms = 20 * np.log10(np.sqrt(np.mean(x * x)))

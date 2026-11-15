@@ -296,7 +296,7 @@ func _draw_controls() -> void:
 	var fill := Color(0.05, 0.04, 0.03, 0.34)
 	var edge := Color(0.86, 0.68, 0.36, 0.7)
 	# Thumb-stick.
-	if player.move_enabled and not _watching():
+	if (player.move_enabled or player.riding) and not _watching():
 		var rest := Vector2(170.0 + _inset, s.y - 160.0) if Game.phone else Vector2(190.0 + _inset, s.y - 190.0)
 		var origin := _stick_origin if _stick_id != -1 else rest
 		_canvas.draw_circle(origin, STICK_RADIUS, Color(0.05, 0.04, 0.03, 0.22 if _stick_id == -1 else 0.34))

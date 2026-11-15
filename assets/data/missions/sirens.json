@@ -1,0 +1,84 @@
+{
+  "loading": "The sea beyond Circe's island...",
+  "text": {
+    "title": "THE SIRENS",
+    "intro": "Circe has told Odysseus what lies ahead. First the Sirens, who bewitch every man who comes near them with their song; round them lie heaps of the bones of men. Then the strait, where Scylla waits in her cave high on one side, and Charybdis sucks down the black water on the other. Now the ship leaves Circe's island behind, and a fair wind fills the sail.",
+    "death_title": "ODYSSEUS HAS FALLEN",
+    "death_text": "The sea kept him, as it has kept many men.",
+    "charybdis_title": "CHARYBDIS",
+    "charybdis_text": "The whirlpool took the ship and dragged her down, and the black water closed over the masthead. No man of that crew came home.",
+    "end_title": "THE ISLAND OF THE SUN",
+    "end_text": "Odysseus heard the lowing of the cattle and remembered the warnings of Circe and Teiresias: do not touch the cattle of the Sun. But his men were weary, and night was coming on, and Eurylochus spoke against him.\n\nAfter Odyssey 12.153-263.",
+    "hint_resist": "The song draws your eyes to the island. Look away from it, out to sea.",
+    "hint_strait": "Keep under Scylla's cliff. If the whirlpool takes hold, row hard away from it."
+  },
+  "objectives": {
+    "sirens": "Sail toward the Sirens' island",
+    "wax": "Knead the wax",
+    "wax_sub": "Stop your men's ears with it",
+    "resist": "Hold fast to the mast",
+    "resist_sub": "Do not look at the island",
+    "strait": "Make for the strait",
+    "scylla": "Steer close under Scylla's cliff",
+    "scylla_sub": "Charybdis lies on the other side",
+    "through": "Row through the strait"
+  },
+  "lines": {
+    "warn": [
+      "Odysseus",
+      "Friends, Circe has told me what lies ahead, and it is not right that one or two alone should know it. First the Sirens. Only I may hear their song. Bind me hand and foot to the mast, and if I beg you to set me free, bind me faster still."
+    ],
+    "wax": [
+      "",
+      "I cut a great cake of wax into pieces and kneaded it in my strong hands until it was soft, and stopped the ears of my men with it. Then they bound me upright against the mast."
+    ],
+    "calm": [
+      "",
+      "The wind dropped, and some god lulled the waves to sleep. The men furled the sail and took to their oars, and the water went white under the blades."
+    ],
+    "siren_1": [
+      "Sirens",
+      "Come here, famous Odysseus, glory of the Achaeans. Bring your ship to land, and listen to our two voices."
+    ],
+    "siren_2": [
+      "Sirens",
+      "No man has ever sailed past this island in his black ship without hearing the sweet song from our lips. He goes on his way delighted, and knowing more than he knew."
+    ],
+    "siren_3": [
+      "Sirens",
+      "For we know all the toils that the Argives and the Trojans bore in wide Troy by the will of the gods. And we know all that comes to pass on the fruitful earth."
+    ],
+    "struggle": [
+      "Odysseus",
+      "Untie me! Set me free! Let me go to them!"
+    ],
+    "tighter": [
+      "",
+      "But Perimedes and Eurylochus rose and bound me faster with more rope."
+    ],
+    "passed": [
+      "",
+      "When we had passed them, and their voices and their song had died away, my comrades took the wax from their ears and set me free."
+    ],
+    "strait_warn": [
+      "Odysseus",
+      "Friends, we have met danger before, and this is no worse than the Cyclops in his cave. Pull, all of you, and do not stop. I will hold her away from the smoke and the surf and keep close under the cliff."
+    ],
+    "charybdis": [
+      "",
+      "On one side was Scylla, on the other Charybdis, sucking down the salt sea. When she spewed it out she seethed like a cauldron on a great fire, and when she sucked it down the sea floor showed dark with sand."
+    ],
+    "scylla": [
+      "",
+      "And while we looked at Charybdis, fearing death, Scylla snatched six of my men out of the ship, the strongest of them. I turned and saw their hands and feet above me as she lifted them, crying out to me by name for the last time."
+    ],
+    "pitiful": [
+      "Odysseus",
+      "Of all the things I suffered on the paths of the sea, that was the most pitiful thing my eyes have seen."
+    ],
+    "through": [
+      "",
+      "So we escaped the rocks, and dread Charybdis, and Scylla. Soon we came to the fair island of the Sun, where the broad-browed cattle of Helios grazed."
+    ]
+  }
+}

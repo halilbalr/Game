@@ -30,6 +30,9 @@ var weapon_index: int = 0
 var spears: int = 0
 ## When false the player cannot move, look or fight (cutscenes, menus).
 var control_enabled: bool = true
+## Standing on a ship that carries him (see SeaMission.board): he does not
+## walk, and the movement controls steer the ship instead.
+var riding: bool = false
 ## When false movement is frozen but looking is still allowed.
 var move_enabled: bool = true
 var combat_enabled: bool = true
@@ -167,6 +170,9 @@ func current_weapon() -> String:
 func look_toward(point: Vector3) -> void:
 	var to := point - eye_position()
 	rotation.y = atan2(-to.x, -to.z)
+	if riding:
+		# Turned within the ship that carries him.
+		rotation.y -= get_parent_node_3d().global_rotation.y
 	_pitch = clampf(atan2(to.y, Vector2(to.x, to.z).length()), -1.4, 1.4)
 	_head.rotation.x = _pitch
 
@@ -726,7 +732,11 @@ func _physics_process(delta: float) -> void:
 			_stamina_wait = 0.5
 	else:
 		velocity.y -= GRAVITY * delta
-	move_and_slide()
+	if riding:
+		# Carried by the ship: its node moves him, not his legs.
+		velocity = Vector3.ZERO
+	else:
+		move_and_slide()
 
 	# Footsteps.
 	var flat := move_speed()

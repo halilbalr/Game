@@ -28,10 +28,41 @@ excavations at Hisarlik.
 | **The Wooden Horse** (attacker) | Odysseus | *Odyssey* 4.271-289, 8.492-520; *Little Iliad*; *Sack of Ilium* | Keep the men silent inside the horse while Helen calls to them, climb down at night, slip through the sleeping city, kill the gate watch, unbar the Scaean Gate, then fight with Menelaus to the house of Deiphobus. |
 | **The Scaean Gate** (defender) | Hector | *Iliad* 6.237-529, 16.684-867 | Part from Andromache and the child at the gate tower, lead the sortie, hold the ground before the gate against the Achaean assault, and meet Patroclus in Achilles' armour when he storms the wall. |
 | **Walk the City** | — | Excavation record | Free exploration of Troy by day with a chronicle of what is known about each place. |
+| **The Cyclops** (the voyage home) | Odysseus | *Odyssey* 9.105-566 | Row to the land of the Cyclopes, climb to the cave with twelve men, be shut in by Polyphemus, cut and harden a stake from his club, make him drunk and give your name as Nobody, blind him in his sleep, get out under the rams, and row away under the boulders he throws. |
+| **The Sirens** (the voyage home) | Odysseus | *Odyssey* 12.37-259 | Stop the crew's ears with wax, be bound to the mast and resist the song as the ship passes the Sirens' meadow, then take the steering oar through the strait between Charybdis and Scylla, who takes six men from the benches. |
 
 Later missions (roadmap, not built): the duel of Paris and Menelaus, Diomedes'
 day, the night raid on Rhesus, the fight at the ships, Achilles and Hector,
 Priam's ransom.
+
+## The voyage home
+
+Added after the Troy slice: two episodes from Odysseus' wanderings, played at
+sea. They share one sailing system (`src/sea/`).
+
+- **The ship** is a twenty-oared black ship of the Late Bronze Age: about
+  22 m, pitch-black hull with red bows and an eye, one square sail on a
+  lowering mast, a steering oar at the stern, ten oars a side. The player
+  stands at the stern and steers (move forward to row harder, left and right
+  to turn), or is placed by the mast. The ship rides the same waves the sea
+  shader draws, rolls and pitches with them, and stops on rock.
+- **The sea** is a sum of four long waves, computed both in the shader and in
+  `Sea.height()`, so ships and thrown rocks meet the water where it is drawn.
+  Charybdis is a funnel sunk into that surface and a current that draws the
+  ship in.
+- **Islands** are height functions with levelled places for a beach or a cave
+  floor, walkable and solid. The cave of Polyphemus is a separate rock shell
+  with a door stone that rolls aside.
+- **Gods felt, not seen** holds at sea: the Sirens are a song and a meadow
+  with heaps of bones, never shown. Scylla is shown only as Homer gives her:
+  six long necks out of a cave high in the cliff, each with a head and three
+  rows of teeth.
+- **The Cyclops** is the one giant in the game: a man's figure at three times
+  scale with a single eye, dressed as a herdsman.
+- The song pulls the view toward the island (the meter THE SONG fills while
+  the player looks at it). If it fills, Odysseus strains at the ropes and the
+  crew tie him tighter: it slows the passage, it does not end the mission.
+- Defeats: the ship drawn under by Charybdis, or broken by a boulder.
 
 ## The city
 

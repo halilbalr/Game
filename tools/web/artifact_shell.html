@@ -146,8 +146,8 @@ button:disabled { opacity: 0.55; cursor: default; }
     <div class="inner">
       <p class="greek" lang="grc">Ἄνδρα μοι ἔννεπε, Μοῦσα, πολύτροπον</p>
       <h1>The Odyssey</h1>
-      <p class="sub">The Fall of Troy</p>
-      <p class="lede">Climb out of the wooden horse as Odysseus and open the gates. Hold the Scaean Gate as Hector on the day Patroclus came. Or walk Bronze Age Troy by daylight.</p>
+      <p class="sub">The Fall of Troy · The Voyage Home</p>
+      <p class="lede">Climb out of the wooden horse as Odysseus and open the gates. Hold the Scaean Gate as Hector on the day Patroclus came. Walk Bronze Age Troy by daylight. Then put to sea for the voyage home: the Cyclops in his cave, the Sirens, and the strait of Scylla and Charybdis.</p>
 
       <div class="row">
         <button id="play" class="primary" type="button">Play</button>
@@ -194,8 +194,9 @@ button:disabled { opacity: 0.55; cursor: default; }
   // first) so each stays inside the Artifact file limits. The engine asks for
   // them by their usual names; fetch is answered from the unpacked copies.
   var PARTS = {
-    "index.wasm": { src: "engine.wasm.gz.txt", gzip: true, type: "application/wasm", size: /*__WASM_TEXT_SIZE__*/ },
-    "index.pck": { src: "game.pck.txt", gzip: false, type: "application/octet-stream", size: /*__PCK_TEXT_SIZE__*/ }
+    "index.wasm": { src: ["engine.wasm.gz.txt"], gzip: true, type: "application/wasm", size: /*__WASM_TEXT_SIZE__*/ },
+    // The game data is larger than one file may be: it comes in parts.
+    "index.pck": { src: /*__PCK_PARTS__*/, gzip: false, type: "application/octet-stream", size: /*__PCK_TEXT_SIZE__*/ }
   };
 
   var card = document.getElementById("card");
@@ -287,10 +288,10 @@ button:disabled { opacity: 0.55; cursor: default; }
     for (var name in PARTS) { got += received[name] || 0; total += PARTS[name].size; }
     if (!started) { setStatus("Fetching the engine… " + Math.round(got / 1048576) + " of " + Math.round(total / 1048576) + " MB", got / total * 0.9); }
   }
-  async function readText(name) {
-    var res = await realFetch(PARTS[name].src);
-    if (!res.ok) { throw new Error("a game file is missing (" + PARTS[name].src + ")"); }
-    if (!res.body || !res.body.getReader) { return res.text(); }
+  async function readOne(name, src) {
+    var res = await realFetch(src);
+    if (!res.ok) { throw new Error("a game file is missing (" + src + ")"); }
+    if (!res.body || !res.body.getReader) { return (await res.text()).trim(); }
     var reader = res.body.getReader();
     var decoder = new TextDecoder();
     var chunks = [];
@@ -302,7 +303,12 @@ button:disabled { opacity: 0.55; cursor: default; }
       progress();
     }
     chunks.push(decoder.decode());
-    return chunks.join("");
+    return chunks.join("").trim();
+  }
+  async function readText(name) {
+    // Parts are fetched together and joined in order.
+    var texts = await Promise.all(PARTS[name].src.map(function (src) { return readOne(name, src); }));
+    return texts.join("");
   }
   function decode(b64) {
     var bin = atob(b64.trim());

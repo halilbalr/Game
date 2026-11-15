@@ -8,6 +8,8 @@ const MISSIONS := {
 	"horse": "res://src/missions/mission_horse.gd",
 	"gate": "res://src/missions/mission_gate.gd",
 	"roam": "res://src/missions/mission_roam.gd",
+	"cyclops": "res://src/missions/mission_cyclops.gd",
+	"sirens": "res://src/missions/mission_sirens.gd",
 }
 
 ## Command-line user arguments (after `--`), as key -> value.

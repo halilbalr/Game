@@ -39,12 +39,13 @@ static func _shader(file: String, params: Dictionary = {}) -> ShaderMaterial:
 	return m
 
 
-## The same material drawn from both sides: cloaks, veils, awning cloth.
+## A copy of [param m] seen from both sides: for one thickness of cloth (a
+## cloak, a veil, an awning, a sail), which also lets some light through.
 static func _two_sided(m: ShaderMaterial) -> ShaderMaterial:
 	var copy := m.duplicate() as ShaderMaterial
 	var sh := Shader.new()
 	sh.code = m.shader.code.replace("shader_type spatial;", "shader_type spatial;\nrender_mode cull_disabled;") \
-		.replace("\tRIM_TINT = 0.6;", "\tRIM_TINT = 0.6;\n\tif (!FRONT_FACING) {\n\t\tNORMAL = -NORMAL;\n\t}")
+		.replace("\tRIM_TINT = 0.6;", "\tRIM_TINT = 0.6;\n\tif (!FRONT_FACING) {\n\t\tNORMAL = -NORMAL;\n\t}\n\tBACKLIGHT = ALBEDO * 0.45;")
 	copy.shader = sh
 	return copy
 
