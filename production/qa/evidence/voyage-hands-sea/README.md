@@ -24,6 +24,8 @@ Captured on the Linux engine (Forward+, software Vulkan) at 960 x 540 or
 | `11-island-trees-maquis.jpg` | Islands clothed in holm oak, olive, fig, maquis and boulders |
 | `12-water-on-the-lens.jpg` | Drops on the view after spray: each bends the picture behind it |
 | `13-strait-at-the-tiller.jpg` | The strait, hands on the tiller |
+| `14-bow-inside-dry.jpg` | Inside the bow from above: no water in the hull up to the stem |
+| `15-stern-inside-dry.jpg` | The same at the stern |
 
 ## Runs
 
@@ -36,8 +38,13 @@ Captured on the Linux engine (Forward+, software Vulkan) at 960 x 540 or
 
 ## Fixed on the way
 
-- **Water inside the ship.** Wave crests showed through the deck; the sea is
-  now kept out of the hull's footprint.
+- **Water inside the ship.** Wave crests showed through the deck. The sea
+  is now kept out of the hull's exact plan (the same curve the hull is built
+  on, from stem to stern), both the near swell and the flat sea beneath it.
+  A first mask, an ellipse, left water showing in the narrow bow and stern
+  and along the sides; the owner reported it and it was replaced.
+- **Sea seen through the gunwale.** The rail along the top of the hull stood
+  3 cm clear of the planking on both sides; it now meets them.
 - **Sandbars in the troughs.** The shallow shelf round each island showed
   through the swell; the bottom now falls away below the strand.
 - **A surf strip under the waves.** A first attempt laid foam on a separate

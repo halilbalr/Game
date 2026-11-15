@@ -20,7 +20,8 @@ uniform sampler2D ground_tex : filter_linear, repeat_disable;
 uniform vec4 ground_rect = vec4(0.0);
 uniform vec3 sand_water : source_color = vec3(0.16, 0.5, 0.46);
 // The ship's hull, kept dry inside: centre x, z, then sin and cos of its
-// heading; hull_size is the half beam and half length (0 for no ship).
+// heading; hull_size is the half beam and half length (0 for no ship). The
+// plan follows Ship._half_beam; keep the two in step.
 uniform vec4 hull_xf = vec4(0.0, 0.0, 0.0, 1.0);
 uniform vec2 hull_size = vec2(0.0);
 
@@ -85,10 +86,16 @@ void vertex() {
 void fragment() {
 	vec2 p = w_pos.xz;
 	if (hull_size.x > 0.0) {
+		// The hull's own plan (Ship._half_beam): full beam amidships, narrowing
+		// to the stem and the stern, so no water shows anywhere inside her.
 		vec2 o = p - hull_xf.xy;
-		vec2 l = vec2(o.x * hull_xf.w - o.y * hull_xf.z, o.x * hull_xf.z + o.y * hull_xf.w) / hull_size;
-		if (dot(l, l) < 0.92) {
-			discard;
+		float across = o.x * hull_xf.w - o.y * hull_xf.z;
+		float f = (o.x * hull_xf.z + o.y * hull_xf.w) / hull_size.y;
+		if (abs(f) < 1.0) {
+			float half_beam = hull_size.x * pow(max(cos(f * 1.5707963), 0.0), 0.55);
+			if (abs(across) < half_beam) {
+				discard;
+			}
 		}
 	}
 	vec3 s = swell_at(p) + funnel(p);

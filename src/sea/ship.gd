@@ -342,6 +342,8 @@ func oar_transform(station: int) -> Transform3D:
 
 # --- shapes -------------------------------------------------------------------------
 
+## Half the beam at [param v] (0 the stem, 1 the stern). The sea keeps out of
+## this plan: keep sea.gdshader's hull mask in step.
 static func _half_beam(v: float) -> float:
 	return BEAM * 0.5 * pow(sin(PI * clampf(v, 0.0, 1.0)), 0.55)
 
@@ -385,8 +387,9 @@ static func hull_mesh() -> ArrayMesh:
 		var cap := func(u: float, v: float) -> Vector3:
 			var a := _hull_point(side, v, 0.0)
 			var b := _hull_point(side, v, 0.09)
-			return a.lerp(b, u) + Vector3(0, 0.03, 0)
-		Sculpt.grid(gb, &"hide", 1, 40, cap, Color(0.3, 0.2, 0.12), false, Vector3(0, -30, 0))
+			# Crowned, but meeting the planking on both edges: no gap to see the sea through.
+			return a.lerp(b, u) + Vector3(0, 0.035 * sin(PI * u), 0)
+		Sculpt.grid(gb, &"hide", 3, 40, cap, Color(0.3, 0.2, 0.12), false, Vector3(0, -30, 0))
 	# Deck planks, benches.
 	gb.box(&"wood", Transform3D(Basis.IDENTITY, Vector3(0, 0.12, 0)), Vector3(BEAM * 0.6, 0.05, LENGTH * 0.72), Color.WHITE, false, 0)
 	# A thwart for each pair of oars, just forward of the oarlocks.
