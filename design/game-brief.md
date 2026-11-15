@@ -296,7 +296,7 @@ thing to do. Title cards are narrated and are scenes too.
 
 | Check | How | State |
 |---|---|---|
-| Rules and formulas (combat moves included), touch controls (two-thumb look, tap and hold Strike), phone button layout, every sound the scripts ask for exists, aim assist | 88 tests, `tests/run_tests.gd` | Pass |
+| Rules and formulas (combat moves included), touch controls (two-thumb look, tap and hold Strike), phone button layout, every sound the scripts ask for exists, aim assist, the sea surface, islands and cave doorway | 94 tests, `tests/run_tests.gd` | Pass |
 | Missions in mobile and phone mode | `--mission=<id> --bot --god --mobile --phone` | Pass |
 | Android package is complete | Debug APK built and signed; a mission finished from its contents on the Linux engine | Pass |
 | The app builds on a real phone or tablet | — | Not verified |
@@ -308,6 +308,7 @@ thing to do. Title cards are narrated and are scenes too.
 | Mission scripts reach their end | `--mission=<id> --autoplay` | Pass |
 | Player combat through real input | `--scene=arena --autoplay --bot` | Pass |
 | Whole missions with real walking, fighting and use | `--mission=<id> --bot --god` (`--noalarm` for the horse) | Pass: both reach their ending |
+| The voyage: rowing, steering, climbing, using, whole missions | `--mission=cyclops|sirens --bot --god`, each also with `--mobile --phone` and with `--web` | Pass: all six runs reach the ending, no script errors |
 | Screen transitions | `--tour --autoplay` | Pass |
 | Layout, legibility, presence | Screenshots in `production/qa/evidence/vertical-slice/` | Looked at |
 | Frame rate on real hardware | — | Not verified |

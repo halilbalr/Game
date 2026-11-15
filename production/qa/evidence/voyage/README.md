@@ -24,7 +24,11 @@ Vulkan) at 1280 x 720, and in headless Chromium for the web build.
 |---|---|
 | `--mission=cyclops --bot --god` | MISSION COMPLETE, 530 s, no script errors |
 | `--mission=sirens --bot --god` | MISSION COMPLETE, 548 s, no script errors |
-| Both with `--mobile --phone` and `--web` | See `design/game-brief.md`, *Verification* |
+| `--mission=cyclops --bot --god --mobile --phone` | MISSION COMPLETE, 527 s (after the terrain fix below) |
+| `--mission=cyclops --bot --god --web` | MISSION COMPLETE, 526 s |
+| `--mission=sirens --bot --god --mobile --phone` | MISSION COMPLETE, 548 s |
+| `--mission=sirens --bot --god --web` | MISSION COMPLETE, 548 s |
+| Troy missions after the change (`gate`, `horse --noalarm`, bot) | Both complete, no script errors |
 | Web package in Chromium | Boots, opens the voyage page, starts the Cyclops |
 
 ## Fixed on the way
