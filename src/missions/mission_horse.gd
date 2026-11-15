@@ -26,6 +26,7 @@ func _init() -> void:
 	preset = "night"
 	music = [&"night", &"battle", &"lament"]
 	ambience = [&"feast", &"night", &"sack"]
+	outfits = ["odysseus", "menelaus", "diomedes", "achaean", "myrmidon", "trojan_watch", "trojan", "deiphobus"]
 
 
 func _watch(pos: Vector3, yaw: float, opts: Dictionary = {}) -> Soldier:

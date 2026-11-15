@@ -120,14 +120,31 @@ func test_drag_to_look_does_not_strike() -> void:
 	await _clear(st)
 
 
-func test_strike_button_starts_an_attack() -> void:
+func test_strike_tapped_starts_a_light_blow() -> void:
 	var st := _stage()
 	await frames(SETTLE)
 	var pos := st.touch._button_centre("strike")
 	_touch(2, pos, true)
+	await frames(3)
+	_touch(2, pos, false)
 	await frames(SETTLE)
 	check(st.player.viewmodel.is_busy(), "tapping STRIKE should start an attack")
+	check(not st.player._attack_heavy, "a tap is a light blow")
+	await _clear(st)
+
+
+func test_strike_held_then_released_starts_a_heavy_blow() -> void:
+	var st := _stage()
+	await frames(SETTLE)
+	var pos := st.touch._button_centre("strike")
+	_touch(2, pos, true)
+	# Well past the heavy threshold (0.32 s) at 60 physics ticks a second.
+	await frames(36)
+	check(not st.player.viewmodel.is_busy(), "nothing is thrown while STRIKE is held")
 	_touch(2, pos, false)
+	await frames(SETTLE)
+	check(st.player.viewmodel.is_busy(), "releasing STRIKE should start the attack")
+	check(st.player._attack_heavy, "a held STRIKE is a heavy blow")
 	await _clear(st)
 
 

@@ -31,31 +31,32 @@ var _hide_weapon_until_recover: bool = false
 var _flinch: float = 0.0
 var _shield_radius: float = 0.44
 var _lower_k: float = 0.0
+## 0 to 1: how far the weapon arm is drawn back for a heavy blow.
+var charge: float = 0.0
+var _charge_k: float = 0.0
+var _bash: float = 0.0
 
 
-static func _mat(tint: Color, metal: float, rough: float, vertex_color: bool) -> ShaderMaterial:
-	var m := ShaderMaterial.new()
-	m.shader = load("res://assets/shaders/viewmodel.gdshader")
-	m.set_shader_parameter("tint", tint)
-	m.set_shader_parameter("metal", metal)
-	m.set_shader_parameter("rough", rough)
-	m.set_shader_parameter("use_vertex_color", vertex_color)
-	return m
-
-
-## The view-model material set, keyed like [Mats].
+## The view-model material set, keyed like [Mats]: the figure materials,
+## each with its depth pulled toward the camera so a long spear never pokes
+## through a wall or a man standing close.
 static func materials() -> Dictionary:
 	if _mats.is_empty():
-		_mats = {
-			&"tint": _mat(Color.WHITE, 0.0, 0.8, true),
-			&"tint_2s": _mat(Color.WHITE, 0.0, 0.85, true),
-			&"hide": _mat(Color.WHITE, 0.0, 0.6, true),
-			&"bronze": _mat(Color(0.83, 0.56, 0.27), 1.0, 0.32, false),
-			&"bronze_dull": _mat(Color(0.55, 0.40, 0.22), 1.0, 0.55, false),
-			&"gold": _mat(Color(1.0, 0.78, 0.32), 1.0, 0.25, false),
-			&"silver": _mat(Color(0.85, 0.85, 0.82), 1.0, 0.3, false),
-			&"ivory": _mat(Color(0.90, 0.85, 0.72), 0.0, 0.45, false),
-		}
+		for key: StringName in Mats.FIGURE:
+			var spec: Array = Mats.FIGURE[key]
+			var src := load("res://assets/shaders/" + str(spec[0])) as Shader
+			var sh := Shader.new()
+			var pull := "\tPOSITION = PROJECTION_MATRIX * MODELVIEW_MATRIX * vec4(VERTEX, 1.0);\n\tPOSITION.z = mix(POSITION.z, POSITION.w, 0.86);\n"
+			sh.code = src.code.replace("shader_type spatial;", "shader_type spatial;\nrender_mode cull_disabled;") \
+				.replace("\tlp = VERTEX;\n", "\tlp = VERTEX;\n" + pull)
+			var m := ShaderMaterial.new()
+			m.shader = sh
+			for k: String in spec[1]:
+				m.set_shader_parameter(k, (spec[1] as Dictionary)[k])
+			_mats[key] = m
+		_mats[&"tint_2s"] = _mats[&"tint"]
+		_mats[&"figure_2s"] = _mats[&"figure"]
+		_mats[&"wool_2s"] = _mats[&"wool"]
 	return _mats
 
 
@@ -90,17 +91,11 @@ func setup(look: Dictionary) -> void:
 func _forearm(look: Dictionary, mats: Dictionary) -> MeshInstance3D:
 	var gb := GeoBuilder.new()
 	gb.chunk_size = 0.0
+	FigureMesh.forearm(gb, look)
+	# The arm runs on up out of sight.
 	var skin: Color = look.get("skin", Color(0.7, 0.5, 0.36))
-	var prof := PackedVector2Array([Vector2(0.0, -0.34), Vector2(0.03, -0.32), Vector2(0.036, -0.25), Vector2(0.05, -0.08),
-		Vector2(0.056, 0.2), Vector2(0.058, 0.5)])
-	gb.lathe(&"tint", Transform3D.IDENTITY, prof, 10, skin)
-	gb.box(&"tint", Transform3D(Basis.IDENTITY, Vector3(0, -0.3, -0.012)), Vector3(0.078, 0.085, 0.07), skin, false, 0)
-	if look.get("armor", "none") in ["bronze", "bronze_gold"]:
-		var guard := PackedVector2Array([Vector2(0.04, -0.23), Vector2(0.056, -0.06), Vector2(0.054, -0.03)])
-		gb.lathe(&"bronze", Transform3D.IDENTITY, guard, 10)
-	else:
-		var wrap := PackedVector2Array([Vector2(0.04, -0.22), Vector2(0.046, -0.15), Vector2(0.044, -0.13)])
-		gb.lathe(&"hide", Transform3D.IDENTITY, wrap, 10, Color(0.25, 0.16, 0.1))
+	Sculpt.loft(gb, &"skin", Transform3D.IDENTITY, [[0.0, 0.046, 0.046, 0.047, 0, 0, 2], [0.2, 0.056, 0.056, 0.056, 0, 0, 2],
+		[0.5, 0.058, 0.058, 0.058, 0, 0, 2]], 10, skin, 1)
 	var mi := MeshInstance3D.new()
 	mi.mesh = gb.build_mesh(mats)
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -133,6 +128,11 @@ func release_weapon() -> void:
 	_hide_weapon_until_recover = true
 
 
+## Punches the shield forward.
+func bash() -> void:
+	_bash = 1.0
+
+
 ## Kicks the view model back when the player is struck.
 func flinch() -> void:
 	_flinch = 1.0
@@ -159,6 +159,10 @@ func update(delta: float, move_speed: float, look_delta: Vector2, crouched: bool
 	_lower_k = lerpf(_lower_k, 1.0 if lowered else 0.0, 1.0 - exp(-5.0 * delta))
 	pos += Vector3(0.08, -0.22, 0.12) * _lower_k
 	rot += Vector3(-0.45, -0.1, 0.0) * _lower_k
+	_charge_k = lerpf(_charge_k, charge, 1.0 - exp(-14.0 * delta))
+	pos += Vector3(0.06, 0.05, 0.2) * _charge_k
+	rot += Vector3(0.12, 0.0, -0.12) * _charge_k
+	_bash = maxf(_bash - delta * 3.5, 0.0)
 	if _attack_t >= 0.0:
 		_attack_t += delta
 		var tw := _attack_times.x
@@ -213,7 +217,9 @@ func update(delta: float, move_speed: float, look_delta: Vector2, crouched: bool
 		var r := _shield_radius
 		var lp := Vector3(-0.22 - r * 0.8, -0.2 - r * 0.98, -0.52).lerp(Vector3(-0.2, -0.13 - r, -0.56), _block_k)
 		var lr := Vector3(0.1, -0.5, 0.2).lerp(Vector3(0.06, -0.1, 0.04), _block_k)
-		_left.position = lp + bob * 0.8 + Vector3(_sway.x, _sway.y + _flinch * 0.03, _flinch * 0.08 * _block_k)
+		var punch := sin(_bash * PI) * 0.34
+		_left.position = lp + bob * 0.8 + Vector3(_sway.x + punch * 0.25, _sway.y + _flinch * 0.03 + punch * 0.3,
+			_flinch * 0.08 * _block_k - punch)
 		_left.rotation = lr
 
 

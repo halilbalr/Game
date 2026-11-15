@@ -344,7 +344,8 @@
       ],
       "cloak": [
         null
-      ]
+      ],
+      "long_hair": false
     },
     "trojan_watch": {
       "skin": [
@@ -436,7 +437,8 @@
           0.2
         ],
         null
-      ]
+      ],
+      "long_hair": false
     },
     "odysseus": {
       "skin": [
@@ -953,7 +955,8 @@
       "cloak": [
         null
       ],
-      "robe": true
+      "robe": true,
+      "female": true
     },
     "townswoman": {
       "skin": [
@@ -1047,7 +1050,8 @@
       "cloak": [
         null
       ],
-      "robe": true
+      "robe": true,
+      "female": true
     },
     "townsman": {
       "skin": [
@@ -1146,7 +1150,8 @@
           0.32,
           0.24
         ]
-      ]
+      ],
+      "long_hair": false
     },
     "priam": {
       "skin": [

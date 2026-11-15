@@ -68,7 +68,9 @@ func _capture() -> void:
 		var img := get_viewport().get_texture().get_image()
 		var path: String = (Game.args["shot"] as String).replace(".png", "_%d.png" % ci)
 		img.save_png(path)
-		print("shot saved: ", path)
+		print("shot saved: %s (%d triangles, %d draw calls)" % [path,
+			RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME),
+			RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME)])
 	# Harness runs end here. A hard exit: a clean quit can hang on teardown
 	# under the software renderer.
 	await get_tree().process_frame

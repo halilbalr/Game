@@ -49,6 +49,7 @@ func build(preset_name: String, quality: int) -> void:
 	_signature = tris
 	builder.b.commit(self, Mats.all())
 	fires = Props.place(self, info, quality)
+	Clutter.place(self, info, [0.35, 0.6, 0.85][clampi(quality, 0, 2)] if Game.lite else 1.0)
 	for f in fires:
 		f.set_lit(night)
 	camp = Props.build_camp(self)

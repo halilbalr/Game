@@ -58,13 +58,13 @@ Xcode project and run it on the device
 |---|---|
 | Move | Left thumb, anywhere on the left half. Push the stick to its rim to run. |
 | Look | Drag anywhere on the right. A thumb resting on STRIKE or SHIELD can still turn the view. |
-| STRIKE | Tap. |
-| SHIELD | Hold. |
+| STRIKE | Tap for a quick blow; hold and let go for a heavy one. With SHIELD held, a shove. |
+| SHIELD | Hold. Raise it just as a blow lands to parry. |
 | THROW | Tap. Shown while a spear is in hand. |
 | ARMS | Next weapon. |
 | CROUCH | Tap to crouch, tap again to stand. |
 | SKIP | Shown during a scene. Passes over the rest of it. |
-| JUMP | Tap. |
+| JUMP | Tap. While stepping aside or back, a dodge. |
 | USE | Appears only when there is something to use. Some things must be held. |
 | READ | Walk the City only: the chronicle of the place you are standing in. |
 | II | Pause. The Android back gesture pauses too. |
@@ -136,8 +136,10 @@ has been heard.
 |---|---|---|
 | Move | W A S D | Left stick |
 | Look | Mouse | Right stick |
-| Strike | Left mouse | Right trigger |
-| Raise shield | Right mouse (hold) | Left trigger |
+| Strike (hold for a heavy blow) | Left mouse | Right trigger |
+| Raise shield (parry: just as the blow lands) | Right mouse (hold) | Left trigger |
+| Shove | Strike with the shield raised | |
+| Dodge | Jump while moving sideways or back | |
 | Throw spear | G or middle mouse | Right bumper |
 | Change weapon | 1 2 3, wheel, or Q | Y |
 | Use | E (some things must be held) | X |
@@ -155,8 +157,19 @@ has been heard.
 - The **sword** is quicker and shorter. You draw it automatically when the
   last spear is gone.
 - The **dagger** (Odysseus only) is for a man who has not seen you.
-- A raised **shield** stops blows from the front and costs stamina. A blow on
-  an exhausted arm drives through.
+- **Tap Strike** for a quick blow. Blows that land one after another build a
+  chain: the second comes faster and the third hits hardest.
+- **Hold Strike** and let go for a **heavy blow**: slow and costly, but it
+  breaks a raised shield and drives the man back. Enemies do the same; watch
+  for a long wind-up.
+- A raised **shield** stops blows from the front and costs stamina. Raise it
+  **just as the blow lands** and you **parry**: he is thrown off balance, and
+  a blow struck while he reels is a **riposte** that does half again as much.
+  A heavy blow, or a blow on an exhausted arm, drives through a shield held
+  up too long.
+- **Strike with the shield up** to shove a man back and leave him reeling.
+- **Jump while stepping sideways or back** to dodge: a blow passes through you.
+- Blows land with weight: men are knocked back, and a heavy blow is felt.
 - Blows to the head do more. Bronze turns part of a blow to the body.
 - Health comes back slowly when you are out of the fight.
 
@@ -253,8 +266,9 @@ model itself is not part of this repository.
 
 ## Known limits
 
-- People are built from simple shapes and animated in code. They read as
-  figures, not as portraits.
+- People are sculpted and animated in code: faces with eyes, nose, lips,
+  brows and beards, helmets with crests and cheek pieces, shaped armour.
+  They are stylised, not photographic.
 - Voices, music and effects are synthetic and have not been heard by the
   person who built them.
 - No saving inside a mission. Each takes ten to fifteen minutes.
@@ -264,7 +278,7 @@ model itself is not part of this repository.
 
 ```
 godot --headless --path . --import                              # once after cloning
-godot --headless --path . -s res://tests/run_tests.gd           # 76 tests
+godot --headless --path . -s res://tests/run_tests.gd           # 83 tests
 godot --headless --path . --fixed-fps 60 -- --mission=horse --autoplay   # script plays itself; exit 0 on completion
 godot --headless --path . --fixed-fps 60 -- --mission=gate --autoplay
 godot --headless --path . --fixed-fps 60 -- --scene=arena --autoplay --bot   # scripted player through real input

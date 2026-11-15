@@ -8,7 +8,7 @@ extends Node
 ## one heard last) and nudges its pitch and level, so that no two blows in a
 ## fight sound alike.
 
-const POOL_3D := 20
+const POOL_3D := 28
 const POOL_2D := 6
 const SFX_DIR := "res://assets/audio/sfx/"
 const AMBIENCE_DIR := "res://assets/audio/ambience/"
@@ -55,6 +55,10 @@ func _ready() -> void:
 		p.unit_size = 7.0
 		p.max_distance = 80.0
 		p.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
+		# Air takes the top off a far sound. (Desktop and Android: a browser's
+		# audio engine plays these without the filter.)
+		p.attenuation_filter_cutoff_hz = 5500.0
+		p.attenuation_filter_db = -16.0
 		add_child(p)
 		_players_3d.append(p)
 	for i in POOL_2D:

@@ -35,6 +35,10 @@ var _alarm: float = -1.0
 var _alarm_total: float = 1.0
 var _stealth_visible: bool = false
 
+## Words flashed when the player pulls off a move (see Player.feat).
+const FEATS := {&"parry": "PARRIED", &"guard_broken": "GUARD BROKEN", &"riposte": "RIPOSTE", &"combo": "THIRD BLOW",
+	&"bash": "SHIELD BASH"}
+
 const VIGNETTE := "
 shader_type canvas_item;
 uniform float amount = 0.0;
@@ -189,6 +193,9 @@ func bind(p: Player, b: Battlefield) -> void:
 	player.damaged.connect(func(amount: float, blocked: bool) -> void:
 		_hurt = clampf(_hurt + (0.12 if blocked else 0.25 + amount / 60.0), 0.0, 1.0))
 	player.weapon_changed.connect(func(_id: String) -> void: _refresh_weapon())
+	player.feat.connect(func(what: StringName) -> void:
+		if FEATS.has(what):
+			toast(FEATS[what], 1.1))
 	_refresh_weapon()
 
 

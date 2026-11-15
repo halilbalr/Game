@@ -249,6 +249,10 @@ func apply_settings() -> void:
 	var q := clampi(int(settings["quality"]), 0, 2)
 	var vp := get_viewport()
 	if vp != null:
+		# How many pixels a simpler mesh may be off by before the full one is used.
+		vp.mesh_lod_threshold = [5.0, 3.5, 2.5][q] if lite else [3.0, 2.0, 1.5][q]
+		# Takes effect for figures sculpted from now on.
+		Sculpt.detail = [0.6, 0.8, 1.0][q] if lite else 1.0
 		if lite:
 			# On a phone or in a browser the option trades sharpness for frame rate.
 			vp.msaa_3d = Viewport.MSAA_DISABLED

@@ -377,6 +377,40 @@ def step() -> np.ndarray:
     return finish(x, -3.0)
 
 
+def parry() -> np.ndarray:
+    """A blow turned aside on the shield's bronze rim: a short screech of
+    metal sliding on metal, then the ring of both."""
+    n = n_(0.9)
+    t = t_(n)
+    x = np.zeros(n)
+    slide = n_(rng.uniform(0.08, 0.13))
+    k = np.linspace(0.0, 1.0, slide)
+    path = rng.uniform(2600, 3400) + 1400.0 * k + 300.0 * np.sin(TAU * 38.0 * t_(slide))
+    scrape = sweep(noise(slide), path, 14.0) * swell(slide, 0.3, 1.5)
+    place(x, scrape, 0.0, 1.0)
+    place(x, bronze(0.9, rng.uniform(900, 1150), rng.uniform(0.22, 0.38), 0.85), 0.0, 0.5)
+    place(x, bronze(0.6, rng.uniform(1800, 2300), 0.12, 0.9), slide / SR, 0.45)
+    place(x, click(0.03, 1500.0, 8000.0, 0.004), 0.0, 0.8)
+    return finish(room(x, 0.3, 0.09), -1.0)
+
+
+def gear_step() -> np.ndarray:
+    """An armed man's footfall: the step, and his gear answering it: the
+    shield on its strap, a spear butt, bronze plates knocking."""
+    n = n_(0.4)
+    x = np.zeros(n)
+    place(x, step(), 0.0, 0.8)
+    for _ in range(rng.integers(2, 5)):
+        at = rng.uniform(0.01, 0.12)
+        if rng.random() < 0.55:
+            place(x, bronze(0.25, rng.uniform(1700, 2800), 0.04, 0.7), at, rng.uniform(0.08, 0.18))
+        else:
+            place(x, modes(0.12, [rng.uniform(300, 420), rng.uniform(800, 1000)], [1.0, 0.5], [0.02, 0.012]), at,
+                  rng.uniform(0.15, 0.3))
+    place(x, crackle(0.12, 1800.0, 1500.0, 5000.0, env(n_(0.12), 0.01, 0.04)), 0.02, 0.4)
+    return finish(x, -3.0)
+
+
 # --- the scripted moments ------------------------------------------------------------
 
 def pickup() -> np.ndarray:
@@ -597,6 +631,21 @@ def death(i: int) -> np.ndarray:
     x = bend(x, rng.uniform(1.0, 1.1), rng.uniform(0.66, 0.76))
     x *= np.linspace(1.0, 0.35, x.size) ** 0.8
     return finish(room(strain(x, 2.4), 0.3, 0.1), -1.0)
+
+
+EFFORTS = [("am_fenrir", "hˈæ!"), ("am_eric", "hˈɑː!"), ("bm_george", "hˈʌp!"), ("am_liam", "hjˈæ!"),
+           ("am_michael", "hˈɐː!"), ("am_adam", "hˈʌ!"), ("bm_daniel", "hˈæ!"), ("am_onyx", "hˈɑː!")]
+
+
+def effort(i: int) -> np.ndarray:
+    """The breath a man drives out as he puts his weight behind a blow."""
+    voice, ph = EFFORTS[i % len(EFFORTS)]
+    x = speak(voice, phonemes=ph, speed=1.25)
+    x = bend(x, rng.uniform(1.0, 1.08), rng.uniform(0.9, 0.98))
+    # Short: the end of a shout is not part of a swing.
+    x = x[: n_(0.32)]
+    x[-n_(0.04):] *= np.linspace(1.0, 0.0, n_(0.04))
+    return finish(room(strain(x, 3.0, 1.8), 0.2, 0.06), -1.0)
 
 
 def shout(i: int) -> np.ndarray:
@@ -850,13 +899,13 @@ EFFECTS = {
     "whoosh_thrust": (whoosh_thrust, 4), "whoosh_slash": (whoosh_slash, 4), "whoosh_throw": (whoosh_throw, 3),
     "hit_pierce": (hit_pierce, 5), "hit_cut": (hit_cut, 5), "hit_head": (hit_head, 4),
     "block": (block, 5), "clang": (clang, 4), "stab": (stab, 3), "fall": (fall, 4), "spear_stick": (spear_stick, 3),
-    "step": (step, 8),
+    "step": (step, 8), "gear_step": (gear_step, 6), "parry": (parry, 4), "effort": (effort, 8),
     "grunt": (grunt, 8), "hurt": (hurt, 5), "death": (death, 8), "shout": (shout, 6),
     "pickup": (pickup, 1), "objective": (objective, 1), "horn": (horn, 1), "alarm": (alarm, 1), "bar": (bar, 1),
     "gate": (gate, 1), "knock": (knock, 1), "hatch": (hatch, 1), "fire": (fire_burst, 2), "thunder": (thunder, 2),
     "helmet": (helmet, 1),
 }
-VOICED = {"grunt", "hurt", "death", "shout"}
+VOICED = {"grunt", "hurt", "death", "shout", "effort"}
 AMBIENCE = ["night", "day", "feast", "battle", "battle_far", "sack"]
 
 

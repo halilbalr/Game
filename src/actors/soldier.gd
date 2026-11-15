@@ -58,6 +58,12 @@ var _attack_pending: bool = false
 var _attack_timer: float = 0.0
 ## Time left on [member _attack_timer] when the swing becomes audible.
 var _swing_at: float = -1.0
+var _attack_heavy: bool = false
+## Seconds left off balance (parried, bashed, guard broken): he cannot
+## block, and a blow that lands now is a riposte.
+var _reel: float = 0.0
+var _knock := Vector3.ZERO
+var _step_t: float = 0.0
 var _attack_is_throw: bool = false
 var _repath: float = 0.0
 var _nav_dest: Vector3 = Vector3.INF
@@ -290,6 +296,11 @@ func _maybe_throw() -> void:
 func _begin_attack() -> void:
 	var slow := 1.0 + (1.0 - skill) * 0.4
 	var windup := float(weapon.get("windup", 0.3)) * slow + 0.14
+	# Now and then a practised man winds up a heavy blow: slow enough to
+	# see coming, hard enough to drive through a held shield.
+	_attack_heavy = randf() < float(Data.tune("combat.ai_heavy_chance", 0.22)) * skill * 1.6 and not civilian
+	if _attack_heavy:
+		windup += float(Data.tune("combat.ai_heavy_windup", 0.42))
 	var strike := float(weapon.get("strike", 0.12))
 	var recover := float(weapon.get("recover", 0.5))
 	figure.attack(StringName(str(weapon.get("kind", "thrust"))), windup, strike, recover)
@@ -337,14 +348,32 @@ func _resolve_attack() -> void:
 	if target is Soldier:
 		# Men of the line wear each other down slowly; the player decides the fight.
 		base *= float(Data.tune("combat.ai_vs_ai_damage_scale", 0.5))
-	var result: Dictionary = target.receive_hit(self, base, height, to.normalized(), weapon_id)
+	if _attack_heavy:
+		base *= float(Data.tune("combat.ai_heavy_damage", 1.5))
+	var result: Dictionary = target.receive_hit(self, base, height, to.normalized(), weapon_id, _attack_heavy)
 	Sfx.strike(target.global_position + Vector3(0, 1.2, 0), weapon_id, result)
+	if result.get("broken", false) and target.has_method("stagger"):
+		target.stagger(float(Data.tune("combat.guard_break_stagger", 0.9)))
 	if result.get("blocked", false):
 		_stun = 0.25
 
 
-## Takes a blow. Returns {"blocked", "killed", "damage", "zone", "stealth"}.
-func receive_hit(attacker: Node3D, base_damage: float, height: float, dir: Vector3, _weapon: String = "") -> Dictionary:
+## True while he is off balance and open to a riposte.
+func is_reeling() -> bool:
+	return _reel > 0.0 and state != State.DEAD
+
+
+## Shoves him [param speed] m/s along [param dir]; it dies away in a moment.
+func knock(dir: Vector3, speed: float) -> void:
+	if hold or state == State.DEAD:
+		return
+	_knock = Vector3(dir.x, 0.0, dir.z).normalized() * speed * (0.5 if hero else 1.0)
+
+
+## Takes a blow. Returns {"blocked", "killed", "damage", "zone", "stealth"},
+## with "broken" when a [param heavy] blow beat his shield aside.
+func receive_hit(attacker: Node3D, base_damage: float, height: float, dir: Vector3, _weapon: String = "",
+		heavy: bool = false) -> Dictionary:
 	if state == State.DEAD or invulnerable:
 		return {}
 	var to_att := attacker.global_position - global_position if attacker != null else -dir
@@ -357,14 +386,24 @@ func receive_hit(attacker: Node3D, base_damage: float, height: float, dir: Vecto
 		_die(attacker, dir, true)
 		return {"blocked": false, "killed": true, "damage": max_health, "zone": &"body", "stealth": true}
 	var cfg: Dictionary = Data.tuning.get("combat", {})
-	if figure.has_shield() and not behind and _stun <= 0.0 and not civilian:
+	if figure.has_shield() and not behind and _stun <= 0.0 and _reel <= 0.0 and not civilian:
 		var chance := 0.08 + 0.42 * skill
 		if _attack_pending:
 			chance *= 0.35
 		if randf() < chance:
 			_block_show = 0.5
 			_face(to_att, 1.0, 100.0)
-			return {"blocked": true, "killed": false, "damage": 0.0, "zone": &"body"}
+			if not heavy:
+				return {"blocked": true, "killed": false, "damage": 0.0, "zone": &"body"}
+			# A heavy blow beats the shield aside and lands, weakened.
+			stagger(float(cfg.get("guard_break_stagger", 0.9)))
+			health -= base_damage * float(cfg.get("guard_break_leak", 0.4))
+			if player_kill_only and not by_player:
+				health = maxf(health, 1.0)
+			if health <= 0.0:
+				_die(attacker, dir, false)
+				return {"blocked": true, "broken": true, "killed": true, "damage": base_damage, "zone": &"body"}
+			return {"blocked": true, "broken": true, "killed": false, "damage": base_damage, "zone": &"body"}
 	var zone := Combat.hit_zone(height, body_scale, figure.crouching)
 	var dmg := Combat.damage(base_damage, zone, Combat.armor_value(str(figure.look.get("armor", "none"))), behind, randf(), cfg)
 	health -= dmg
@@ -415,6 +454,7 @@ func _die(killer: Node3D, dir: Vector3, quiet: bool) -> void:
 ## Leaves the soldier reeling for [param seconds], unable to act.
 func stagger(seconds: float) -> void:
 	_stun = maxf(_stun, seconds)
+	_reel = maxf(_reel, seconds)
 	_attack_pending = false
 	figure.flinch(1.5)
 
@@ -503,6 +543,7 @@ func _physics_process(delta: float) -> void:
 		return
 	_cooldown -= delta
 	_stun -= delta
+	_reel -= delta
 	_block_show -= delta
 	_think_t -= delta
 	if _think_t <= 0.0:
@@ -525,6 +566,10 @@ func _physics_process(delta: float) -> void:
 		desired += battle.separation(self, float(Data.tune("ai.separation", 0.95)))
 	velocity.x = move_toward(velocity.x, desired.x, 22.0 * delta)
 	velocity.z = move_toward(velocity.z, desired.z, 22.0 * delta)
+	if _knock.length_squared() > 0.01:
+		velocity.x += _knock.x
+		velocity.z += _knock.z
+		_knock = _knock.move_toward(Vector3.ZERO, 30.0 * delta)
 	if is_on_floor():
 		velocity.y = -1.0
 	else:
@@ -532,6 +577,14 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	var flat := Vector2(velocity.x, velocity.z).length()
 	figure.speed = flat
+	# Footfalls and the rattle of his gear, for men near enough to hear.
+	if flat > 0.8 and is_on_floor() and not civilian and battle != null and battle.player != null:
+		_step_t -= delta * flat
+		if _step_t <= 0.0:
+			_step_t = 1.9
+			var near := global_position.distance_squared_to(battle.player.global_position)
+			if near < 18.0 * 18.0:
+				Sfx.play_at(&"gear_step", global_position, -12.0 if flat < 3.0 else -8.0)
 	figure.blocking = _block_show > 0.0
 	# Unstick: if we want to move but are not, sidestep.
 	if desired.length() > 1.0 and get_real_velocity().length() < 0.2:
@@ -548,6 +601,9 @@ func _physics_process(delta: float) -> void:
 		if _swing_at >= 0.0 and _attack_timer <= _swing_at and not _attack_is_throw:
 			_swing_at = -1.0
 			Sfx.play_at(Sfx.swing_sound(weapon), global_position + Vector3(0, 1.3, 0), -6.0)
+			# A man puts his breath behind a heavy blow, and often a light one.
+			if _attack_heavy or randf() < 0.3:
+				Sfx.play_at(&"effort", global_position + Vector3(0, 1.5, 0), -2.0 if _attack_heavy else -6.0)
 		if _attack_timer <= 0.0:
 			_attack_pending = false
 			_resolve_attack()

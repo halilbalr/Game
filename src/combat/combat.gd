@@ -94,3 +94,41 @@ static func detection_gain(distance: float, angle_deg: float, crouched: bool, mo
 	if hear > 0.0 and distance <= hear:
 		gain = maxf(gain, rate * (0.8 + 2.0 * (1.0 - distance / hear)))
 	return gain
+
+
+## A blow is heavy when Strike was held for [code]heavy_hold[/code] seconds
+## or more before it was let go: slower, harder, and it breaks a guard.
+static func is_heavy(held_seconds: float, cfg: Dictionary) -> bool:
+	return held_seconds >= float(cfg.get("heavy_hold", 0.32))
+
+
+## Which blow of a chain this is (0, 1 or 2). A light blow that follows a hit
+## within the combo window carries the chain on; anything else starts again.
+static func combo_step(previous_step: int, window_left: float, heavy: bool) -> int:
+	if heavy or window_left <= 0.0:
+		return 0
+	return mini(previous_step + 1, 2)
+
+
+## Damage and wind-up multipliers for a blow: {"damage", "windup", "stamina"}.
+## [param riposte] is true when it lands on a man reeling from a parry or bash.
+static func blow(step: int, heavy: bool, riposte: bool, cfg: Dictionary) -> Dictionary:
+	var dmg: Array = cfg.get("combo_damage", [1.0, 1.12, 1.4])
+	var wind: Array = cfg.get("combo_windup", [1.0, 0.85, 0.78])
+	var i := clampi(step, 0, mini(dmg.size(), wind.size()) - 1)
+	var out := {"damage": float(dmg[i]), "windup": float(wind[i]), "stamina": 1.0}
+	if heavy:
+		out = {"damage": float(cfg.get("heavy_damage", 1.7)), "windup": float(cfg.get("heavy_windup", 1.45)),
+			"stamina": float(cfg.get("heavy_stamina", 1.8))}
+	if riposte:
+		out["damage"] = float(out["damage"]) * float(cfg.get("riposte_damage", 1.5))
+	return out
+
+
+## What a raised shield does with a blow from the front: &"parry" when it
+## was raised within the parry window (the attacker is thrown off balance),
+## &"broken" when the blow is heavy (it drives through), else &"block".
+static func guard(block_age: float, heavy: bool, cfg: Dictionary) -> StringName:
+	if block_age <= float(cfg.get("parry_window", 0.24)):
+		return &"parry"
+	return &"broken" if heavy else &"block"

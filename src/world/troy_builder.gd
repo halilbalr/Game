@@ -613,7 +613,7 @@ func _house(c: Vector2, yaw: float, w: float, d: float, floors: int, tint: Color
 		# Mud bench against the wall.
 		b.box(wall, xf.translated_local(Vector3(clampf(door_x + 2.2, -w * 0.5 + 1.0, w * 0.5 - 1.0), 0.22, d * 0.5 + 0.28)),
 			Vector3(1.8, 0.44, 0.5), a0, true, 8)
-	info["houses"].append({"pos": xf.origin, "yaw": yaw, "w": w, "d": d, "h": h})
+	info["houses"].append({"pos": xf.origin, "yaw": yaw, "w": w, "d": d, "h": h, "door": door_x})
 
 
 ## A megaron: the hall-and-porch house of Aegean and north-west Anatolian

@@ -34,6 +34,8 @@ var cinematic: bool = false
 ## screen (see [method Sfx.preload_loops]).
 var music: Array[StringName] = []
 var ambience: Array[StringName] = []
+## Outfits of everyone who will appear, sculpted behind the loading screen.
+var outfits: Array[String] = []
 var _scene: bool = false
 var _skipping: bool = false
 var _pause: PauseMenu
@@ -47,6 +49,7 @@ func _ready() -> void:
 	Sfx.music(&"")
 	Sfx.ambience(&"")
 	Sfx.preload_loops(music, ambience)
+	Humanoid.warm(outfits)
 	world = Game.acquire_world(preset)
 	add_child(world)
 	world.ensure_navigation()
@@ -407,6 +410,7 @@ func complete(title: String, body: String) -> void:
 
 
 func _report(what: String) -> void:
+	print("Figures: %d ms sculpting parts this session" % Humanoid.build_ms)
 	print("%s: %s after %.1f s wall, %.0f s game time, kills %d, health %.0f" % [what, id,
 		(Time.get_ticks_msec() - _started_ms) * 0.001, (Engine.get_physics_frames() - _started_frame) / 60.0,
 		player.kills, player.health])

@@ -21,6 +21,7 @@ func _init() -> void:
 	preset = "evening"
 	music = [&"lament", &"battle"]
 	ambience = [&"battle_far", &"battle"]
+	outfits = ["hector", "andromache", "townswoman", "townsman", "trojan", "paris", "achaean", "myrmidon", "patroclus"]
 
 
 func _g(p: Vector3, lift: float = 0.15) -> Vector3:

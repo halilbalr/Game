@@ -5,6 +5,26 @@ extends RefCounted
 
 const _SHADER_DIR := "res://assets/shaders/"
 
+## Materials of figures and their gear: name -> [shader file, parameters].
+## Shared with the first-person view (see [Viewmodel.materials]).
+const FIGURE := {
+	&"figure": ["figure.gdshader", {}],
+	&"metal": ["metal.gdshader", {"base_color": Color.WHITE}],
+	&"skin": ["figure.gdshader", {"rough": 0.58, "grain": 0.07, "grain_size": 90.0, "sheen": 0.22}],
+	&"hair": ["figure.gdshader", {"rough": 0.5, "grain": 0.1, "strands": 0.5, "sheen": 0.12}],
+	&"eye": ["figure.gdshader", {"rough": 0.12, "grain": 0.0}],
+	&"wool": ["figure.gdshader", {"rough": 0.92, "grain": 0.1, "grain_size": 25.0, "weave": 900.0}],
+	&"tint": ["figure.gdshader", {"rough": 0.8, "grain": 0.08}],
+	&"hide": ["figure.gdshader", {"rough": 0.62, "grain": 0.2, "grain_size": 40.0}],
+	&"oxhide": ["figure.gdshader", {"rough": 0.7, "grain": 0.14, "grain_size": 30.0, "dapple": 1.0}],
+	&"ivory": ["figure.gdshader", {"rough": 0.4, "grain": 0.08, "grain_size": 50.0}],
+	&"bronze": ["metal.gdshader", {}],
+	&"bronze_dull": ["metal.gdshader", {"base_color": Color(0.58, 0.41, 0.22), "rough": 0.5, "tarnish": 0.55}],
+	&"bronze_scale": ["metal.gdshader", {"base_color": Color(0.7, 0.48, 0.25), "rough": 0.38, "scales": 34.0, "hammer": 0.4}],
+	&"gold": ["metal.gdshader", {"base_color": Color(1.0, 0.78, 0.32), "rough": 0.24, "tarnish": 0.05, "hammer": 0.6}],
+	&"silver": ["metal.gdshader", {"base_color": Color(0.85, 0.85, 0.82), "rough": 0.3, "tarnish": 0.35, "hammer": 0.5}],
+}
+
 static var _lib: Dictionary = {}
 static var _local: Dictionary = {}
 static var _sooty: Array[ShaderMaterial] = []
@@ -17,6 +37,16 @@ static func _shader(file: String, params: Dictionary = {}) -> ShaderMaterial:
 	for k: String in params:
 		m.set_shader_parameter(k, params[k])
 	return m
+
+
+## The same material drawn from both sides: cloaks, veils, awning cloth.
+static func _two_sided(m: ShaderMaterial) -> ShaderMaterial:
+	var copy := m.duplicate() as ShaderMaterial
+	var sh := Shader.new()
+	sh.code = m.shader.code.replace("shader_type spatial;", "shader_type spatial;\nrender_mode cull_disabled;") \
+		.replace("\tRIM_TINT = 0.6;", "\tRIM_TINT = 0.6;\n\tif (!FRONT_FACING) {\n\t\tNORMAL = -NORMAL;\n\t}")
+	copy.shader = sh
+	return copy
 
 
 static func _std(albedo: Color, metallic: float, roughness: float, vertex_color: bool = false) -> StandardMaterial3D:
@@ -65,21 +95,13 @@ static func _build() -> void:
 	_lib[&"ground"] = _shader("ground.gdshader")
 	_lib[&"water"] = _shader("water.gdshader")
 
-	var bronze := _std(Color(0.83, 0.56, 0.27), 1.0, 0.32)
-	_lib[&"bronze"] = bronze
-	_lib[&"bronze_dull"] = _std(Color(0.55, 0.40, 0.22), 1.0, 0.55)
-	_lib[&"gold"] = _std(Color(1.0, 0.78, 0.32), 1.0, 0.25)
-	_lib[&"silver"] = _std(Color(0.85, 0.85, 0.82), 1.0, 0.3)
-	_lib[&"ivory"] = _std(Color(0.90, 0.85, 0.72), 0.0, 0.45)
+	for key: StringName in FIGURE:
+		var spec: Array = FIGURE[key]
+		_lib[key] = _shader(spec[0], spec[1])
+	_lib[&"wool_2s"] = _two_sided(_lib[&"wool"])
+	_lib[&"figure_2s"] = _two_sided(_lib[&"figure"])
+	_lib[&"tint_2s"] = _two_sided(_lib[&"tint"])
 	_lib[&"dark"] = _std(Color(0.015, 0.012, 0.01), 0.0, 1.0)
-	# Skin, cloth and leather on figures are tinted per vertex.
-	var tint := _std(Color.WHITE, 0.0, 0.8, true)
-	_lib[&"tint"] = tint
-	var hide := _std(Color.WHITE, 0.0, 0.6, true)
-	_lib[&"hide"] = hide
-	var tint2 := _std(Color.WHITE, 0.0, 0.85, true)
-	tint2.cull_mode = BaseMaterial3D.CULL_DISABLED
-	_lib[&"tint_2s"] = tint2
 	var ember := _std(Color(1.0, 0.45, 0.1), 0.0, 1.0)
 	ember.emission_enabled = true
 	ember.emission = Color(1.0, 0.42, 0.08)

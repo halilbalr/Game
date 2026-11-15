@@ -11,6 +11,7 @@ func _init() -> void:
 	preset = "day"
 	music = [&"lyre"]
 	ambience = [&"day"]
+	outfits = ["townswoman", "townsman", "trojan", "priam", "andromache"]
 
 
 func prepare() -> void:

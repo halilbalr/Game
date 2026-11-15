@@ -9,7 +9,7 @@ const STICK_RADIUS := 105.0
 const LOOK_SPEED := 0.0042
 const BUTTONS := {
 	# id: [offset from bottom-right corner, radius, label, action, kind]
-	"strike": [Vector2(-180, -200), 84.0, "STRIKE", &"attack", "tap"],
+	"strike": [Vector2(-180, -200), 84.0, "STRIKE", &"attack", "hold"],
 	"shield": [Vector2(-385, -135), 64.0, "SHIELD", &"block", "hold"],
 	"throw": [Vector2(-135, -400), 52.0, "THROW", &"throw", "tap"],
 	"jump": [Vector2(-345, -325), 48.0, "JUMP", &"jump", "tap"],
@@ -181,7 +181,8 @@ func _press_button(id: String, index: int) -> void:
 		"hold":
 			Input.action_press(action)
 			_button_ids[index] = id
-			if id == "shield":
+			# A thumb resting on Strike or Shield can still turn the view.
+			if id == "shield" or id == "strike":
 				_look_ids[index] = true
 		"toggle":
 			_crouched = not _crouched

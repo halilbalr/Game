@@ -79,9 +79,18 @@ bronze cuirass, linen corslet, bronze greaves for the "well-greaved Achaeans".
 
 - **Health** regenerates slowly out of combat. **Stamina** pays for sprinting,
   striking and holding a block.
-- **Melee**: a strike has a wind-up, a hit moment and a recovery. A raised
-  shield stops blows from the front at a stamina cost. Hits to the head do
-  more; armour reduces body hits.
+- **Melee**: a strike has a wind-up, a hit moment and a recovery. A tapped
+  Strike is a light blow; light blows that land inside a short window chain
+  into a combo of three (each faster, the last harder). A held Strike is a
+  heavy blow: slower, costlier, harder, and it breaks a guard. A shield
+  raised within the parry window turns a blow aside and leaves the attacker
+  reeling; a blow on a reeling man is a riposte. Strike with the shield up is
+  a shove (stagger and push, no wound). Jump while stepping aside or back is
+  a dodge with a moment of grace. Blows knock men back and freeze the world
+  for an instant (hit stop). Soldiers wind up heavy blows of their own, more
+  often the more skilled they are. Hits to the head do more; armour reduces
+  body hits. The rules are pure functions in `src/combat/combat.gd`
+  (`is_heavy`, `combo_step`, `blow`, `guard`), unit-tested.
 - **Throwing**: a held spear can be thrown; spears lying on the field can be
   picked up.
 - **Stealth** (Wooden Horse): sentries see in a cone and hear running feet.
@@ -91,6 +100,33 @@ bronze cuirass, linen corslet, bronze greaves for the "well-greaved Achaeans".
   than three enemies press the player at once.
 
 All numbers are in `assets/data/tuning.json`.
+
+## Figures
+
+Every man and woman is sculpted in code (`src/actors/figure_mesh.gd` on
+`src/actors/sculpt.gd`): smooth surfaces with computed normals rather than
+faceted boxes. Heads have a modelled face (brow, cheekbones, jaw, chin, a
+separately sculpted nose and lips, eyeballs with irises and lids, ears),
+hair that grows from a hairline, and beards. Helmets sit on the brow with
+cheek pieces, nasal and neck guard: boar's tusk rows, bronze with a
+horsehair crest, the pointed Anatolian helmet with its plume, leather caps.
+Armour follows the finds: the Dendra-style bronze corslet with shoulder
+pieces and collar, quilted linen, studded leather, scale. Shields are
+dappled ox-hide with stitching, rim, rivets and boss.
+
+Two materials draw all of it (`figure.gdshader`, `metal.gdshader`); what a
+surface is made of rides in its vertex alpha, so a figure costs a few draw
+calls. Each part carries generated levels of detail, and parts are shared
+between figures whose looks agree on what that part depends on. A mission
+sculpts its whole cast behind its loading screen (about 2.5 s), so nothing
+is built mid-fight.
+
+## The lived-in city
+
+`src/world/clutter.gd` scatters grass, scrub and stones over the plain;
+baskets, jars, benches, woodpiles, ladders and weeds before the houses;
+washing on the flat roofs; stalls and carts in the square. Each kind is one
+mesh drawn many times, batched per 64 m tile so distant tiles drop out.
 
 ## Tone and content
 
@@ -172,7 +208,10 @@ Three sources, all synthetic, none recorded:
   overtones above 150 Hz rather than in a fundamental a phone cannot play.
   `Sfx.strike` picks the sound of a blow from what it met (shield, stealth,
   cut, thrust, head); each play takes a variant at random, never the last one,
-  with a small change of pitch and level.
+  with a small change of pitch and level. Soldiers' footfalls carry the rattle
+  of their gear; men grunt as they put weight behind a blow; a parry is a
+  scrape of bronze on bronze. Far sounds are muffled by distance on desktop
+  and Android (a browser's audio engine plays them unfiltered).
 - **Music** is composed and rendered by `tools/audio/make_music.py` into five
   looping tracks (`assets/audio/music/`): `theme` (title screen), `battle`,
   `night` (the horse, the sleeping city), `lament` (Andromache, endings,
@@ -216,7 +255,7 @@ thing to do. Title cards are narrated and are scenes too.
 
 | Check | How | State |
 |---|---|---|
-| Rules and formulas, touch controls (two-thumb look included), phone button layout, every sound the scripts ask for exists | 76 tests, `tests/run_tests.gd` | Pass |
+| Rules and formulas (combat moves included), touch controls (two-thumb look, tap and hold Strike), phone button layout, every sound the scripts ask for exists | 83 tests, `tests/run_tests.gd` | Pass |
 | Missions in mobile and phone mode | `--mission=<id> --bot --god --mobile --phone` | Pass |
 | Android package is complete | Debug APK built and signed; a mission finished from its contents on the Linux engine | Pass |
 | The app builds on a real phone or tablet | — | Not verified |

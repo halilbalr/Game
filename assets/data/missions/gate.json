@@ -7,10 +7,10 @@
     "death_text": "The Achaeans drag his armour from him before the gate. On the tower a woman has seen it.",
     "end_title": "THE ARMOUR OF ACHILLES",
     "end_text": "Hector stripped the armour of Achilles from the body of Patroclus and put it on. He would wear it to his death. By the ships, a man who had sworn not to fight heard the news and rose.\n\nAfter Iliad 6.237-529 and 16.684-867.",
-    "hint_block": "Hold the right mouse button to raise your shield. It stops what comes from the front.",
-    "hint_throw": "Press [G] to throw your spear. Spears on the field can be taken up again.",
-    "hint_block_touch": "Hold SHIELD to raise your shield. It stops what comes from the front.",
-    "hint_throw_touch": "Tap THROW to cast your spear. Spears on the field can be taken up again."
+    "hint_block": "Hold the right mouse button to raise your shield. Raise it just as a blow lands and you turn it aside: strike back while he reels.",
+    "hint_throw": "Hold Strike for a heavy blow that breaks a guard. Strike with the shield up to shove him. Jump while stepping aside to dodge. [G] throws your spear.",
+    "hint_block_touch": "Hold SHIELD to raise your shield. Raise it just as a blow lands and you turn it aside: strike back while he reels.",
+    "hint_throw_touch": "Hold STRIKE for a heavy blow that breaks a guard. STRIKE with SHIELD held to shove him. JUMP while stepping aside to dodge."
   },
   "objectives": {
     "find": "Find Andromache at the Scaean Gate",

@@ -4,6 +4,8 @@ extends Node3D
 
 
 func _ready() -> void:
+	if Game.args.has("lod"):
+		get_viewport().mesh_lod_threshold = float(Game.args["lod"])
 	var atmo := Atmosphere.new()
 	add_child(atmo)
 	atmo.apply(Game.args.get("preset", "day"), Game.settings["quality"])
@@ -28,7 +30,6 @@ func _ready() -> void:
 		elif i % 5 == 2:
 			weapon = "sword"
 		h.setup(ids[i], outfits.get(ids[i], {}), i, weapon)
-		h.stance = stances[i]
 		var row := i / 10
 		h.position = Vector3((i % 10) * 1.5 - 6.75, 0, -row * 2.4)
 		h.rotation.y = PI

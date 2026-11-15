@@ -122,6 +122,9 @@ static func _color(v: Variant, fallback: Color = Color.WHITE) -> Color:
 
 ## Resolves an outfit definition into concrete choices for [param variant].
 static func resolve_look(outfit_id: String, outfit: Dictionary, variant: int) -> Dictionary:
+	# Twelve looks to an outfit: enough that no two men in a rank match, few
+	# enough that their sculpted meshes are built once and shared.
+	variant = posmod(variant, 12)
 	return {
 		"id": outfit_id, "variant": variant,
 		"skin": _color(_pick(outfit.get("skin", []), variant), Color(0.7, 0.5, 0.36)),
@@ -137,243 +140,52 @@ static func resolve_look(outfit_id: String, outfit: Dictionary, variant: int) ->
 		"beard": bool(_pick(outfit.get("beard", [false]), variant)),
 		"cloak": _pick(outfit.get("cloak", [null]), variant),
 		"robe": bool(outfit.get("robe", false)),
+		"female": bool(outfit.get("female", false)),
+		"long_hair": bool(outfit.get("long_hair", true)),
+		# Four faces to an outfit (see FigureMesh.face).
+		"face": variant % 4,
 	}
 
 
-# --- mesh construction -----------------------------------------------------------
+# --- assembly ---------------------------------------------------------------------
 
-static func _limb(gb: GeoBuilder, mat: StringName, col: Color, r_top: float, r_bot: float, length: float,
-		squash: float = 1.0, bulge: float = 0.0) -> void:
-	var prof := PackedVector2Array()
-	prof.append(Vector2(0.0, -length - r_bot * 0.7))
-	prof.append(Vector2(r_bot * 0.78, -length - r_bot * 0.3))
-	prof.append(Vector2(r_bot, -length))
-	if bulge > 0.0:
-		prof.append(Vector2(r_bot + bulge * 0.4, -length * 0.62))
-		prof.append(Vector2(r_top + bulge, -length * 0.28))
-	prof.append(Vector2(r_top, 0.0))
-	prof.append(Vector2(r_top * 0.78, r_top * 0.4))
-	prof.append(Vector2(0.0, r_top * 0.7))
-	gb.lathe(mat, Transform3D.IDENTITY, prof, 10, col, false, squash)
+## What each part's shape and paint depend on: two figures whose looks agree
+## on these share that part's mesh, so a rank of men costs a few builds.
+const PART_INPUTS := {
+	"head": ["id", "face", "skin", "hair", "crest", "helmet", "beard", "female", "long_hair"],
+	"torso": ["tunic", "skin", "kilt", "armor", "cloak", "female"],
+	"pelvis": ["kilt", "robe", "armor"],
+	"arm_u": ["skin", "robe", "kilt", "tunic"],
+	"arm_f": ["skin", "armor"],
+	"leg_u": ["skin"],
+	"leg_l": ["skin", "greaves"],
+}
 
-
-static func _ring(gb: GeoBuilder, mat: StringName, col: Color, y: float, r: float, h: float, squash: float) -> void:
-	var prof := PackedVector2Array([Vector2(r - 0.004, y), Vector2(r, y + h * 0.3), Vector2(r, y + h * 0.7), Vector2(r - 0.004, y + h)])
-	gb.lathe(mat, Transform3D.IDENTITY, prof, 12, col, false, squash)
-
-
-static func _build_torso(look: Dictionary) -> ArrayMesh:
-	var gb := GeoBuilder.new()
-	gb.chunk_size = 0.0
-	var tunic: Color = look["tunic"]
-	var skin: Color = look["skin"]
-	var squash := 0.64
-	var body := PackedVector2Array([Vector2(0.0, -0.03), Vector2(0.135, 0.0), Vector2(0.15, 0.12), Vector2(0.176, 0.28),
-		Vector2(0.186, 0.4), Vector2(0.13, 0.48), Vector2(0.062, 0.515), Vector2(0.0, 0.52)])
-	gb.lathe(&"tint", Transform3D.IDENTITY, body, 12, tunic, false, squash)
-	var neck := PackedVector2Array([Vector2(0.056, 0.49), Vector2(0.05, 0.6)])
-	gb.lathe(&"tint", Transform3D.IDENTITY, neck, 8, skin, false, 0.95)
-	var armor: String = look["armor"]
-	var shell := PackedVector2Array([Vector2(0.146, -0.01), Vector2(0.162, 0.12), Vector2(0.188, 0.28),
-		Vector2(0.198, 0.4), Vector2(0.14, 0.485), Vector2(0.075, 0.5)])
-	match armor:
-		"bronze", "bronze_gold":
-			gb.lathe(&"bronze", Transform3D.IDENTITY, shell, 12, Color.WHITE, false, squash + 0.03)
-			for sx: float in [-1.0, 1.0]:
-				var cap := PackedVector2Array([Vector2(0.0, -0.05), Vector2(0.075, -0.03), Vector2(0.085, 0.02), Vector2(0.05, 0.055), Vector2(0.0, 0.065)])
-				gb.lathe(&"bronze", Transform3D(Basis.IDENTITY, Vector3(sx * 0.205, 0.43, 0.0)), cap, 8, Color.WHITE, false, 0.9)
-			var trim: StringName = &"gold" if armor == "bronze_gold" else &"bronze_dull"
-			_ring(gb, trim, Color.WHITE, -0.01, 0.152, 0.035, squash + 0.03)
-			_ring(gb, trim, Color.WHITE, 0.26, 0.192, 0.02, squash + 0.03)
-			if armor == "bronze_gold":
-				# The stars on the breastplate of Achilles (Iliad 16.134).
-				for i in 5:
-					var a := -0.9 + i * 0.45
-					gb.box(&"gold", Transform3D(Basis.IDENTITY, Vector3(sin(a) * 0.15, 0.34 - absf(a) * 0.06, -0.127 * cos(a) - 0.004)),
-						Vector3(0.022, 0.022, 0.012), Color.WHITE, false, 0)
-		"linen":
-			gb.lathe(&"tint", Transform3D.IDENTITY, shell, 12, Color(0.86, 0.82, 0.72), false, squash + 0.02)
-			for y: float in [0.06, 0.16, 0.26]:
-				_ring(gb, &"tint", Color(0.5, 0.42, 0.32), y, 0.2 if y > 0.2 else 0.178, 0.012, squash + 0.02)
-		"leather":
-			gb.lathe(&"hide", Transform3D.IDENTITY, shell, 12, Color(0.34, 0.22, 0.14), false, squash + 0.02)
-			for i in 6:
-				var a := TAU * i / 6.0 + 0.5
-				gb.box(&"bronze", Transform3D(Basis(Vector3.UP, -a), Vector3(sin(a) * 0.178, 0.3, cos(a) * 0.178 * (squash + 0.02))),
-					Vector3(0.035, 0.035, 0.012), Color.WHITE, false, 0)
-			_ring(gb, &"hide", Color(0.2, 0.13, 0.08), 0.0, 0.156, 0.04, squash + 0.03)
-		"scale":
-			gb.lathe(&"bronze_dull", Transform3D.IDENTITY, shell, 12, Color.WHITE, false, squash + 0.02)
-			for i in 6:
-				_ring(gb, &"bronze", Color.WHITE, 0.02 + i * 0.07, lerpf(0.154, 0.2, i / 5.0), 0.014, squash + 0.03)
-		_:
-			# A belt over the plain tunic.
-			_ring(gb, &"hide", Color(0.25, 0.16, 0.1), 0.0, 0.14, 0.035, squash + 0.02)
-	var cloak: Variant = look["cloak"]
-	if cloak is Array:
-		var cc := _color(cloak)
-		var top_l := Vector3(-0.19, 0.47, 0.085)
-		var top_r := Vector3(0.19, 0.47, 0.085)
-		var mid_l := Vector3(-0.24, 0.1, 0.16)
-		var mid_r := Vector3(0.24, 0.1, 0.16)
-		var bot_l := Vector3(-0.27, -0.42, 0.2)
-		var bot_r := Vector3(0.27, -0.42, 0.2)
-		gb.quad_h(&"tint_2s", mid_l, mid_r, top_r, top_l, Vector3(0, 0, 1), cc.darkened(0.08), false, cc)
-		gb.quad_h(&"tint_2s", bot_l, bot_r, mid_r, mid_l, Vector3(0, 0, 1), cc.darkened(0.2), false, cc.darkened(0.08))
-		# Folded over the shoulders and pinned at the breast.
-		for sx: float in [-1.0, 1.0]:
-			gb.quad_h(&"tint_2s", Vector3(sx * 0.19, 0.47, 0.085), Vector3(sx * 0.2, 0.47, -0.06), Vector3(sx * 0.08, 0.5, -0.09),
-				Vector3(sx * 0.07, 0.5, 0.08), Vector3(0, 1, 0), cc, false)
-		gb.box(&"gold", Transform3D(Basis.IDENTITY, Vector3(0.0, 0.47, -0.1)), Vector3(0.035, 0.035, 0.015), Color.WHITE, false, 0)
-	return gb.build_mesh(Mats.all())
+## Sculpts every look of the given outfits now, so that nothing is built
+## later, mid-fight, when a new wave of men comes on.
+## [codeblock]Humanoid.warm(["achaean", "trojan"])[/codeblock]
+static func warm(outfit_ids: Array) -> void:
+	var outfits: Dictionary = Data.characters.get("outfits", {})
+	for id: String in outfit_ids:
+		for variant in 12:
+			var h := Humanoid.new()
+			h.setup(id, outfits.get(id, {}), variant, "spear" if variant % 2 == 0 else "sword")
+			h.free()
 
 
-static func _build_pelvis(look: Dictionary) -> ArrayMesh:
-	var gb := GeoBuilder.new()
-	gb.chunk_size = 0.0
-	var kilt: Color = look["kilt"]
-	if look["robe"]:
-		var robe := PackedVector2Array([Vector2(0.0, -0.78), Vector2(0.235, -0.86), Vector2(0.21, -0.45), Vector2(0.17, -0.1),
-			Vector2(0.15, 0.05), Vector2(0.0, 0.06)])
-		gb.lathe(&"tint", Transform3D.IDENTITY, robe, 12, kilt, false, 0.82)
-		_ring(gb, &"tint", kilt.lightened(0.35), -0.85, 0.24, 0.05, 0.82)
-		_ring(gb, &"tint", kilt.lightened(0.35), -0.5, 0.217, 0.03, 0.82)
-	else:
-		var skirt := PackedVector2Array([Vector2(0.0, -0.26), Vector2(0.2, -0.36), Vector2(0.185, -0.16), Vector2(0.152, 0.04),
-			Vector2(0.0, 0.06)])
-		gb.lathe(&"tint", Transform3D.IDENTITY, skirt, 12, kilt, false, 0.82)
-		# Fringed hem, as on the Warrior Vase.
-		_ring(gb, &"tint", kilt.lightened(0.4), -0.365, 0.204, 0.035, 0.82)
-	return gb.build_mesh(Mats.all())
-
-
-static func _build_head(look: Dictionary) -> ArrayMesh:
-	var gb := GeoBuilder.new()
-	gb.chunk_size = 0.0
-	var skin: Color = look["skin"]
-	var hair: Color = look["hair"]
-	var crest: Color = look["crest"]
-	var skull := PackedVector2Array([Vector2(0.0, 0.0), Vector2(0.058, 0.012), Vector2(0.084, 0.06), Vector2(0.094, 0.125),
-		Vector2(0.09, 0.18), Vector2(0.06, 0.225), Vector2(0.0, 0.24)])
-	gb.lathe(&"tint", Transform3D.IDENTITY, skull, 12, skin, false, 1.12)
-	var dark := Color(0.06, 0.04, 0.03)
-	gb.frustum(&"tint", Transform3D(Basis.IDENTITY, Vector3(0, 0.092, -0.108)), Vector2(0.03, 0.03), Vector2(0.018, 0.02), 0.055, skin.darkened(0.08), false)
-	for sx: float in [-1.0, 1.0]:
-		gb.box(&"tint", Transform3D(Basis.IDENTITY, Vector3(sx * 0.036, 0.142, -0.097)), Vector3(0.024, 0.012, 0.012), dark, false, 0)
-		gb.box(&"tint", Transform3D(Basis.IDENTITY, Vector3(sx * 0.037, 0.158, -0.098)), Vector3(0.036, 0.008, 0.014), hair.darkened(0.2), false, 0)
-	gb.box(&"tint", Transform3D(Basis.IDENTITY, Vector3(0, 0.064, -0.094)), Vector3(0.04, 0.007, 0.012), skin.darkened(0.45), false, 0)
-	if look["beard"]:
-		var beard := PackedVector2Array([Vector2(0.0, -0.045), Vector2(0.05, -0.03), Vector2(0.088, 0.03), Vector2(0.097, 0.085)])
-		gb.lathe(&"tint", Transform3D(Basis.IDENTITY, Vector3(0, 0.0, -0.012)), beard, 10, hair, false, 1.05)
-	var helmet: String = look["helmet"]
-	var covered := helmet in ["boar_tusk", "bronze_crest", "bronze_crest_tall", "bronze_gold", "anatolian", "leather"]
-	if not covered:
-		var cap := PackedVector2Array([Vector2(0.099, 0.165), Vector2(0.096, 0.19), Vector2(0.066, 0.232), Vector2(0.0, 0.25)])
-		gb.lathe(&"tint", Transform3D.IDENTITY, cap, 12, hair, false, 1.12)
-	# Long hair down the neck: the "long-haired Achaeans".
-	gb.box(&"tint", Transform3D(Basis.IDENTITY, Vector3(0, 0.08, 0.078)), Vector3(0.16, 0.2, 0.06), hair, false, 0)
-	var dome := PackedVector2Array([Vector2(0.104, 0.105), Vector2(0.108, 0.15), Vector2(0.096, 0.205), Vector2(0.058, 0.25), Vector2(0.0, 0.266)])
-	match helmet:
-		"boar_tusk":
-			# Rows of split boar tusks sewn to a leather cap (Iliad 10.261-265).
-			gb.lathe(&"ivory", Transform3D.IDENTITY, dome, 12, Color.WHITE, false, 1.12)
-			for y: float in [0.135, 0.172, 0.208]:
-				_ring(gb, &"tint", Color(0.2, 0.13, 0.08), y, 0.112 - (y - 0.135) * 0.2, 0.008, 1.12)
-			for sx: float in [-1.0, 1.0]:
-				gb.box(&"ivory", Transform3D(Basis.IDENTITY, Vector3(sx * 0.098, 0.05, -0.02)), Vector3(0.016, 0.12, 0.075), Color.WHITE, false, 0)
-			gb.cylinder(&"ivory", Vector3(0, 0.262, 0), 0.02, 0.028, 0.035, 8)
-		"bronze_crest", "bronze_crest_tall", "bronze_gold":
-			gb.lathe(&"bronze", Transform3D.IDENTITY, dome, 12, Color.WHITE, false, 1.12)
-			for sx: float in [-1.0, 1.0]:
-				gb.box(&"bronze", Transform3D(Basis.IDENTITY, Vector3(sx * 0.098, 0.05, -0.025)), Vector3(0.014, 0.125, 0.08), Color.WHITE, false, 0)
-			gb.box(&"bronze", Transform3D(Basis.IDENTITY, Vector3(0, 0.12, -0.112)), Vector3(0.02, 0.075, 0.012), Color.WHITE, false, 0)
-			var tall := helmet != "bronze_crest"
-			var lift := 0.07 if tall else 0.0
-			if tall:
-				gb.cylinder(&"gold" if helmet == "bronze_gold" else &"bronze", Vector3(0, 0.26, 0), 0.014, 0.014, lift + 0.01, 6)
-			# Horsehair crest, front to back, with the tail hanging behind.
-			var steps := 7
-			for i in steps:
-				var a := lerpf(-0.9, 1.5, float(i) / (steps - 1))
-				var p := Vector3(0, 0.15 + lift + cos(a) * 0.125, sin(a) * 0.125)
-				var basis := Basis(Vector3.RIGHT, a)
-				gb.box(&"tint", Transform3D(basis, p + basis * Vector3(0, 0.04, 0)), Vector3(0.028, 0.09 if not tall else 0.12, 0.07),
-					crest if i % 2 == 0 else crest.darkened(0.15), false, 0)
-			gb.box(&"tint", Transform3D(Basis(Vector3.RIGHT, 0.25), Vector3(0, 0.02 + lift * 0.5, 0.17)), Vector3(0.03, 0.3 + lift, 0.05), crest, false, 0)
-			if helmet == "bronze_gold":
-				_ring(gb, &"gold", Color.WHITE, 0.112, 0.111, 0.016, 1.12)
-				_ring(gb, &"gold", Color.WHITE, 0.2, 0.1, 0.012, 1.12)
-		"anatolian":
-			# Tall pointed helmet with a plume down the back, as on the
-			# warrior of the King's Gate at Hattusa.
-			var cone := PackedVector2Array([Vector2(0.104, 0.105), Vector2(0.104, 0.16), Vector2(0.07, 0.25), Vector2(0.03, 0.33), Vector2(0.0, 0.35)])
-			gb.lathe(&"bronze_dull", Transform3D.IDENTITY, cone, 12, Color.WHITE, false, 1.12)
-			_ring(gb, &"bronze", Color.WHITE, 0.105, 0.108, 0.02, 1.12)
-			for sx: float in [-1.0, 1.0]:
-				gb.box(&"hide", Transform3D(Basis.IDENTITY, Vector3(sx * 0.098, 0.045, -0.015)), Vector3(0.014, 0.13, 0.085), Color(0.3, 0.2, 0.12), false, 0)
-			gb.box(&"tint", Transform3D(Basis(Vector3.RIGHT, 0.5), Vector3(0, 0.26, 0.07)), Vector3(0.025, 0.2, 0.03), crest, false, 0)
-			gb.box(&"tint", Transform3D(Basis(Vector3.RIGHT, 0.12), Vector3(0, 0.06, 0.14)), Vector3(0.028, 0.26, 0.035), crest, false, 0)
-		"leather":
-			gb.lathe(&"hide", Transform3D.IDENTITY, dome, 12, Color(0.32, 0.21, 0.13), false, 1.12)
-			_ring(gb, &"bronze_dull", Color.WHITE, 0.105, 0.108, 0.02, 1.12)
-			gb.cylinder(&"bronze_dull", Vector3(0, 0.258, 0), 0.03, 0.012, 0.025, 8)
-		"veil":
-			var hood := PackedVector2Array([Vector2(0.104, 0.15), Vector2(0.1, 0.2), Vector2(0.066, 0.24), Vector2(0.0, 0.256)])
-			gb.lathe(&"tint", Transform3D.IDENTITY, hood, 12, crest, false, 1.14)
-			gb.quad_h(&"tint_2s", Vector3(-0.15, -0.3, 0.13), Vector3(0.15, -0.3, 0.13), Vector3(0.1, 0.2, 0.1), Vector3(-0.1, 0.2, 0.1),
-				Vector3(0, 0, 1), crest.darkened(0.1), false, crest)
-			for sx: float in [-1.0, 1.0]:
-				gb.quad_h(&"tint_2s", Vector3(sx * 0.15, -0.3, 0.13), Vector3(sx * 0.14, -0.12, -0.02), Vector3(sx * 0.105, 0.17, 0.0),
-					Vector3(sx * 0.1, 0.2, 0.1), Vector3(sx, 0, 0), crest.darkened(0.06), false, crest)
-		"diadem":
-			_ring(gb, &"gold", Color.WHITE, 0.175, 0.101, 0.022, 1.12)
-		_:
-			_ring(gb, &"tint", Color(0.5, 0.2, 0.14), 0.168, 0.1, 0.014, 1.12)
-	return gb.build_mesh(Mats.all())
-
-
-static func _build_arm(look: Dictionary, upper: bool) -> ArrayMesh:
-	var gb := GeoBuilder.new()
-	gb.chunk_size = 0.0
-	var skin: Color = look["skin"]
-	if upper:
-		_limb(gb, &"tint", skin, 0.055, 0.046, 0.28)
-		var sleeve := PackedVector2Array([Vector2(0.052, -0.13 if not look["robe"] else -0.24), Vector2(0.06, -0.04), Vector2(0.058, 0.02), Vector2(0.0, 0.05)])
-		gb.lathe(&"tint", Transform3D.IDENTITY, sleeve, 10, look["tunic"])
-	else:
-		_limb(gb, &"tint", skin, 0.045, 0.035, 0.25)
-		gb.box(&"tint", Transform3D(Basis.IDENTITY, Vector3(0, -0.295, -0.005)), Vector3(0.07, 0.09, 0.045), skin, false, 0)
-		if look["armor"] in ["bronze", "bronze_gold"]:
-			var guard := PackedVector2Array([Vector2(0.037, -0.22), Vector2(0.044, -0.06), Vector2(0.042, -0.04)])
-			gb.lathe(&"bronze", Transform3D.IDENTITY, guard, 10)
-	return gb.build_mesh(Mats.all())
-
-
-static func _build_leg(look: Dictionary, upper: bool) -> ArrayMesh:
-	var gb := GeoBuilder.new()
-	gb.chunk_size = 0.0
-	var skin: Color = look["skin"]
-	if upper:
-		_limb(gb, &"tint", skin, 0.086, 0.062, 0.44)
-	else:
-		_limb(gb, &"tint", skin, 0.056, 0.04, 0.42, 1.0, 0.014)
-		var sole := Color(0.22, 0.14, 0.09)
-		gb.box(&"tint", Transform3D(Basis.IDENTITY, Vector3(0, -0.455, -0.055)), Vector3(0.085, 0.05, 0.235), skin.darkened(0.05), false, 0)
-		gb.box(&"tint", Transform3D(Basis.IDENTITY, Vector3(0, -0.482, -0.055)), Vector3(0.095, 0.02, 0.25), sole, false, 0)
-		if look["greaves"]:
-			# Bronze greaves: the "well-greaved Achaeans".
-			var greave := PackedVector2Array([Vector2(0.044, -0.41), Vector2(0.058, -0.3), Vector2(0.07, -0.13), Vector2(0.062, -0.02), Vector2(0.05, 0.0)])
-			gb.lathe(&"bronze", Transform3D.IDENTITY, greave, 10)
-		else:
-			for y: float in [-0.4, -0.33]:
-				_ring(gb, &"tint", sole, y, 0.046, 0.012, 1.0)
-	return gb.build_mesh(Mats.all())
+## Milliseconds spent sculpting figure parts so far (for the harness).
+static var build_ms: int = 0
 
 
 static func _cached(look: Dictionary, part: String, builder: Callable) -> ArrayMesh:
-	var key := "%s:%d:%s:%s" % [look["id"], look["variant"], part, look["helmet"]]
+	var key := part
+	for field: String in PART_INPUTS[part]:
+		var v: Variant = look.get(field)
+		key += ":" + ((v as Color).to_html(false) if v is Color else str(v))
 	if not _mesh_cache.has(key):
+		var t0 := Time.get_ticks_msec()
 		_mesh_cache[key] = builder.call()
+		build_ms += Time.get_ticks_msec() - t0
 	return _mesh_cache[key]
 
 
@@ -402,14 +214,14 @@ func setup(outfit_id: String, outfit: Dictionary, variant: int, weapon: String =
 	look = resolve_look(outfit_id, outfit, variant)
 	_lod_slot = variant
 	_body = _joint(self, Vector3(0, HIP_HEIGHT, 0))
-	_part(_body, _cached(look, "pelvis", _build_pelvis.bind(look)), Vector3.ZERO)
+	_part(_body, _cached(look, "pelvis", FigureMesh.pelvis.bind(look, Mats.all())), Vector3.ZERO)
 	_spine = _joint(_body, Vector3(0, 0.02, 0))
-	_part(_spine, _cached(look, "torso", _build_torso.bind(look)), Vector3.ZERO)
+	_part(_spine, _cached(look, "torso", FigureMesh.torso.bind(look, Mats.all())), Vector3.ZERO)
 	_head = _joint(_spine, Vector3(0, 0.575, 0))
-	_head_mesh = _part(_head, _cached(look, "head", _build_head.bind(look)), Vector3.ZERO)
+	_head_mesh = _part(_head, _cached(look, "head", FigureMesh.head.bind(look, Mats.all())), Vector3.ZERO)
 	_head_mesh.scale = Vector3.ONE * 1.1
-	var arm_u := _cached(look, "arm_u", _build_arm.bind(look, true))
-	var arm_f := _cached(look, "arm_f", _build_arm.bind(look, false))
+	var arm_u := _cached(look, "arm_u", FigureMesh.arm.bind(look, true, Mats.all()))
+	var arm_f := _cached(look, "arm_f", FigureMesh.arm.bind(look, false, Mats.all()))
 	_arm_l = _joint(_spine, Vector3(-0.205, 0.43, 0))
 	_part(_arm_l, arm_u, Vector3.ZERO, false)
 	_fore_l = _joint(_arm_l, Vector3(0, -0.28, 0))
@@ -419,8 +231,8 @@ func setup(outfit_id: String, outfit: Dictionary, variant: int, weapon: String =
 	_fore_r = _joint(_arm_r, Vector3(0, -0.28, 0))
 	_part(_fore_r, arm_f, Vector3.ZERO, false)
 	_hand_r = _joint(_fore_r, Vector3(0, -0.3, -0.01))
-	var leg_u := _cached(look, "leg_u", _build_leg.bind(look, true))
-	var leg_l := _cached(look, "leg_l", _build_leg.bind(look, false))
+	var leg_u := _cached(look, "leg_u", FigureMesh.leg.bind(look, true, Mats.all()))
+	var leg_l := _cached(look, "leg_l", FigureMesh.leg.bind(look, false, Mats.all()))
 	_thigh_l = _joint(_body, Vector3(-0.088, -0.02, 0))
 	_part(_thigh_l, leg_u, Vector3.ZERO)
 	_shin_l = _joint(_thigh_l, Vector3(0, -0.44, 0))
@@ -444,7 +256,7 @@ func setup(outfit_id: String, outfit: Dictionary, variant: int, weapon: String =
 ## Bares the head (a helmet struck off or laid aside).
 func remove_helmet() -> void:
 	look["helmet"] = "none"
-	_head_mesh.mesh = _cached(look, "head", _build_head.bind(look))
+	_head_mesh.mesh = _cached(look, "head", FigureMesh.head.bind(look, Mats.all()))
 
 
 ## True when this figure carries a shield.

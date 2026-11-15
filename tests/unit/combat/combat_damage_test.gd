@@ -70,3 +70,48 @@ func test_is_behind_only_for_attackers_at_the_back() -> void:
 	check(Combat.is_behind(forward, Vector3(0, 0, 2)))
 	check(not Combat.is_behind(forward, Vector3(0, 0, -2)))
 	check(not Combat.is_behind(forward, Vector3(2, 0, 0)), "the flank is not the back")
+
+
+const MOVES := {"heavy_hold": 0.32, "heavy_damage": 1.7, "heavy_windup": 1.45, "heavy_stamina": 1.8,
+	"combo_damage": [1.0, 1.12, 1.4], "combo_windup": [1.0, 0.85, 0.78], "parry_window": 0.24, "riposte_damage": 1.5}
+
+
+func test_strike_held_past_the_threshold_is_heavy() -> void:
+	check(not Combat.is_heavy(0.1, MOVES), "a tap is light")
+	check(Combat.is_heavy(0.32, MOVES), "held to the threshold is heavy")
+	check(Combat.is_heavy(0.8, MOVES), "held long is heavy")
+
+
+func test_combo_climbs_on_hits_inside_the_window_and_stops_at_three() -> void:
+	check(Combat.combo_step(0, 0.5, false) == 1, "second blow")
+	check(Combat.combo_step(1, 0.5, false) == 2, "third blow")
+	check(Combat.combo_step(2, 0.5, false) == 2, "stays at the third")
+	check(Combat.combo_step(1, 0.0, false) == 0, "window closed")
+	check(Combat.combo_step(1, 0.5, true) == 0, "a heavy blow starts again")
+
+
+func test_later_blows_of_a_chain_hit_harder_and_come_faster() -> void:
+	var first := Combat.blow(0, false, false, MOVES)
+	var third := Combat.blow(2, false, false, MOVES)
+	check(float(third["damage"]) > float(first["damage"]), "third hits harder")
+	check(float(third["windup"]) < float(first["windup"]), "third comes faster")
+
+
+func test_heavy_blow_is_slower_harder_and_costlier() -> void:
+	var light := Combat.blow(0, false, false, MOVES)
+	var heavy := Combat.blow(0, true, false, MOVES)
+	check(is_equal_approx(float(heavy["damage"]), 1.7), "damage x1.7")
+	check(float(heavy["windup"]) > float(light["windup"]), "slower")
+	check(float(heavy["stamina"]) > float(light["stamina"]), "costlier")
+
+
+func test_riposte_multiplies_whatever_blow_it_is() -> void:
+	check(is_equal_approx(float(Combat.blow(0, false, true, MOVES)["damage"]), 1.5), "light riposte")
+	check(is_equal_approx(float(Combat.blow(0, true, true, MOVES)["damage"]), 1.7 * 1.5), "heavy riposte")
+
+
+func test_guard_parries_when_fresh_breaks_under_a_heavy_blow_else_blocks() -> void:
+	check(Combat.guard(0.1, false, MOVES) == &"parry", "fresh guard parries")
+	check(Combat.guard(0.1, true, MOVES) == &"parry", "a fresh guard parries even a heavy blow")
+	check(Combat.guard(1.0, false, MOVES) == &"block", "a held guard blocks")
+	check(Combat.guard(1.0, true, MOVES) == &"broken", "a heavy blow breaks a held guard")

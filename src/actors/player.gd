@@ -7,6 +7,9 @@ signal died
 signal damaged(amount: float, blocked: bool)
 signal weapon_changed(weapon_id: String)
 signal struck(target: Node3D, result: Dictionary)
+## A feat of arms worth telling the player about: "parry", "guard_broken",
+## "heavy", "combo", "riposte", "bash", "dodge".
+signal feat(what: StringName)
 signal focus_changed(item: Interactable)
 
 const GRAVITY := 19.0
@@ -58,6 +61,17 @@ var _attack_resolved: bool = false
 ## When the weapon starts to move fast enough to be heard (into the attack).
 var _attack_swing_at: float = 0.0
 var _attack_swung: bool = false
+var _attack_heavy: bool = false
+var _attack_scale: float = 1.0
+## Seconds Strike has been held, or -1 when it is not.
+var _strike_held: float = -1.0
+var _combo: int = 0
+var _combo_left: float = 0.0
+## How long the shield has been up: a guard raised just in time is a parry.
+var _block_age: float = 0.0
+var _bash_wait: float = 0.0
+var _dodge_left: float = 0.0
+var _dodge_grace: float = 0.0
 var _regen_wait: float = 0.0
 var _stamina_wait: float = 0.0
 var _step_t: float = 0.0
@@ -242,19 +256,26 @@ func _turn(yaw: float, pitch: float) -> void:
 	_look_delta += Vector2(yaw, pitch)
 
 
-func _start_attack(throw: bool) -> void:
+## Starts a blow. A [param heavy] one is slower and harder and breaks a
+## guard; light blows that follow a hit chain into a combo.
+func _start_attack(throw: bool, heavy: bool = false) -> void:
 	var id := current_weapon()
 	if id == "":
 		return
 	var w: Dictionary = Data.weapons.get(id, {})
 	if throw and (id != "spear" or spears <= 0):
 		return
-	var cost := float(w.get("stamina", 10.0)) * (1.3 if throw else 1.0)
+	var cfg: Dictionary = Data.tuning.get("combat", {})
+	_combo = 0 if throw else Combat.combo_step(_combo, _combo_left, heavy)
+	var blow := Combat.blow(_combo, heavy and not throw, false, cfg)
+	var cost := float(w.get("stamina", 10.0)) * (1.3 if throw else float(blow["stamina"]))
 	if stamina < cost * 0.5:
 		return
 	stamina = maxf(stamina - cost, 0.0)
 	_stamina_wait = float(_cfg.get("stamina_regen_delay", 0.9))
-	var windup := float(w.get("windup", 0.25)) * (1.5 if throw else 1.0)
+	_attack_heavy = heavy and not throw
+	_attack_scale = float(blow["damage"])
+	var windup := float(w.get("windup", 0.25)) * (1.5 if throw else float(blow["windup"]))
 	var strike := float(w.get("strike", 0.12))
 	var recover := float(w.get("recover", 0.4))
 	_attack_t = 0.0
@@ -319,19 +340,78 @@ func _resolve_attack() -> void:
 		if not hit.is_empty():
 			Sfx.play_at(&"clang", hit["position"], -4.0)
 		return
-	var result: Dictionary = best.receive_hit(self, float(w.get("damage", 30.0)), best_height, aim, id)
+	var cfg: Dictionary = Data.tuning.get("combat", {})
+	var riposte: bool = best.has_method("is_reeling") and best.is_reeling()
+	var dmg := float(w.get("damage", 30.0)) * _attack_scale * (float(cfg.get("riposte_damage", 1.5)) if riposte else 1.0)
+	var result: Dictionary = best.receive_hit(self, dmg, best_height, aim, id, _attack_heavy)
 	if result.is_empty():
+		_combo_left = 0.0
 		return
 	Sfx.strike(best.global_position, current_weapon(), result)
-	_shake = 0.25 if result.get("blocked", false) else 0.18
+	_shake = 0.25 if result.get("blocked", false) else (0.3 if _attack_heavy else 0.18)
+	if result.get("blocked", false) and not result.get("broken", false):
+		_combo_left = 0.0
+	else:
+		# The chain goes on if the next blow follows soon enough.
+		_combo_left = float(cfg.get("combo_window", 0.75)) + _attack_end - _attack_t
+		if best.has_method("knock"):
+			best.knock(aim, float(cfg.get("knockback", 2.4)) * (1.8 if _attack_heavy else 1.0))
+		_hit_stop(float(cfg.get("hit_stop", 0.06)) * (1.6 if _attack_heavy else 1.0))
+		if result.get("broken", false):
+			feat.emit(&"guard_broken")
+		elif riposte:
+			feat.emit(&"riposte")
+		elif _combo == 2:
+			feat.emit(&"combo")
 	if result.get("killed", false):
 		kills += 1
 	struck.emit(best, result)
 
 
-## Takes a blow. Returns {"blocked", "killed", "damage"}.
-func receive_hit(attacker: Node3D, base_damage: float, height: float, dir: Vector3, _weapon: String = "") -> Dictionary:
-	if _dead or invulnerable:
+## Freezes the world for an instant when a blow lands, so it is felt.
+func _hit_stop(seconds: float) -> void:
+	if seconds <= 0.0 or Engine.time_scale < 1.0 or Game.is_harness():
+		return
+	Engine.time_scale = 0.08
+	get_tree().create_timer(seconds, true, false, true).timeout.connect(func() -> void: Engine.time_scale = 1.0)
+
+
+## Drives the shield into whoever stands in front: no wound, but he reels
+## and is pushed back, open to the next blow.
+func _bash() -> void:
+	var cfg: Dictionary = Data.tuning.get("combat", {})
+	var cost := float(cfg.get("bash_stamina", 18.0))
+	if _bash_wait > 0.0 or stamina < cost:
+		return
+	stamina -= cost
+	_stamina_wait = float(_cfg.get("stamina_regen_delay", 0.9))
+	_bash_wait = float(cfg.get("bash_cooldown", 0.9))
+	viewmodel.bash()
+	Sfx.play(&"whoosh_thrust", -8.0)
+	var fwd := -global_transform.basis.z
+	var hit := false
+	for e in battle.enemies_of(side):
+		var to: Vector3 = e.global_position - global_position
+		to.y = 0.0
+		if to.length() > float(cfg.get("bash_range", 1.8)) or fwd.angle_to(to) > 0.75 or not e.has_method("stagger"):
+			continue
+		e.stagger(float(cfg.get("bash_stagger", 0.9)))
+		e.knock(to.normalized(), float(cfg.get("bash_push", 4.0)))
+		if e.has_method("alert"):
+			e.alert(self)
+		hit = true
+	if hit:
+		Sfx.play_at(&"block", global_position + fwd + Vector3(0, 1.2, 0))
+		_shake = 0.3
+		feat.emit(&"bash")
+
+
+## Takes a blow. Returns {"blocked", "killed", "damage"}, with "parried"
+## when the shield came up just in time and "broken" when a [param heavy]
+## blow drove through it. Empty when the blow missed (a dodge).
+func receive_hit(attacker: Node3D, base_damage: float, height: float, dir: Vector3, _weapon: String = "",
+		heavy: bool = false) -> Dictionary:
+	if _dead or invulnerable or _dodge_grace > 0.0:
 		return {}
 	var cfg: Dictionary = Data.tuning.get("combat", {})
 	# Two men striking in the same instant count as one blow.
@@ -343,9 +423,22 @@ func receive_hit(attacker: Node3D, base_damage: float, height: float, dir: Vecto
 	var can_block := blocking and viewmodel.has_shield() \
 		and Combat.in_block_arc(fwd, to_att, float(_cfg.get("block_arc_deg", 115.0)))
 	if can_block:
-		stamina = maxf(stamina - float(_cfg.get("block_hit_cost", 16.0)), 0.0)
+		var guard := Combat.guard(_block_age, heavy, cfg)
+		if guard == &"parry":
+			# Turned aside at the last moment: he is thrown off balance.
+			if attacker != null and attacker.has_method("stagger"):
+				attacker.stagger(float(cfg.get("parry_stagger", 1.3)))
+			viewmodel.flinch()
+			_shake = 0.2
+			Sfx.play(&"parry", -2.0)
+			feat.emit(&"parry")
+			return {"blocked": true, "parried": true, "killed": false, "damage": 0.0}
+		var broken := guard == &"broken"
+		stamina = maxf(stamina - float(cfg.get("guard_break_stamina", 40.0) if broken else _cfg.get("block_hit_cost", 16.0)), 0.0)
 		_stamina_wait = float(_cfg.get("stamina_regen_delay", 0.9))
-		var leak := base_damage * float(_cfg.get("block_damage_leak", 0.08))
+		var leak := base_damage * float(cfg.get("guard_break_leak", 0.4) if broken else _cfg.get("block_damage_leak", 0.08))
+		if broken:
+			feat.emit(&"guard_broken")
 		# A blow that lands on an exhausted arm drives through.
 		if stamina <= 0.0:
 			leak = base_damage * 0.5
@@ -460,6 +553,10 @@ func _physics_process(delta: float) -> void:
 	blocking = active and combat_enabled and Input.is_action_pressed(&"block") and viewmodel.has_shield() and _attack_t < 0.0
 	if debug_block:
 		blocking = true
+	_block_age = _block_age + delta if blocking else 0.0
+	_bash_wait -= delta
+	_combo_left -= delta
+	_dodge_grace -= delta
 	viewmodel.blocking = blocking
 	if blocking:
 		stamina = maxf(stamina - float(_cfg.get("block_hold_cost", 2.0)) * delta, 0.0)
@@ -484,11 +581,30 @@ func _physics_process(delta: float) -> void:
 	var accel := float(_cfg.get("acceleration", 26.0))
 	if not is_on_floor():
 		accel *= float(_cfg.get("air_control", 0.3))
-	velocity.x = move_toward(velocity.x, wish.x * speed, accel * delta)
-	velocity.z = move_toward(velocity.z, wish.z * speed, accel * delta)
+	var cfg: Dictionary = Data.tuning.get("combat", {})
+	if _dodge_left > 0.0:
+		# Mid-dodge: carried by the step already taken.
+		_dodge_left -= delta
+	else:
+		velocity.x = move_toward(velocity.x, wish.x * speed, accel * delta)
+		velocity.z = move_toward(velocity.z, wish.z * speed, accel * delta)
 	if is_on_floor():
 		velocity.y = -1.0
-		if can_move and Input.is_action_just_pressed(&"jump") and not crouching and stamina >= 4.0:
+		# Jump pressed while stepping sideways or back is a dodge: a quick
+		# step out of the way that a blow passes through.
+		var aside := absf(input.x) > 0.4 or input.y > 0.4
+		if can_move and combat_enabled and aside and Input.is_action_just_pressed(&"jump") and not crouching \
+				and stamina >= float(cfg.get("dodge_stamina", 14.0)) and _dodge_left <= 0.0:
+			stamina -= float(cfg.get("dodge_stamina", 14.0))
+			_stamina_wait = 0.5
+			var step := wish.normalized() * float(cfg.get("dodge_speed", 7.5))
+			velocity.x = step.x
+			velocity.z = step.z
+			_dodge_left = float(cfg.get("dodge_seconds", 0.22))
+			_dodge_grace = float(cfg.get("dodge_grace", 0.34))
+			Sfx.play(&"step", -8.0)
+			feat.emit(&"dodge")
+		elif can_move and Input.is_action_just_pressed(&"jump") and not crouching and stamina >= 4.0:
 			velocity.y = float(_cfg.get("jump_velocity", 4.6))
 			stamina = maxf(stamina - float(_cfg.get("jump_cost", 8.0)), 0.0)
 			_stamina_wait = 0.5
@@ -507,14 +623,33 @@ func _physics_process(delta: float) -> void:
 	# Attacks.
 	if active and combat_enabled and _attack_t < 0.0:
 		if Input.is_action_just_pressed(&"attack"):
-			_start_attack(false)
+			if blocking:
+				_bash()
+			else:
+				_strike_held = 0.0
 		elif Input.is_action_just_pressed(&"throw"):
 			_start_attack(true)
+		if _strike_held >= 0.0:
+			# A tap is a quick blow; held, the arm draws back for a heavy one.
+			_strike_held += delta
+			viewmodel.charge = clampf(_strike_held / float(cfg.get("heavy_hold", 0.32)), 0.0, 1.0)
+			if not Input.is_action_pressed(&"attack") or _strike_held >= float(cfg.get("heavy_auto_release", 0.9)):
+				var heavy := Combat.is_heavy(_strike_held, cfg)
+				_strike_held = -1.0
+				viewmodel.charge = 0.0
+				_start_attack(false, heavy)
+				if heavy and _attack_t >= 0.0:
+					feat.emit(&"heavy")
+	else:
+		_strike_held = -1.0
+		viewmodel.charge = 0.0
 	if _attack_t >= 0.0:
 		_attack_t += delta
 		if not _attack_swung and _attack_t >= _attack_swing_at:
 			_attack_swung = true
 			Sfx.play(Sfx.swing_sound(Data.weapons.get(current_weapon(), {})), -4.0)
+			if _attack_heavy:
+				Sfx.play(&"effort", -8.0)
 		if not _attack_resolved and _attack_t >= _attack_hit_at:
 			_attack_resolved = true
 			_resolve_attack()

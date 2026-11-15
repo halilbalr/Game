@@ -2,10 +2,10 @@ class_name OptionsPanel
 extends VBoxContainer
 ## The options shared by the main menu and the pause screen.
 
-const CONTROLS_TEXT := "Move  W A S D        Look  Mouse\nStrike  Left mouse        Shield  Right mouse (hold)\nThrow spear  G or middle mouse\nWeapons  1 2 3 or wheel        Use  E\nRun  Shift        Crouch  Ctrl or C        Jump  Space\nChronicle  Tab        Pause  Esc        Skip a scene  Enter\nA gamepad also works."
+const CONTROLS_TEXT := "Move  W A S D        Look  Mouse\nStrike  Left mouse (hold for a heavy blow)        Shield  Right mouse (hold)\nParry  raise the shield as the blow lands        Shove  strike with the shield up\nDodge  Space while stepping aside or back\nThrow spear  G or middle mouse\nWeapons  1 2 3 or wheel        Use  E\nRun  Shift        Crouch  Ctrl or C        Jump  Space\nChronicle  Tab        Pause  Esc        Skip a scene  Enter\nA gamepad also works."
 
 
-const TOUCH_TEXT := "Move  left thumb, anywhere on the left\nPush the stick to its rim to run\nLook  drag on the right\nSTRIKE, SHIELD (hold), THROW, JUMP, CROUCH, ARMS\nUSE appears when there is something to use\nSKIP passes over a scene you have heard before"
+const TOUCH_TEXT := "Move  left thumb, anywhere on the left\nPush the stick to its rim to run\nLook  drag on the right\nSTRIKE (hold for a heavy blow), SHIELD (hold), THROW, JUMP, CROUCH, ARMS\nParry  raise SHIELD as the blow lands\nShove  STRIKE with SHIELD held        Dodge  JUMP while stepping aside\nUSE appears when there is something to use\nSKIP passes over a scene you have heard before"
 
 
 const WEB_NOTE := "\nIn a browser: click the game to take control. Esc frees the pointer; P pauses."
