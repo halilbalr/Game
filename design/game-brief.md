@@ -63,6 +63,17 @@ sea. They share one sailing system (`src/sea/`).
   the player looks at it). If it fills, Odysseus strains at the ropes and the
   crew tie him tighter: it slows the passage, it does not end the mission.
 - Defeats: the ship drawn under by Charybdis, or broken by a boulder.
+- **Hands on the work.** Whatever Odysseus does, the player sees his hands
+  doing it (`Viewmodel.act`): the tiller at the helm, rope at his wrists at
+  the mast (two of the crew bind him while the story is told), the stake in
+  the fire and in the eye, the bowl raised to the giant, fists in the ram's
+  fleece. Each oar is laid from its oarlock through its rower's two hands.
+- **The sea, nearer the real thing.** A baked map of the sea floor turns the
+  shallows turquoise and breaks surf at the waterline; the islands carry
+  holm oak, olive, fig, maquis and boulders; spray flies off the bow; drops
+  of water land on the view (`LensWater`).
+- **Music.** A breathy wooden flute over drones and frame drums, original,
+  in the manner of a modern film score for the Odyssey.
 
 ## The city
 
@@ -296,7 +307,7 @@ thing to do. Title cards are narrated and are scenes too.
 
 | Check | How | State |
 |---|---|---|
-| Rules and formulas (combat moves included), touch controls (two-thumb look, tap and hold Strike), phone button layout, every sound the scripts ask for exists, aim assist, the sea surface, islands and cave doorway | 94 tests, `tests/run_tests.gd` | Pass |
+| Rules and formulas (combat moves included), touch controls (two-thumb look, tap and hold Strike), phone button layout, every sound the scripts ask for exists, aim assist, the sea surface, islands and cave doorway, oars through the rowers' hands | 99 tests, `tests/run_tests.gd` | Pass |
 | Missions in mobile and phone mode | `--mission=<id> --bot --god --mobile --phone` | Pass |
 | Android package is complete | Debug APK built and signed; a mission finished from its contents on the Linux engine | Pass |
 | The app builds on a real phone or tablet | — | Not verified |

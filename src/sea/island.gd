@@ -10,6 +10,9 @@ extends RefCounted
 ## isle.build(world)
 ## [/codeblock]
 
+## Height (m) below which the sea bottom drops away steeply.
+const SHELF := 0.5
+
 var center: Vector2
 var radii: Vector2
 var peak: float
@@ -67,6 +70,10 @@ func height(x: float, z: float) -> float:
 		var d := Vector2(x, z).distance_to(flat[0])
 		var k := smoothstep(float(flat[1]) * 1.6, float(flat[1]), d)
 		h = lerpf(h, float(flat[2]), k)
+	# Below the strand the bottom falls away quickly, so the shallows never
+	# show through the troughs of the swell as sandbars.
+	if h < SHELF:
+		h = SHELF + (h - SHELF) * 2.6
 	return h
 
 
@@ -112,3 +119,64 @@ static func _normal(hs: PackedFloat32Array, nx: int, nz: int, i: int, j: int, st
 	var u := hs[maxi(j - 1, 0) * (nx + 1) + i]
 	var dn := hs[mini(j + 1, nz) * (nx + 1) + i]
 	return Vector3(l - r, 2.0 * step, u - dn).normalized()
+
+
+## Clothes the island: holm oak, olive and fig on the gentler slopes, the
+## low thorny maquis everywhere it can hold, boulders on the steep ground
+## and along the shore. Levelled places (a beach, a path, a cave floor) are
+## left clear.
+func dress(parent: Node3D) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_value * 7919 + 13
+	var lite := Game.lite
+	var area := PI * radii.x * radii.y
+	var trees: Dictionary = {"olive": [] as Array[Transform3D], "oak": [] as Array[Transform3D], "fig": [] as Array[Transform3D]}
+	var scrub: Array[Transform3D] = []
+	var rocks: Array[Transform3D] = []
+	var tries := int(area / (260.0 if lite else 120.0))
+	for i in tries:
+		var a := rng.randf() * TAU
+		var rr := sqrt(rng.randf()) * 1.05
+		var x := center.x + cos(a) * radii.x * rr
+		var z := center.y + sin(a) * radii.y * rr
+		var h := height(x, z)
+		if h < 0.6 or _in_flat(x, z):
+			continue
+		var slope := Vector2(height(x + 1.5, z) - height(x - 1.5, z), height(x, z + 1.5) - height(x, z - 1.5)).length() / 3.0
+		var yaw := rng.randf() * TAU
+		var grow := Island._fbm(Vector2(x, z) * 0.02, seed_value + 11.0)
+		if slope > 0.9:
+			# Too steep for anything but bare stone.
+			if rng.randf() < 0.18:
+				var s := rng.randf_range(2.0, 6.0)
+				rocks.append(Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3(s, s * rng.randf_range(0.6, 1.1), s)), Vector3(x, h - 0.3 * s, z)))
+			continue
+		if h < 2.5:
+			# The shore: boulders and a little scrub.
+			if rng.randf() < 0.35:
+				var s := rng.randf_range(1.2, 4.5)
+				rocks.append(Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3(s, s * 0.7, s)), Vector3(x, h - 0.25 * s, z)))
+			continue
+		if grow > 0.5 and slope < 0.55 and rng.randf() < 0.45:
+			var kind: String = "olive" if h < peak * 0.35 else ("oak" if rng.randf() < 0.75 else "fig")
+			var s := rng.randf_range(0.8, 1.35)
+			(trees[kind] as Array[Transform3D]).append(Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3.ONE * s), Vector3(x, h - 0.1, z)))
+		elif rng.randf() < 0.85:
+			var s := rng.randf_range(1.2, 3.2) * (1.3 if grow > 0.45 else 1.0)
+			scrub.append(Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3(s, s * rng.randf_range(0.7, 1.2), s)), Vector3(x, h - 0.05, z)))
+	for kind: String in trees:
+		var list: Array[Transform3D] = trees[kind]
+		if not list.is_empty():
+			var mmi := Props._multimesh(parent, Props.tree_mesh(kind, seed_value + kind.length()), list, "Trees_" + kind, 1400.0)
+			mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF if lite else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	if not scrub.is_empty():
+		Clutter._scatter(parent, Clutter.scrub_mesh(), scrub, "Maquis", 500.0 if lite else 900.0, false)
+	if not rocks.is_empty():
+		Clutter._scatter(parent, Clutter.stone_mesh(), rocks, "Boulders", 900.0, not lite)
+
+
+func _in_flat(x: float, z: float) -> bool:
+	for flat: Array in flats:
+		if Vector2(x, z).distance_to(flat[0]) < float(flat[1]) * 1.15:
+			return true
+	return false

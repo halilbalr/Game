@@ -139,7 +139,10 @@ Under **The Voyage Home** on the title screen:
 | **The Sirens** | Odysseus, at sea | Soften wax for the crew's ears and be bound to the mast. The song pulls your eyes to the meadow: look away. Then take the steering oar through the strait, close under Scylla's cliff and clear of Charybdis. |
 
 At sea, move forward to row harder and left and right to turn the steering
-oar. On a touch screen the stick steers.
+oar. On a touch screen the stick steers. You see your own hands at the work:
+on the tiller, bound at the mast, holding the stake in the fire, lifting the
+wine bowl, fists in the ram's fleece. Spray off the bow and a boulder's
+splash land on the view as drops of water.
 
 ## Controls
 
@@ -233,12 +236,16 @@ Kokoro text-to-speech model and are not recordings of actors. The Greek names
 were given their traditional English pronunciations by hand. They have not
 been checked by ear: this project was built on a machine with no speakers.
 
-Seven pieces of music were written for the game and synthesised in code
+Eight pieces of music were written for the game and synthesised in code
 (strings, horn, choir, a reed pipe, a lyre and skin drums): a march for the
 title screen, a drum-driven piece for the fighting, a sparse one for the
 night in the city, a lament for partings and endings, a lyre air for
-walking the city, a rowing song in six for the open sea, and the Sirens' song
-(two voices winding round each other over a lyre). Music drops under speech.
+walking the city, a breathy wooden flute over drones and frame drums for the
+open sea, the same flute crying over drums in a seven-beat measure when the
+boulders fall and in the strait, and the Sirens' song (two voices winding
+round each other over a lyre). The sea pieces are original, written in the
+manner of a modern film score for the Odyssey; they quote no existing score.
+Music drops under speech.
 
 The sounds of fighting are built from their parts: the punch of a blow, the
 crack of a spear point or the bite of a sword, the wet tail of a wound, the
@@ -300,7 +307,7 @@ model itself is not part of this repository.
 
 ```
 godot --headless --path . --import                              # once after cloning
-godot --headless --path . -s res://tests/run_tests.gd           # 94 tests
+godot --headless --path . -s res://tests/run_tests.gd           # 99 tests
 godot --headless --path . --fixed-fps 60 -- --mission=horse --autoplay   # script plays itself; exit 0 on completion
 godot --headless --path . --fixed-fps 60 -- --mission=gate --autoplay
 godot --headless --path . --fixed-fps 60 -- --mission=cyclops --bot --god      # the voyage: the bot rows, climbs and uses

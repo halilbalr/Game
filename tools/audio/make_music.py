@@ -3,10 +3,13 @@
 
     python3 tools/audio/make_music.py [track ...]
 
-Writes assets/audio/music/{theme,battle,night,lament,lyre,sea,sirens}.ogg. Every note is
-synthesised here with numpy: string and choir pads, horn, a reed pipe
-(aulos), a plucked lyre and skin drums, in a hall made by convolution. No
-samples or recordings are used. Each track loops without a seam: whatever
+Writes assets/audio/music/<track>.ogg for theme, battle, night, lament, lyre,
+sea, sirens and odyssey. Every note is synthesised here with numpy: string
+and choir pads, horn, a reed pipe (aulos), a wooden flute, a plucked lyre and
+skin and frame drums, in a hall made by convolution. No samples or recordings
+are used, and no existing score is quoted: the sea pieces are original music
+written in the manner of a modern film score for the Odyssey (a breathy
+flute, drones, frame drums in uneven measures). Each track loops without a seam: whatever
 rings past the end is folded back onto the start.
 
 The mode is D minor leaning on the lowered second (E flat), the nearest
@@ -454,48 +457,199 @@ def lyre_air() -> np.ndarray:
     return mix.render(3.0, -21.0, 0.6)
 
 
+def flute(notes: list, beat: float, octave: float = 1.0, breath: float = 1.0, seed: int = 0) -> np.ndarray:
+    """A wooden flute played in one breath per phrase: the pitch glides
+    between notes, a puff of air marks each new note, the vibrato only blooms
+    once a note is held, and the breath is always under the tone.
+
+    [notes] is a list of (name, beats) or (name, beats, ornament) with "-" for
+    a rest (a new breath). Ornaments: "slide" (a slow glide up into the note
+    from below), "grace" (a flick from the note above), "turn" (above, note,
+    below, note), "fall" (the note sinks away at its end).
+    """
+    local = np.random.default_rng(seed)
+    total = sum(n[1] for n in notes) * beat + 1.5
+    n = int(total * SR)
+    t = np.arange(n) / SR
+    pitch = np.zeros(n)
+    amp = np.zeros(n)
+    chiff = np.zeros(n)
+    at = 0.0
+    prev = 0.0
+    for note in notes:
+        name, beats = note[0], note[1]
+        orn = note[2] if len(note) > 2 else ""
+        dur = beats * beat
+        a, b = int(at * SR), int((at + dur) * SR)
+        at += dur
+        if name == "-":
+            prev = 0.0
+            continue
+        f = hz(name) * octave
+        seg = np.full(b - a, f)
+        k = np.arange(b - a) / SR
+        start = prev if prev > 0.0 else f * 2.0 ** (-0.35 / 12.0)
+        glide = 0.045
+        if orn == "slide":
+            start, glide = f * 2.0 ** (-2.0 / 12.0), 0.22
+        seg = f + (start - f) * np.exp(-k / glide * 2.5)
+        if orn == "grace" and b - a > int(0.12 * SR):
+            m = int(0.07 * SR)
+            seg[:m] = f * 2.0 ** (2.0 / 12.0)
+        if orn == "turn" and b - a > int(0.3 * SR):
+            m = int(0.065 * SR)
+            seg[:m] = f * 2.0 ** (2.0 / 12.0)
+            seg[2 * m:3 * m] = f * 2.0 ** (-1.0 / 12.0)
+        if orn == "fall":
+            seg *= 2.0 ** (-np.clip((k - dur * 0.7) / (dur * 0.3 + 1e-6), 0.0, 1.0) * 1.5 / 12.0)
+        # The vibrato blooms only on a held note, and never quite regular.
+        rate = 5.0 + local.uniform(-0.4, 0.4)
+        depth = 0.006 * np.clip((k - 0.35) / 0.6, 0.0, 1.0)
+        seg *= 1.0 + depth * np.sin(TAU * rate * k + local.uniform(0, TAU))
+        pitch[a:b] = seg
+        # Each note tongued: a small dip in the air and a puff of noise.
+        env = np.clip(k / 0.05, 0.0, 1.0) ** 0.7 * (0.82 + 0.18 * np.clip(k / max(dur, 0.1), 0.0, 1.0))
+        if dur > 1.2:
+            env *= 0.9 + 0.1 * np.sin(np.pi * np.clip(k / dur, 0.0, 1.0))
+        tail = int(min(0.06, dur * 0.3) * SR)
+        if tail > 0 and b - a > tail:
+            env[-tail:] *= np.linspace(1.0, 0.75, tail)
+        amp[a:b] = np.maximum(amp[a:b], env)
+        c = min(int(0.03 * SR), b - a)
+        chiff[a:a + c] += np.exp(-np.arange(c) / (0.008 * SR))
+        prev = f
+    # Breath ends: a rest lets the air go.
+    amp = lowpass(amp, 30.0, 1)
+    pitch = np.where(pitch > 0.0, pitch, np.maximum.accumulate(np.where(pitch > 0.0, pitch, 1e-3)))
+    phase = np.cumsum(pitch / SR)
+    tone = (np.sin(TAU * phase) + 0.22 * np.sin(TAU * 2.0 * phase + 0.4) + 0.07 * np.sin(TAU * 3.0 * phase + 1.1)
+            + 0.025 * np.sin(TAU * 4.0 * phase))
+    air = local.standard_normal(n)
+    # Breath in the bore: noise rung at the note's own pitch, and the hiss across the lip.
+    rung = np.zeros(n)
+    for f0 in (300.0, 500.0, 800.0, 1200.0, 1800.0):
+        band = (pitch > f0 * 0.75) & (pitch <= f0 * 1.35)
+        if band.any():
+            rung += peak(air, f0, 6.0) * band
+    hiss = highpass(air, 2500.0) * 0.5
+    puff = lowpass(air, 4000.0) * chiff
+    x = tone * amp * 0.8 + rung * amp * 0.09 * breath + hiss * amp * 0.035 * breath + puff * 0.18 * breath
+    x = lowpass(x, 6500.0)
+    left = x
+    right = np.roll(x, int(0.0007 * SR))
+    return stereo(left, right) * shape(n, 0.01, 0.8)[:, None]
+
+
+def frame_drum(accent: float = 1.0, low: bool = False) -> np.ndarray:
+    """A big frame drum: the deep 'dum' at the centre, or the dry 'tek' at the rim."""
+    if low:
+        x = drum(95.0, 52.0, 3.4, 0.6)
+    else:
+        x = drum(320.0, 240.0, 26.0, 1.4) * 0.6
+    return x * accent
+
+
+def pulse(freq: float, dur: float, rate: float, bright: float = 900.0) -> np.ndarray:
+    """A low throbbing bass: a saw pulsing at [rate] times a second, like a heartbeat in the hull."""
+    n = int((dur + 0.5) * SR)
+    t = np.arange(n) / SR
+    s = saw(freq, n) + 0.5 * saw(freq * 0.5, n)
+    gate = (0.5 - 0.5 * np.cos(TAU * np.minimum(np.mod(t * rate, 1.0) * 1.8, 1.0))) ** 1.5
+    x = lowpass(s, bright) * gate * shape(n, 0.4, 0.5)
+    return stereo(x, x)
+
+
 def sea() -> np.ndarray:
-    """At sea: a rocking six-beat swell for the oars, the stroke on the drum,
-    a pipe tune over strings and men's voices."""
-    beat = 60.0 / 150.0
-    chords = [DM, C, BB, C, DM, F, GM, A]
-    span = 12 * beat
-    mix = Mix(len(chords) * span)
-    for i, (bass, notes) in enumerate(chords):
-        at = i * span
-        full = i >= 4
-        mix.add(pad(hz(bass), span, 500.0, 1.2), at, 0.3)
-        mix.add(pad(hz(bass) * 2.0, span, 760.0, 1.2), at, 0.2)
-        for j, name in enumerate(notes):
-            mix.add(pad(hz(name), span, 1900.0 if full else 1300.0, 1.0), at, 0.085, (j - 1.5) * 0.35)
-        if full:
-            mix.add(choir(hz(notes[0]), span, "oh"), at, 0.22, -0.35, 0.6)
-            mix.add(choir(hz(notes[2]), span, "oh"), at, 0.16, 0.35, 0.6)
-        # The lyre rolls in sixes, like water along the hull.
-        roll = [notes[0], notes[1], notes[2], notes[3], notes[2], notes[1]]
-        for k in range(12):
-            mix.add(lyre(hz(roll[k % 6]) * 2.0, 2.0), at + k * beat, 0.09 if k % 6 else 0.13,
-                    0.4 if (k // 6) % 2 else -0.4, 0.5)
-        # The stroke: the drum gives the rowers their time, twice a chord.
-        for half in (0, 6):
-            mix.add(boom(), at + half * beat, 0.7, 0.0, 0.45)
-            mix.add(tom(0.85), at + (half + 3) * beat, 0.24, 0.3, 0.45)
-            if full:
-                mix.add(rattle(0.8), at + (half + 4.5) * beat, 0.05, -0.5, 0.3)
-    tune = [
-        ("A4", 3), ("D5", 2), ("C5", 1), ("A4", 4), ("G4", 2),
-        ("E4", 3), ("G4", 2), ("A4", 1), ("G4", 4), ("-", 2),
-        ("F4", 3), ("G4", 2), ("A4", 1), ("Bb4", 3), ("A4", 2), ("G4", 1),
-        ("E4", 3), ("C4", 2), ("E4", 1), ("G4", 6),
-        ("A4", 3), ("D5", 2), ("E5", 1), ("F5", 3), ("E5", 2), ("D5", 1),
-        ("C5", 3), ("A4", 2), ("C5", 1), ("F4", 6),
-        ("G4", 3), ("Bb4", 2), ("D5", 1), ("D5", 3), ("C5", 2), ("Bb4", 1),
-        ("A4", 3), ("C#5", 2), ("E5", 1), ("A4", 6),
+    """At sea: a lone wooden flute over a held drone, the slow dum of a frame
+    drum like a heartbeat, the swell of low strings; men's voices join the
+    second time round. Original music for this game, written in the spirit of
+    a modern film score for the Odyssey: breath, space, and old modes."""
+    beat = 60.0 / 66.0
+    bars = 16
+    span = 4 * beat
+    mix = Mix(bars * span)
+    # The drone: D and A, the sea under everything.
+    for i in range(4):
+        at = i * 4 * span
+        mix.add(pad(hz("D2"), 4 * span, 380.0, 3.0), at, 0.32)
+        mix.add(pad(hz("A2"), 4 * span, 520.0, 3.5), at, 0.16, 0.35)
+        mix.add(pad(hz("D3"), 4 * span, 700.0, 4.0), at, 0.08, -0.35)
+    # Strings rising under the second half.
+    for i, (bass, top) in enumerate([("Bb1", "F3"), ("C2", "G3"), ("F2", "A3"), ("A1", "E3")]):
+        at = (8 + i * 2) * span
+        mix.add(pad(hz(bass), 2 * span, 600.0, 1.2), at, 0.24)
+        mix.add(pad(hz(top), 2 * span, 1600.0, 1.2), at, 0.08, 0.3)
+        mix.add(choir(hz(top) * 0.5, 2 * span, "oh"), at, 0.14, -0.2, 0.7)
+    # The heartbeat: dum . . dum-dum, and the rim later.
+    for bar in range(bars):
+        at = bar * span
+        mix.add(frame_drum(0.9, True), at, 0.55, 0.0, 0.5)
+        if bar % 2 == 1:
+            mix.add(frame_drum(0.6, True), at + 2.5 * beat, 0.4, 0.0, 0.5)
+            mix.add(frame_drum(0.7, True), at + 3.0 * beat, 0.45, 0.0, 0.5)
+        if bar >= 8:
+            for b in (1.0, 1.5, 3.5):
+                mix.add(frame_drum(0.5), at + b * beat, 0.16, 0.45, 0.4)
+    # The flute: the theme, then answered an octave down by the voices.
+    theme = [
+        ("A4", 1.5, "slide"), ("D5", 0.5), ("C5", 0.5, "grace"), ("Bb4", 0.5), ("A4", 3.0), ("-", 2.0),
+        ("G4", 1.0), ("A4", 0.5), ("Bb4", 0.5), ("C5", 1.0, "turn"), ("Bb4", 0.5), ("A4", 0.5), ("G4", 3.0, "fall"), ("-", 2.0),
+        ("F4", 1.0), ("G4", 0.5), ("A4", 1.5, "grace"), ("D5", 1.0), ("E5", 0.5, "slide"), ("F5", 2.5), ("-", 1.0),
+        ("E5", 0.5), ("D5", 0.5), ("C5", 1.0), ("A4", 1.0, "grace"), ("D4", 4.5, "slide"), ("-", 3.5),
     ]
-    melody(mix, aulos, tune, 0.0, beat, 0.2, 1.0, 0.1, 0.65, 0.95)
-    melody(mix, horn, tune[20:], 4 * span, beat, 0.12, 0.5, -0.2, 0.5, 0.95)
-    mix.add(swell(3 * beat), 4 * span - 3 * beat, 0.08, 0.0, 0.6)
-    return mix.render(3.0, -19.0, 1.1)
+    mix.add(flute(theme, beat, 1.0, 1.0, 11), 0.5 * span, 0.42, -0.08, 0.6)
+    answer = [
+        ("D5", 2.0, "slide"), ("C5", 1.0), ("A4", 1.0), ("Bb4", 2.0, "turn"), ("A4", 2.0),
+        ("G4", 1.5), ("A4", 0.5), ("F4", 2.0), ("E4", 1.0, "grace"), ("D4", 5.0, "fall"), ("-", 1.0),
+    ]
+    mix.add(flute(answer, beat, 1.0, 1.1, 12), 9 * span, 0.38, 0.1, 0.65)
+    melody(mix, lambda f, d: choir(f, d, "oh"), [(n[0], n[1]) for n in answer], 9 * span, beat, 0.07, 0.5, -0.2, 0.7)
+    return mix.render(3.8, -19.0, 1.0)
+
+
+def odyssey() -> np.ndarray:
+    """Danger at sea (the Cyclops' boulders, the strait): the flute crying
+    over driving frame drums and a throbbing bass in a seven-beat measure,
+    low brass and voices hammering underneath. Original, in the same spirit."""
+    beat = 60.0 / 138.0
+    measure = 7 * beat
+    count = 16
+    mix = Mix(count * measure)
+    # 7/8 as 2+2+3, the dum on each group.
+    groups = (0.0, 2.0, 4.0)
+    roots = ["D2", "D2", "Eb2", "D2", "C2", "D2", "Bb1", "A1"] * 2
+    for m in range(count):
+        at = m * measure
+        root = roots[m]
+        mix.add(pulse(hz(root), measure, 1.0 / (2.0 * beat) * 2.0, 700.0 + 50.0 * m), at, 0.2, 0.0, 0.25)
+        for i, g in enumerate(groups):
+            mix.add(frame_drum(1.0 if i == 0 else 0.75, True), at + g * beat, 0.55 if i == 0 else 0.4, 0.0, 0.4)
+        for b in (1.0, 3.0, 5.0, 6.0):
+            mix.add(frame_drum(0.7), at + b * beat, 0.18, 0.4 if b < 4 else -0.4, 0.35)
+        if m >= 8:
+            mix.add(tom(0.9), at + 6.5 * beat, 0.3, -0.3, 0.4)
+            for k in range(14):
+                mix.add(rattle(1.0 if k % 2 == 0 else 0.5), at + k * beat / 2, 0.045, 0.55, 0.25)
+        if m % 4 == 0:
+            mix.add(horn(hz(root) * 2.0, measure * 1.8, 1000.0, 0.12), at, 0.3, -0.15, 0.45)
+            mix.add(choir(hz(root) * 2.0, measure * 2.0, "ah"), at, 0.18, 0.2, 0.6)
+        if m >= 8 and m % 2 == 1:
+            mix.add(horn(hz(root) * 3.0, measure * 0.9, 1400.0, 0.05), at, 0.18, 0.3, 0.45)
+    cry = [
+        ("D5", 3.0, "slide"), ("Eb5", 1.0, "grace"), ("D5", 1.0), ("C5", 1.0), ("Bb4", 1.0),
+        ("A4", 5.0, "fall"), ("-", 2.0),
+        ("G4", 1.0), ("A4", 1.0), ("Bb4", 1.0), ("C5", 2.0, "turn"), ("D5", 2.0),
+        ("Eb5", 2.0, "slide"), ("D5", 1.0), ("C5", 2.0), ("D5", 5.0, "fall"), ("-", 3.0),
+    ]
+    mix.add(flute(cry, beat, 1.0, 1.2, 21), 2 * measure, 0.4, -0.1, 0.5)
+    high = [
+        ("A5", 3.0, "slide"), ("G5", 1.0), ("F#5", 2.0, "grace"), ("Eb5", 1.0), ("D5", 4.0), ("-", 3.0),
+        ("D5", 1.0), ("Eb5", 1.0), ("F#5", 1.0), ("G5", 2.0), ("A5", 2.0, "turn"), ("Bb5", 1.5), ("A5", 1.5),
+        ("G5", 1.0), ("F#5", 1.0), ("D5", 6.0, "fall"), ("-", 2.0),
+    ]
+    mix.add(flute(high, beat, 1.0, 1.3, 22), 9 * measure, 0.38, 0.1, 0.5)
+    mix.add(swell(measure), 8 * measure - measure, 0.12, 0.0, 0.5)
+    return mix.render(2.6, -16.5, 1.2)
 
 
 def sirens() -> np.ndarray:
@@ -535,9 +689,9 @@ def sirens() -> np.ndarray:
 
 
 TRACKS = {"theme": theme, "battle": battle, "night": night, "lament": lament, "lyre": lyre_air,
-          "sea": sea, "sirens": sirens}
+          "sea": sea, "sirens": sirens, "odyssey": odyssey}
 # Tracks seeded by their own name, so rendering one alone gives the same file.
-SEEDED = {"sea": 2201, "sirens": 2202}
+SEEDED = {"sea": 2201, "sirens": 2202, "odyssey": 2203}
 
 
 def write_ogg(path: Path, x: np.ndarray) -> None:

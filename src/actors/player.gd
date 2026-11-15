@@ -24,6 +24,8 @@ var health: float = 100.0
 var max_stamina: float = 100.0
 var stamina: float = 100.0
 var crouching: bool = false
+## Set by a mission: the eye kept low whatever the player does (under a ram).
+var stoop: bool = false
 var blocking: bool = false
 var weapons: Array[String] = []
 var weapon_index: int = 0
@@ -41,6 +43,13 @@ var camera: Camera3D
 var viewmodel: Viewmodel
 ## Interactable currently looked at, or null.
 var focus: Interactable
+## What the hands are doing beyond fighting: &"helm", &"bound", ... (see
+## [method Viewmodel.act]). Set by the mission; empty for weapon and shield.
+var action: StringName = &""
+## The node an action is held at (the tiller), if any.
+var action_anchor: Node3D
+## The strength of the action (the strain against the ropes, the turn of the tiller).
+var action_drive: float = 0.0
 ## 0 to 1 progress of a hold-to-use interaction.
 var hold_progress: float = 0.0
 var kills: int = 0
@@ -669,10 +678,12 @@ func _physics_process(delta: float) -> void:
 			_shape.height = 1.2 if crouching else 1.76
 			_collider.position.y = _shape.height * 0.5
 	var eye_target := float(_cfg.get("crouch_eye_height", 1.02)) if crouching else _eye
+	if stoop:
+		eye_target = 0.62
 	_head.position.y = lerpf(_head.position.y, eye_target, 1.0 - exp(-12.0 * delta))
 
 	# Shield.
-	blocking = active and combat_enabled and Input.is_action_pressed(&"block") and viewmodel.has_shield() and _attack_t < 0.0
+	blocking = active and combat_enabled and action == &"" and Input.is_action_pressed(&"block") and viewmodel.has_shield() and _attack_t < 0.0
 	if debug_block:
 		blocking = true
 	_block_age = _block_age + delta if blocking else 0.0
@@ -747,7 +758,7 @@ func _physics_process(delta: float) -> void:
 			Sfx.play(&"step", -22.0 if crouching else (-9.0 if sprinting else -14.0))
 
 	# Attacks.
-	if active and combat_enabled and _attack_t < 0.0:
+	if active and combat_enabled and action == &"" and _attack_t < 0.0:
 		if Input.is_action_just_pressed(&"attack"):
 			if blocking:
 				_bash()
@@ -806,8 +817,23 @@ func _physics_process(delta: float) -> void:
 		health = minf(health + float(_cfg.get("regen_rate", 5.0)) * delta, max_health)
 
 
+## Puts the hands to [param kind] until told otherwise (see [member action]).
+func set_action(kind: StringName, anchor: Node3D = null) -> void:
+	action = kind
+	action_anchor = anchor
+	action_drive = 0.0
+
+
 func _process(delta: float) -> void:
 	viewmodel.lowered = not combat_enabled
+	# Holding Use on something shows the hands at it; else the standing action.
+	if focus != null and focus.action != &"" and hold_progress > 0.0:
+		viewmodel.act(focus.action)
+		viewmodel.progress = hold_progress
+	else:
+		viewmodel.act(action, action_anchor)
+		viewmodel.progress = 0.0
+	viewmodel.drive = action_drive
 	viewmodel.update(delta, move_speed() if is_on_floor() else 0.0, _look_delta, crouching)
 	_look_delta = Vector2.ZERO
 	# Camera shake from blows given and taken.

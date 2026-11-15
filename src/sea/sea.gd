@@ -30,7 +30,10 @@ var vortex := Vector4.ZERO:
 	set(v):
 		vortex = v
 		_mat.set_shader_parameter("vortex", v)
+## A ship whose hull the water is kept out of (see Ship).
+var hull: Node3D
 var _mat: ShaderMaterial
+var _calm: ShaderMaterial
 var _near: MeshInstance3D
 var _waves: Array = []
 
@@ -63,9 +66,9 @@ func _init() -> void:
 	var big := PlaneMesh.new()
 	big.size = Vector2(16000.0, 16000.0)
 	far.mesh = big
-	var calm := _mat.duplicate() as ShaderMaterial
-	calm.set_shader_parameter("swell", 0.0)
-	far.material_override = calm
+	_calm = _mat.duplicate() as ShaderMaterial
+	_calm.set_shader_parameter("swell", 0.0)
+	far.material_override = _calm
 	far.position.y = -0.35
 	far.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(far)
@@ -75,12 +78,28 @@ func _process(delta: float) -> void:
 	time += delta
 	_mat.set_shader_parameter("sea_time", time)
 	_mat.set_shader_parameter("detail_scale", Game.detail())
+	if hull != null and hull.is_inside_tree():
+		var yaw := hull.global_rotation.y
+		var xf := Vector4(hull.global_position.x, hull.global_position.z, sin(yaw), cos(yaw))
+		# Both the near swell and the flat sea under it, or the one shows where the other is cut away.
+		for m: ShaderMaterial in [_mat, _calm]:
+			m.set_shader_parameter("hull_xf", xf)
+			m.set_shader_parameter("hull_size", Vector2(Ship.BEAM * 0.5, Ship.LENGTH * 0.5))
 	var cam := get_viewport().get_camera_3d()
 	if cam != null:
 		# Snapped to whole cells, so the grid does not swim under the waves.
 		var c := cam.global_position
 		var span := NEAR * 2.0 / float((_near.mesh as PlaneMesh).subdivide_width + 1)
 		_near.global_position = Vector3(snappedf(c.x, span), 0.0, snappedf(c.z, span))
+
+
+## Tells the water how deep it is: [param tex] holds the sea floor's height
+## over [param rect] (x, z of its corner, then width and depth in metres),
+## as (height + 12) / 16, so the shallows show turquoise over the sand and
+## the surf breaks at the waterline.
+func set_floor(tex: Texture2D, rect: Vector4) -> void:
+	_mat.set_shader_parameter("ground_tex", tex)
+	_mat.set_shader_parameter("ground_rect", rect)
 
 
 ## Height of the water surface at (x, z) now, metres above sea level.

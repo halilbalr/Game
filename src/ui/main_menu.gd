@@ -16,7 +16,7 @@ func _ready() -> void:
 	_cam.make_current()
 	_place_camera()
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	Sfx.preload_loops([&"theme"], [])
+	Sfx.preload_loops([&"theme", &"sea"], [])
 	Sfx.music(&"theme")
 	Sfx.ambience(&"")
 
@@ -71,11 +71,14 @@ func _ready() -> void:
 		troy.visible = false
 		voyage.visible = true
 		sub.text = "THE VOYAGE HOME"
+		# The flute of the voyage in place of the march of Troy.
+		Sfx.music(&"sea")
 		cyclops.grab_focus())
 	back.pressed.connect(func() -> void:
 		voyage.visible = false
 		troy.visible = true
 		sub.text = "THE FALL OF TROY"
+		Sfx.music(&"theme")
 		sail.grab_focus())
 	_entry(col, "OPTIONS", "", func() -> void: _options.visible = not _options.visible)
 	if not Game.web:

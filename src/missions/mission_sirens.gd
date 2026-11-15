@@ -28,7 +28,7 @@ func _init() -> void:
 	super()
 	id = "sirens"
 	preset = "day"
-	music = [&"sea", &"sirens", &"battle", &"lament"]
+	music = [&"sea", &"sirens", &"odyssey", &"lament"]
 	ambience = [&"sea", &"strait"]
 	outfits = ["odysseus", "achaean", "oarsman"]
 
@@ -96,6 +96,8 @@ func _physics_process(delta: float) -> void:
 		var looking := absf(err.x) < 0.45
 		_longing = clampf(_longing + (0.22 if looking else -0.12) * delta, 0.0, 1.0)
 		hud.set_meter("THE SONG", _longing)
+		# The longer he listens, the harder he strains at the ropes.
+		player.action_drive = maxf(player.action_drive - delta * 0.8, smoothstep(0.35, 1.0, _longing))
 	# Charybdis: sucking down, then spewing out, and drawing the ship in.
 	if _whirl_on:
 		_whirl_t += delta
@@ -112,6 +114,9 @@ func _physics_process(delta: float) -> void:
 			var pull := depth / 8.0 * 4.2 * clampf(1.0 - d / 160.0, 0.0, 1.0) ** 1.5
 			var swirl := Vector3(-to.z, 0.0, to.x).normalized()
 			ship.current = to.normalized() * pull + swirl * pull * 0.6
+			# Close to her, the churning water flies over the side.
+			if d < 80.0 and randf() < delta * 1.2 * (1.0 - d / 80.0):
+				lens.splash(0.2 + 0.4 * (1.0 - d / 80.0))
 			if d < 20.0 and depth > 4.0 and not autoplay and not Game.args.has("god"):
 				fail(text("charybdis_title"), text("charybdis_text"), "text_charybdis_text")
 		elif not sucking and d < 90.0:
@@ -140,19 +145,44 @@ func run() -> void:
 	var wax := add_interactable(Vector3.ZERO, "Knead the wax", 2.0, 3.0, 0.0)
 	wax.reparent(ship.helm, false)
 	wax.position = Vector3(0.6, 0.6, -1.0)
+	wax.action = &"wax"
 	objective("wax", wax)
 	await used(wax)
 	wax.queue_free()
 	hud.set_objective("")
 	await hud.fade(1.0, 0.8 if not autoplay else 0.05)
+	# To the mast: two of the crew bind him to it, turn on turn.
 	board(ship.mast_spot, false)
 	player.rotation.y = 0.0
 	ship.set_sail(false)
 	ship.max_speed = 3.2
 	ship.autopilot_to = Vector3(0.0, 0.0, -420.0)
+	var binders: Array[Humanoid] = []
+	for side: float in [-1.0, 1.0]:
+		# Either side of him, a little forward, working round him and the mast.
+		var at := Vector3(side * 0.75, 0.14, -1.7)
+		var h := ship.add_hand(at, atan2(at.x, at.z + 1.2), 40 + int(side))
+		h.stance = &"tie"
+		binders.append(h)
+	player.set_action(&"bound")
 	hud.fade(0.0, 0.8 if not autoplay else 0.05)
 	scene_begin()
+	# The turns of rope go on while the story is told.
+	var tie := func() -> void:
+		for i in 5:
+			await wait(0.9)
+			ship.show_bonds(i + 1)
+			Sfx.play(&"pickup", -12.0)
+	tie.call()
+	mark("tying")
 	await speak("wax")
+	await wait(0.5)
+	ship.show_bonds(5)
+	# Their work done, they go to the benches left empty and take up the oars.
+	await hud.fade(1.0, 0.4 if not autoplay else 0.05)
+	ship.man_station(binders[0], 1)
+	ship.man_station(binders[1], Ship.OARS_A_SIDE + 1)
+	hud.fade(0.0, 0.5 if not autoplay else 0.05)
 	await speak("calm")
 	scene_end()
 
@@ -173,6 +203,7 @@ func run() -> void:
 		if _longing >= 1.0:
 			_struggles += 1
 			player._shake = 0.6
+			player.action_drive = 1.0
 			await speak("struggle")
 			await speak("tighter")
 			_longing = 0.3
@@ -184,11 +215,14 @@ func run() -> void:
 	await speak("passed")
 	scene_end()
 
-	# The strait.
+	# The strait. Set free, he goes back to the steering oar.
+	await hud.fade(1.0, 0.6 if not autoplay else 0.05)
+	ship.show_bonds(0)
 	ship.autopilot_to = null
 	ship.max_speed = 5.0
 	board(ship.helm, true)
-	Sfx.music(&"battle")
+	hud.fade(0.0, 0.6 if not autoplay else 0.05)
+	Sfx.music(&"odyssey")
 	Sfx.ambience(&"strait")
 	scene_begin()
 	await speak("strait_warn")

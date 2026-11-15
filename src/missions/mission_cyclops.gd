@@ -23,7 +23,7 @@ func _init() -> void:
 	super()
 	id = "cyclops"
 	preset = "day"
-	music = [&"sea", &"night", &"battle", &"lament"]
+	music = [&"sea", &"night", &"odyssey", &"lament"]
 	ambience = [&"sea", &"cave"]
 	outfits = ["odysseus", "achaean", "oarsman", "polyphemus"]
 
@@ -195,21 +195,27 @@ func run() -> void:
 	await speak("club")
 	objective("stake", cave.club)
 	var cut := add_interactable(cave.club.global_position + Vector3(0, 0.4, 0), "Cut a stake from the club", 2.0, 4.5, 0.0)
+	cut.action = &"chop"
 	await used(cut)
 	cut.queue_free()
 	Sfx.play(&"spear_stick", -4.0)
 	stake = _stake_mesh()
 	add_child(stake)
-	stake.global_position = _cave_point(cave.hearth) + Vector3(1.6, 0.2, 0.8)
+	stake.visible = false
+	# The stake is in his hands from here to the fire.
+	player.set_action(&"fire")
+	mark("carry")
 	objective("fire", _cave_point(cave.hearth))
 	var harden := add_interactable(_cave_point(cave.hearth) + Vector3(0, 0.3, 0), "Harden the point in the fire", 3.0, 3.5, 0.0)
+	harden.action = &"fire"
 	await used(harden)
 	harden.queue_free()
 	Sfx.play(&"fire", -4.0)
 	scene_begin()
 	await speak("hardened")
 	scene_end()
-	stake.visible = false
+	# Hidden under the dung that lay thick about the cave.
+	player.set_action(&"")
 
 	# Evening: the wine.
 	await hud.fade(1.0, 1.0 if not autoplay else 0.05)
@@ -231,6 +237,9 @@ func run() -> void:
 		await used(bowl)
 		bowl.queue_free()
 		hud.set_objective("")
+		# The bowl held up to him while he drinks.
+		player.set_action(&"bowl")
+		mark("bowl")
 		scene_begin()
 		match i:
 			0:
@@ -243,6 +252,7 @@ func run() -> void:
 				await speak("name")
 				await speak("poly_gift")
 		scene_end()
+		player.set_action(&"")
 	giant.stance = &"lie"
 	giant.global_position = _cave_point(cave.bed)
 	scene_begin()
@@ -250,14 +260,14 @@ func run() -> void:
 	scene_end()
 
 	# The eye.
-	stake.visible = true
-	stake.global_position = player.global_position + Vector3(0.6, 0.6, 0.4)
+	# The stake out of hiding, its point heated in the embers again.
+	player.set_action(&"stake")
 	objective("eye", giant.head_position())
 	mark("eye")
 	var eye := add_interactable(giant.head_position(), "Drive the stake into his eye", 2.4, 4.5, 0.0)
+	eye.action = &"stake"
 	await used(eye)
 	eye.queue_free()
-	stake.visible = false
 	giant.blind()
 	Sfx.play(&"fire", 0.0)
 	Sfx.play(&"roar", 0.0)
@@ -265,6 +275,10 @@ func run() -> void:
 	giant.stance = &"cheer"
 	giant.global_position = _cave_point(cave.bed + Vector3(0, 0, 1.5))
 	scene_begin()
+	# Twisting it in, as a shipwright bores a ship's timber, then letting go.
+	player.viewmodel.progress = 1.0
+	await wait(1.2)
+	player.set_action(&"")
 	await speak("blinded")
 	await speak("others")
 	await speak("poly_nobody")
@@ -285,9 +299,17 @@ func run() -> void:
 	ram.global_position = _cave_point(cave.rams_spot)
 	objective("ram", ram)
 	var cling := add_interactable(ram.global_position + Vector3(0, 0.5, 0), "Cling under the ram", 1.5, 3.5, 0.0)
+	cling.action = &"cling"
 	await used(cling)
 	cling.queue_free()
+	# Under the ram's belly, fists in the fleece, carried past the blind giant's hands.
+	player.set_action(&"cling")
+	player.stoop = true
+	mark("under_ram")
+	await wait(2.0)
 	await hud.fade(1.0, 1.0 if not autoplay else 0.05)
+	player.set_action(&"")
+	player.stoop = false
 	Sfx.play(&"step", -4.0)
 	var yard := _cave_point(Vector3(0, 0.3, Cave.R + 8.0))
 	place_player(yard, yaw_to(yard, Vector3(BEACH.x, 0, BEACH.y)))
@@ -298,7 +320,7 @@ func run() -> void:
 	scene_begin()
 	await speak("ram_line")
 	scene_end()
-	Sfx.music(&"battle")
+	Sfx.music(&"odyssey")
 	await speak("run")
 	objective("ship", ship.global_position)
 	mark("run")
@@ -373,6 +395,9 @@ func _throw_rock(size: float) -> void:
 	_splash(target, size)
 	_shake(0.6 * size)
 	var d := Vector2(ship.global_position.x - target.x, ship.global_position.z - target.z)
+	# Close by, the sea it throws up comes down over the ship.
+	if d.length() < 50.0:
+		lens.splash(clampf(1.25 - d.length() / 40.0, 0.25, 1.0))
 	if d.length() < 8.0 * size and not autoplay and not Game.args.has("god"):
 		fail(text("wreck_title"), text("wreck_text"), "text_wreck_text")
 		await _never

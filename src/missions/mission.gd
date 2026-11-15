@@ -96,13 +96,17 @@ func _ready() -> void:
 
 
 func _apply_debug_args() -> void:
-	# Harness only: --at=x,y,z,yaw,pitch places the player; --pose=block|sword|dagger sets a stance.
+	# Harness only: --at=x,y,z,yaw,pitch places the player; --pose=block|sword|dagger sets a stance;
+	# --act=<kind> puts the hands to an action.
 	if Game.args.has("at"):
 		var c: PackedStringArray = (Game.args["at"] as String).split(",")
 		place_player(Vector3(float(c[0]), float(c[1]), float(c[2])), float(c[3]))
 		player.set_pitch(float(c[4]))
 	if Game.args.has("pause"):
 		_pause.open.call_deferred()
+	if Game.args.has("act"):
+		# --act=fire|stake|bowl|wax|bound|cling: the hands at that, for screenshots.
+		player.set_action.call_deferred(StringName(str(Game.args["act"])))
 	if Game.args.has("bot"):
 		var bot: Node = (load("res://src/debug/bot.gd") as GDScript).new()
 		bot.set("mission", self)

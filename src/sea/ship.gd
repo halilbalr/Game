@@ -15,10 +15,14 @@ extends Node3D
 ## [/codeblock]
 
 signal struck_rock(strength: float)
+## The bow has driven into a wave and thrown spray back over the ship (0..1).
+signal sprayed(strength: float)
 
 const LENGTH := 22.0
 const BEAM := 3.6
 const OARS_A_SIDE := 10
+## The tiller's set at rest, its end where the helmsman holds it.
+const TILLER_YAW := -0.1
 
 ## The water it floats on.
 var sea: Sea
@@ -42,7 +46,16 @@ var damage: float = 0.0
 ## Where the player stands to steer, and the mast he can be bound to.
 var helm: Node3D
 var mast_spot: Node3D
+## The tiller of the steering oar, with "GripL" and "GripR" where the
+## helmsman's hands go. It swings with the steering.
+var tiller: Node3D
+var _bonds: Array[MeshInstance3D] = []
 var rowers: Array[Humanoid] = []
+## Oar station (0..OARS_A_SIDE * 2 - 1, port first) -> the man at it. A
+## station not in it has no man: its oar is not rigged, or (taken by
+## Scylla) trails alongside.
+var _manned: Dictionary = {}
+var _lost: Dictionary = {}
 var _yaw: float = 0.0
 var _hull: Node3D
 var _oars: MultiMesh
@@ -51,6 +64,9 @@ var _stroke: float = 0.0
 var _throttle: float = 0.0
 var _steer: float = 0.0
 var _bump_cool: float = 0.0
+var _spray: CPUParticles3D
+var _oar_xf: Array[Transform3D] = []
+var _spray_cool: float = 0.0
 
 
 func _init() -> void:
@@ -58,10 +74,14 @@ func _init() -> void:
 	# After the man at its helm, so his eye is drawn smoothly between steps
 	# (see Player._process).
 	process_physics_priority = 10
+	# And after the rowers have moved, so the oars are laid through their hands.
+	process_priority = 10
 
 
 func _ready() -> void:
 	_yaw = rotation.y
+	if sea != null:
+		sea.hull = self
 	_hull = Node3D.new()
 	add_child(_hull)
 	var mi := MeshInstance3D.new()
@@ -83,22 +103,51 @@ func _ready() -> void:
 	helm.name = "Helm"
 	helm.position = Vector3(0.0, 0.3, LENGTH * 0.5 - 3.4)
 	_hull.add_child(helm)
+	# Bound "upright against the mast-step", his back to the mast, facing the bow.
 	mast_spot = Node3D.new()
 	mast_spot.name = "Mast"
-	mast_spot.position = Vector3(0.0, 0.3, 0.1)
+	mast_spot.position = Vector3(0.0, 0.14, -1.36)
 	_hull.add_child(mast_spot)
+	tiller = Node3D.new()
+	tiller.name = "Tiller"
+	tiller.position = Vector3(BEAM * 0.5 + 0.12, 1.55, LENGTH * 0.5 - 4.39)
+	# Swung aft, its end within the helmsman's reach.
+	tiller.rotation.y = TILLER_YAW
+	_hull.add_child(tiller)
+	var bar := MeshInstance3D.new()
+	bar.mesh = tiller_mesh()
+	tiller.add_child(bar)
+	for g: Array in [["GripL", Vector3(-1.42, -0.09, 0.06)], ["GripR", Vector3(-1.12, -0.08, 0.06)]]:
+		var grip := Node3D.new()
+		grip.name = g[0]
+		grip.position = g[1]
+		tiller.add_child(grip)
 	var outfits: Dictionary = Data.characters.get("outfits", {})
-	for i in 8:
-		var side := -1.0 if i % 2 == 0 else 1.0
-		var h := Humanoid.new()
-		_hull.add_child(h)
-		h.setup("oarsman", outfits.get("oarsman", {}), i * 5 + 1, "")
-		h.stance = &"row"
-		# Facing the stern, as rowers do.
-		h.rotation.y = PI
-		h.position = Vector3(side * 0.85, 0.42, -6.0 + int(i / 2) * 2.4)
-		rowers.append(h)
+	# The middle benches are manned; fewer on phones.
+	var benches: Array = [3, 4, 5, 6] if Game.lite else [2, 3, 4, 5, 6, 7]
+	var n := 0
+	for k: int in benches:
+		for side_i in 2:
+			var side := -1.0 if side_i == 0 else 1.0
+			var h := Humanoid.new()
+			_hull.add_child(h)
+			h.setup("oarsman", outfits.get("oarsman", {}), n * 5 + 1, "")
+			n += 1
+			h.stance = &"row"
+			# Facing the stern, as rowers do, on the bench just forward of his oar.
+			h.rotation.y = PI
+			h.position = Vector3(side * 0.8, 0.42, station_z(k) - 0.55)
+			rowers.append(h)
+			_manned[side_i * OARS_A_SIDE + k] = h
+	_spray = _bow_spray()
+	_hull.add_child(_spray)
+	_spray.position = Vector3(0.0, 0.7, -LENGTH * 0.5 + 0.8)
 	_place_oars()
+
+
+## Fore-and-aft position of oar station [param k] (0 at the bow end).
+static func station_z(k: int) -> float:
+	return -7.0 + k * 1.45
 
 
 ## Takes [param n] men from the benches (Scylla). Returns their positions.
@@ -107,8 +156,46 @@ func lose_rowers(n: int) -> Array[Vector3]:
 	for i in mini(n, rowers.size()):
 		var h: Humanoid = rowers.pop_back()
 		out.append(h.global_position)
+		for st: int in _manned.keys():
+			if _manned[st] == h:
+				_manned.erase(st)
+				_lost[st] = true
 		h.queue_free()
 	return out
+
+
+## Shows the first [param n] turns of rope binding a man to the mast (0 for none).
+func show_bonds(n: int) -> void:
+	if _bonds.is_empty():
+		for i in 5:
+			var mi := MeshInstance3D.new()
+			mi.mesh = bond_mesh(i)
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			_hull.add_child(mi)
+			_bonds.append(mi)
+	for i in _bonds.size():
+		_bonds[i].visible = i < n
+
+
+## A deckhand standing on the ship at [param pos] (hull space), facing [param yaw].
+func add_hand(pos: Vector3, yaw: float, variant: int) -> Humanoid:
+	var h := Humanoid.new()
+	_hull.add_child(h)
+	h.setup("oarsman", Data.characters.get("outfits", {}).get("oarsman", {}), variant, "")
+	h.position = pos
+	h.rotation.y = yaw
+	return h
+
+
+## Seats [param h] at oar station [param station] (port 0..9, starboard 10..19) and sets him rowing.
+func man_station(h: Humanoid, station: int) -> void:
+	var side := -1.0 if station < OARS_A_SIDE else 1.0
+	h.stance = &"row"
+	h.rotation = Vector3(0.0, PI, 0.0)
+	h.position = Vector3(side * 0.8, 0.42, station_z(station % OARS_A_SIDE) - 0.55)
+	rowers.append(h)
+	_manned[station] = h
+	_lost.erase(station)
 
 
 ## Shows or hides the sail (it is furled when rowing hard or in the strait).
@@ -188,28 +275,69 @@ func _physics_process(delta: float) -> void:
 		var pitch := atan2(hb - hs, 16.0)
 		var roll := atan2(hl - hr, 3.2) * 0.8 - _steer * speed * 0.012
 		rotation = Vector3(lerp_angle(rotation.x, pitch, minf(1.0, delta * 3.0)), _yaw, lerp_angle(rotation.z, roll, minf(1.0, delta * 3.0)))
+		# The bow driving into the face of a wave throws up spray: more the
+		# faster she goes and the higher the water stands at the stem.
+		_spray_cool -= delta
+		var dig := hb - global_position.y
+		_spray.emitting = speed > 2.0
+		if _spray_cool <= 0.0 and speed > 2.2 and dig > 0.12:
+			_spray_cool = 2.0
+			var strength := clampf(dig * speed / 3.0, 0.15, 1.0)
+			_spray.restart()
+			sprayed.emit(strength)
 	else:
 		rotation.y = _yaw
 	# The oars keep stroke with the speed asked of them.
 	_stroke += delta * (1.2 + 2.6 * clampf(absf(_throttle), 0.0, 1.25))
 	if absf(_throttle) < 0.05 and absf(speed) < 0.3:
 		_stroke = lerpf(_stroke, snappedf(_stroke, TAU), delta)
-	_place_oars()
 	for r in rowers:
 		r.row_phase = _stroke
 
 
+func _process(_delta: float) -> void:
+	_place_oars()
+	# The tiller swings opposite to the turn it makes.
+	tiller.rotation.y = TILLER_YAW - _steer * 0.32
+
+
+## Lays each manned oar from its oarlock through the rower's two hands, so
+## the man is holding it wherever his stroke has brought them.
 func _place_oars() -> void:
 	if _oars == null:
 		return
-	var k := sin(_stroke)
-	var lift := maxf(0.0, cos(_stroke))
 	for i in OARS_A_SIDE * 2:
 		var side := -1.0 if i < OARS_A_SIDE else 1.0
-		var z := -7.0 + (i % OARS_A_SIDE) * 1.45
-		# The oar mesh reaches out along +X: turn the port oars about to reach the other way.
-		var b := Basis(Vector3.UP, (PI if side < 0.0 else 0.0) + side * 0.45 * k) * Basis(Vector3(0, 0, 1), -(0.22 - 0.16 * lift))
-		_oars.set_instance_transform(i, Transform3D(b, Vector3(side * (BEAM * 0.5 - 0.1), 0.85, z)))
+		var lock := Vector3(side * (BEAM * 0.5 - 0.1), 0.85, station_z(i % OARS_A_SIDE))
+		var out := Vector3(side, 0.0, 0.0)
+		if _manned.has(i) and is_instance_valid(_manned[i]):
+			var g := (_manned[i] as Humanoid).grip_points()
+			var grip := _hull.to_local((g[0] + g[1]) * 0.5)
+			out = lock - grip
+		elif _lost.has(i):
+			# Let go: the oar swings back along the hull and trails in the water.
+			out = Vector3(side * 0.35, -0.22, 1.0)
+		else:
+			# No man at it: the oar is not shipped. Drawn at no size.
+			_set_oar(i, Transform3D(Basis().scaled(Vector3.ZERO), lock))
+			continue
+		var x := out.normalized()
+		var z := x.cross(Vector3.UP).normalized()
+		var y := z.cross(x)
+		_set_oar(i, Transform3D(Basis(x, y, z), lock))
+
+
+func _set_oar(i: int, xf: Transform3D) -> void:
+	if _oar_xf.size() < OARS_A_SIDE * 2:
+		_oar_xf.resize(OARS_A_SIDE * 2)
+	_oar_xf[i] = xf
+	_oars.set_instance_transform(i, xf)
+
+
+## Oar [param station]'s transform in the hull's space: the oarlock, and +X
+## out along the loom to the blade.
+func oar_transform(station: int) -> Transform3D:
+	return _oar_xf[station] if station < _oar_xf.size() else Transform3D()
 
 
 # --- shapes -------------------------------------------------------------------------
@@ -261,9 +389,15 @@ static func hull_mesh() -> ArrayMesh:
 		Sculpt.grid(gb, &"hide", 1, 40, cap, Color(0.3, 0.2, 0.12), false, Vector3(0, -30, 0))
 	# Deck planks, benches.
 	gb.box(&"wood", Transform3D(Basis.IDENTITY, Vector3(0, 0.12, 0)), Vector3(BEAM * 0.6, 0.05, LENGTH * 0.72), Color.WHITE, false, 0)
-	for i in 6:
-		var z := -6.6 + i * 2.4
+	# A thwart for each pair of oars, just forward of the oarlocks.
+	for k in range(1, OARS_A_SIDE - 1):
+		var z := station_z(k) - 0.55
 		gb.box(&"wood", Transform3D(Basis.IDENTITY, Vector3(0, 0.45, z)), Vector3(_half_beam(z / LENGTH + 0.5) * 2.0 - 0.15, 0.07, 0.3), Color.WHITE, false, 0)
+	# Oarlocks: a thole pin and its leather loop at each station.
+	for k in OARS_A_SIDE:
+		for side: float in [-1.0, 1.0]:
+			gb.box(&"hide", Transform3D(Basis.IDENTITY, Vector3(side * (BEAM * 0.5 - 0.1), 0.95, station_z(k) - 0.06)), Vector3(0.05, 0.22, 0.05),
+				Color(0.3, 0.2, 0.12), false, 0)
 	# Stern deck where the helmsman stands, bow deck.
 	gb.box(&"wood", Transform3D(Basis.IDENTITY, Vector3(0, 0.3, LENGTH * 0.5 - 3.2)), Vector3(2.2, 0.06, 2.6), Color.WHITE, false, 0)
 	gb.box(&"wood", Transform3D(Basis.IDENTITY, Vector3(0, 0.55, -LENGTH * 0.5 + 2.6)), Vector3(1.6, 0.06, 2.4), Color.WHITE, false, 0)
@@ -291,6 +425,77 @@ static func hull_mesh() -> ArrayMesh:
 	return Sculpt.mesh_with_lods(gb, Mats.all())
 
 
+## Spray thrown off the stem: white drops flung up and aft, falling back.
+static func _bow_spray() -> CPUParticles3D:
+	var p := CPUParticles3D.new()
+	p.amount = 60
+	p.lifetime = 1.3
+	p.local_coords = false
+	p.emitting = false
+	p.direction = Vector3(0.0, 1.0, 0.5)
+	p.spread = 55.0
+	p.initial_velocity_min = 3.0
+	p.initial_velocity_max = 7.5
+	p.gravity = Vector3(0, -9.8, 0)
+	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	p.emission_box_extents = Vector3(0.9, 0.2, 0.4)
+	p.scale_amount_min = 0.25
+	p.scale_amount_max = 0.9
+	var fade := Gradient.new()
+	fade.set_color(0, Color(1, 1, 1, 0.85))
+	fade.set_color(1, Color(1, 1, 1, 0.0))
+	p.color_ramp = fade
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.6, 0.6)
+	var m := StandardMaterial3D.new()
+	m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.vertex_color_use_as_albedo = true
+	m.albedo_color = Color(0.92, 0.96, 0.97)
+	var dot := GradientTexture2D.new()
+	dot.fill = GradientTexture2D.FILL_RADIAL
+	dot.fill_from = Vector2(0.5, 0.5)
+	dot.fill_to = Vector2(1.0, 0.5)
+	var g := Gradient.new()
+	g.set_color(0, Color(1, 1, 1, 1))
+	g.set_color(1, Color(1, 1, 1, 0))
+	dot.gradient = g
+	m.albedo_texture = dot
+	quad.material = m
+	p.mesh = quad
+	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return p
+
+
+## The tiller: a bar from the head of the steering oar in toward the helmsman (-X).
+static func tiller_mesh() -> ArrayMesh:
+	var gb := GeoBuilder.new()
+	gb.chunk_size = 0.0
+	var wood := Color(0.42, 0.29, 0.17)
+	gb.box(&"hide", Transform3D(Basis(Vector3(0, 0, 1), 0.04), Vector3(-0.72, -0.03, 0.06)), Vector3(1.5, 0.06, 0.07), wood, false, 0)
+	# The head of the loom, with a lashing where the tiller is socketed.
+	gb.box(&"hide", Transform3D(Basis.IDENTITY, Vector3(0.0, -0.1, 0.0)), Vector3(0.14, 0.34, 0.14), wood.darkened(0.2), false, 0)
+	gb.box(&"hide", Transform3D(Basis.IDENTITY, Vector3(-0.08, -0.02, 0.03)), Vector3(0.12, 0.08, 0.1), Color(0.6, 0.5, 0.32), false, 0)
+	return gb.build_mesh(Mats.all())
+
+
+## Turn [param i] of the rope binding a man to the mast: a loop round the
+## mast and his body, from the shins up to the chest.
+static func bond_mesh(i: int) -> ArrayMesh:
+	var gb := GeoBuilder.new()
+	gb.chunk_size = 0.0
+	var y: float = [1.35, 1.15, 0.95, 0.72, 0.45][i]
+	var centre := Vector3(0.0, y, -1.18)
+	var loop := func(u: float, v: float) -> Vector3:
+		var a := u * TAU
+		var ring := Vector3(cos(a) * 0.3, sin(a * 2.0 + float(i)) * 0.02, sin(a) * 0.36)
+		var out := Vector3(cos(a), 0.0, sin(a) * 1.2).normalized()
+		return centre + ring + out * cos(v * TAU) * 0.016 + Vector3(0, sin(v * TAU) * 0.016, 0)
+	Sculpt.grid(gb, &"hide", 24, 4, loop, Color(0.6, 0.5, 0.33), true, centre)
+	return gb.build_mesh(Mats.all())
+
+
 ## The square sail of linen on its yard, bellied by the wind.
 static func sail_mesh() -> ArrayMesh:
 	var gb := GeoBuilder.new()
@@ -306,11 +511,13 @@ static func sail_mesh() -> ArrayMesh:
 	return gb.build_mesh(Mats.all())
 
 
-## One oar, pivoting at the gunwale, its blade out over the water (+X).
+## One oar, pivoting at the gunwale, its blade out over the water (+X) and
+## its handle reaching 1.3 m inboard (-X), with a grip worn dark by hands.
 static func oar_mesh() -> ArrayMesh:
 	var gb := GeoBuilder.new()
 	gb.chunk_size = 0.0
-	gb.box(&"hide", Transform3D(Basis.IDENTITY, Vector3(1.6, 0.0, 0.0)), Vector3(4.6, 0.06, 0.06), Color(0.5, 0.36, 0.22), false, 0)
+	gb.box(&"hide", Transform3D(Basis.IDENTITY, Vector3(1.3, 0.0, 0.0)), Vector3(5.2, 0.06, 0.06), Color(0.5, 0.36, 0.22), false, 0)
+	gb.box(&"hide", Transform3D(Basis.IDENTITY, Vector3(-0.95, 0.0, 0.0)), Vector3(0.7, 0.07, 0.07), Color(0.32, 0.22, 0.14), false, 0)
 	gb.box(&"hide", Transform3D(Basis.IDENTITY, Vector3(3.6, 0.0, 0.0)), Vector3(0.9, 0.03, 0.2), Color(0.45, 0.32, 0.2), false, 0)
 	var m := gb.build_mesh(Mats.all())
 	return m

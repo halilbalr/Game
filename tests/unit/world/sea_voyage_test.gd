@@ -55,3 +55,16 @@ func test_cave_doorway_is_wide_enough_to_walk_through() -> void:
 	var right := Cave.shell(gap, 1.0, 0.0)
 	check(left.distance_to(right) > 5.0, "door width %f" % left.distance_to(right))
 	check(Cave.DOOR_H > 2.5, "door height")
+
+
+func test_sea_floor_falls_away_below_the_strand() -> void:
+	# Arrange: an island and a bearing from its middle out to sea.
+	var isle := Island.new(Vector2.ZERO, Vector2(120.0, 90.0), 20.0, 3)
+	var under := 0
+	# Act / assert: once under water, the bottom is never a shallow bar near the surface.
+	for i in 120:
+		var h := isle.height(i * 1.5, 0.0)
+		if h < 0.0:
+			under += 1
+			check(h < -0.6, "at %.0f m the bottom is %.2f m, a bar the troughs would show" % [i * 1.5, h])
+	check(under > 10, "the bearing reaches open water")

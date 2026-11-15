@@ -291,6 +291,11 @@ func hand_transform() -> Transform3D:
 	return _hand_r.global_transform
 
 
+## World positions of the two hands (left, right): where a rower grips his oar.
+func grip_points() -> PackedVector3Array:
+	return PackedVector3Array([_fore_l.global_transform * Vector3(0, -0.3, -0.01), _hand_r.global_position])
+
+
 ## World position of the head centre.
 func head_position() -> Vector3:
 	return _head.global_position + Vector3(0, 0.12, 0)
@@ -359,19 +364,39 @@ func _stance_pose() -> Pose:
 			p.fore_r = 1.3
 			p.weapon_pitch = 0.3
 		&"row":
-			# Seated at an oar: the stroke swings the body and arms (row_phase).
+			# Seated at an oar (row_phase). At the catch he leans toward the
+			# stern with his arms long; through the drive he lies back and draws
+			# the handle to his chest; on the recovery his hands drop a little,
+			# lifting the blade clear. The ship lays the oar through his hands.
 			var k := sin(row_phase)
+			var c := cos(row_phase)
 			p.body_y = -0.5
 			p.thigh_l = Vector3(1.25, 0.0, -0.1)
 			p.thigh_r = Vector3(1.25, 0.0, 0.1)
 			p.shin_l = -0.9
 			p.shin_r = -0.9
-			p.spine = Vector3(0.35 * k, 0.0, 0.0)
-			p.head = Vector3(-0.15 * k, 0.0, 0.0)
-			p.arm_l = Vector3(1.0 + 0.45 * k, 0.0, -0.1)
-			p.arm_r = Vector3(1.0 + 0.45 * k, 0.0, 0.1)
-			p.fore_l = 0.5 - 0.4 * k
-			p.fore_r = 0.5 - 0.4 * k
+			p.spine = Vector3(0.32 * k, 0.0, 0.0)
+			p.head = Vector3(-0.2 * k, 0.0, 0.0)
+			var reach := 1.12 - 0.32 * k - 0.1 * maxf(0.0, -c)
+			p.arm_l = Vector3(reach, 0.0, 0.18)
+			p.arm_r = Vector3(reach, 0.0, -0.18)
+			p.fore_l = 0.55 + 0.6 * k
+			p.fore_r = 0.55 + 0.6 * k
+		&"tie":
+			# Passing a rope round and round a man and a mast, hauling each turn tight.
+			var k := sin(row_phase)
+			var c := cos(row_phase)
+			p.spine = Vector3(-0.25 + 0.08 * c, 0.15 * k, 0.0)
+			p.head = Vector3(0.25, 0.0, 0.0)
+			p.arm_l = Vector3(1.15 + 0.35 * k, 0.0, 0.35 + 0.25 * c)
+			p.arm_r = Vector3(1.15 - 0.35 * k, 0.0, -0.35 + 0.25 * c)
+			p.fore_l = 0.7 - 0.4 * c
+			p.fore_r = 0.7 + 0.4 * c
+			p.thigh_l = Vector3(0.25, 0.0, -0.1)
+			p.thigh_r = Vector3(0.1, 0.0, 0.1)
+			p.shin_l = -0.35
+			p.shin_r = -0.2
+			p.body_y = -0.08
 		&"hold_child":
 			p.arm_l = Vector3(0.75, 0.0, 0.2)
 			p.fore_l = 1.5
@@ -551,6 +576,8 @@ func _process(delta: float) -> void:
 		var far := 28.0 if Game.lite else 70.0
 		if d2 > far * far and (_frame + _lod_slot) % 3 != 0:
 			return
+	if stance == &"tie":
+		row_phase += delta * 3.4
 	var target := _stance_pose()
 	if _dying:
 		_death_pose(target, delta)

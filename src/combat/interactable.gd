@@ -16,6 +16,8 @@ var hold_seconds: float = 0.0
 var aim_cone: float = 0.35
 ## Height above this node's origin that the player must look at.
 var focus_height: float = 1.0
+## What the hero's hands do while Use is held on this (see [method Viewmodel.act]).
+var action: StringName = &""
 
 
 func _enter_tree() -> void:

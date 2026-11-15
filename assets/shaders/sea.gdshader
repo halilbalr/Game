@@ -4,8 +4,8 @@
 shader_type spatial;
 render_mode cull_back, depth_draw_opaque, specular_schlick_ggx;
 
-uniform vec3 deep_color : source_color = vec3(0.02, 0.09, 0.16);
-uniform vec3 shallow_color : source_color = vec3(0.06, 0.28, 0.32);
+uniform vec3 deep_color : source_color = vec3(0.012, 0.06, 0.13);
+uniform vec3 shallow_color : source_color = vec3(0.04, 0.27, 0.30);
 uniform vec3 foam_color : source_color = vec3(0.86, 0.9, 0.9);
 uniform float sea_time = 0.0;
 uniform float swell = 1.0;      // wave height scale: 1 a fair day, 3 a storm
@@ -14,6 +14,15 @@ uniform vec4 vortex = vec4(0.0, 0.0, 0.0, 0.0);
 uniform float vortex_spin = 0.0;
 // 1 on desktops; 0 on phones, where the fine ripples are dropped.
 uniform float detail_scale = 1.0;
+// The sea floor near the islands (see Sea.set_floor): height as (h + 12) / 16
+// over ground_rect (x, z of the corner, width, depth in metres; 0 for none).
+uniform sampler2D ground_tex : filter_linear, repeat_disable;
+uniform vec4 ground_rect = vec4(0.0);
+uniform vec3 sand_water : source_color = vec3(0.16, 0.5, 0.46);
+// The ship's hull, kept dry inside: centre x, z, then sin and cos of its
+// heading; hull_size is the half beam and half length (0 for no ship).
+uniform vec4 hull_xf = vec4(0.0, 0.0, 0.0, 1.0);
+uniform vec2 hull_size = vec2(0.0);
 
 varying vec3 w_pos;
 varying float crest;
@@ -75,6 +84,13 @@ void vertex() {
 
 void fragment() {
 	vec2 p = w_pos.xz;
+	if (hull_size.x > 0.0) {
+		vec2 o = p - hull_xf.xy;
+		vec2 l = vec2(o.x * hull_xf.w - o.y * hull_xf.z, o.x * hull_xf.z + o.y * hull_xf.w) / hull_size;
+		if (dot(l, l) < 0.92) {
+			discard;
+		}
+	}
 	vec3 s = swell_at(p) + funnel(p);
 	vec2 grad = s.yz;
 	float dist = length(w_pos - CAMERA_POSITION_WORLD);
@@ -94,6 +110,12 @@ void fragment() {
 		float nx = vnoise((q + vec2(e, 0.0)) * 0.9 + vec2(t, t * 0.7)) + 0.5 * vnoise((q + vec2(e, 0.0)) * 2.7 - vec2(t * 1.3, t * 0.4));
 		float nz = vnoise((q + vec2(0.0, e)) * 0.9 + vec2(t, t * 0.7)) + 0.5 * vnoise((q + vec2(0.0, e)) * 2.7 - vec2(t * 1.3, t * 0.4));
 		grad += vec2(nx - n0, nz - n0) / e * 0.12 * fade * swell;
+		// Cat's-paws: the finest ripples, close by, where the sun glitters.
+		float near = clamp(1.0 - dist / 120.0, 0.0, 1.0);
+		float e2 = 0.08;
+		vec2 r = q * 6.5 + vec2(-t * 2.1, t * 1.6);
+		float m0 = vnoise(r);
+		grad += vec2(vnoise(r + vec2(e2 * 6.5, 0.0)) - m0, vnoise(r + vec2(0.0, e2 * 6.5)) - m0) / e2 * 0.018 * near;
 	}
 	vec3 wn = normalize(vec3(-grad.x, 1.0, -grad.y));
 	NORMAL = normalize((VIEW_MATRIX * vec4(wn, 0.0)).xyz);
@@ -101,10 +123,31 @@ void fragment() {
 	vec3 col = mix(shallow_color, deep_color, clamp(0.35 + fres, 0.0, 1.0));
 	// Light through the thin top of a wave, and foam breaking on the crests.
 	col += shallow_color * 0.6 * clamp(crest, 0.0, 1.0);
-	float foam = smoothstep(0.7, 1.1, crest + (vnoise(p * 1.7 + sea_time * 0.3) - 0.5) * 0.6) * fade;
+	float foam = smoothstep(0.85, 1.25, crest + (vnoise(p * 1.7 + sea_time * 0.3) - 0.5) * 0.6) * fade;
+	// Lace: the foam a breaking crest leaves on the back of the wave, in
+	// threads drawn out along the swell.
+	vec2 along = normalize(W0.xy);
+	vec2 lp = vec2(dot(p, along), dot(p, vec2(-along.y, along.x)));
+	float lace = vnoise(lp * vec2(0.35, 1.6) + vec2(sea_time * 0.15, 0.0)) * vnoise(lp * vec2(1.1, 3.4) - sea_time * 0.1);
+	foam = max(foam, smoothstep(0.4, 0.66, lace) * smoothstep(0.0, 0.7, crest) * 0.4 * fade * min(swell, 1.5));
 	if (vortex.z > 0.0) {
 		float r = length(p - vortex.xy) / vortex.z;
 		foam = max(foam, smoothstep(1.2, 0.2, r) * (0.4 + 0.6 * vnoise(q * 0.8)));
+	}
+	// The shallows: turquoise over pale sand, and the surf breaking at the
+	// waterline in bands that roll in to the beach.
+	if (ground_rect.z > 0.0) {
+		vec2 uv = (p - ground_rect.xy) / ground_rect.zw;
+		if (uv.x > 0.0 && uv.y > 0.0 && uv.x < 1.0 && uv.y < 1.0) {
+			float floor_h = texture(ground_tex, uv).r * 16.0 - 12.0;
+			float depth = w_pos.y - floor_h;
+			col = mix(col, sand_water * (0.85 + 0.3 * vnoise(p * 0.2)), smoothstep(9.0, 0.8, depth) * 0.85);
+			float roll = fract(floor_h * 0.55 + sea_time * 0.22 + vnoise(p * 0.12) * 0.9);
+			float band = smoothstep(0.0, 0.12, roll) * smoothstep(0.45, 0.12, roll) * smoothstep(3.2, 0.6, depth);
+			float wash = smoothstep(0.9, 0.05, depth);
+			float churn = 0.6 + 0.4 * vnoise(p * 1.4 - sea_time * 0.4);
+			foam = max(foam, clamp(max(band, wash) * churn, 0.0, 1.0));
+		}
 	}
 	ALBEDO = mix(col, foam_color, foam * 0.8);
 	ROUGHNESS = mix(0.06 + 0.12 * (1.0 - fade), 0.7, foam);
