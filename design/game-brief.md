@@ -308,7 +308,7 @@ thing to do. Title cards are narrated and are scenes too.
 | Mission scripts reach their end | `--mission=<id> --autoplay` | Pass |
 | Player combat through real input | `--scene=arena --autoplay --bot` | Pass |
 | Whole missions with real walking, fighting and use | `--mission=<id> --bot --god` (`--noalarm` for the horse) | Pass: both reach their ending |
-| The voyage: rowing, steering, climbing, using, whole missions | `--mission=cyclops|sirens --bot --god`, each also with `--mobile --phone` and with `--web` | Pass: all six runs reach the ending, no script errors |
+| The voyage: rowing, steering, climbing, using, whole missions | `--mission=cyclops` and `--mission=sirens` with `--bot --god`, each also with `--mobile --phone` and with `--web` | Pass: all six runs reach the ending, no script errors |
 | Screen transitions | `--tour --autoplay` | Pass |
 | Layout, legibility, presence | Screenshots in `production/qa/evidence/vertical-slice/` | Looked at |
 | Frame rate on real hardware | — | Not verified |
